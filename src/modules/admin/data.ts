@@ -2,7 +2,7 @@
  * Internal ops reads (service role). Never expose to non-allowlisted users — pages must call `requireInternalOpsActor`.
  */
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-import type { BillingEventRow, InvoiceRow, PaymentTransactionRow } from "@/modules/billing/data";
+import type { BillingEventRow, PaymentTransactionRow } from "@/modules/billing/data";
 import type { InvoiceWithOrg } from "@/modules/billing/admin-data";
 
 export type OrganizationOpsRow = {
