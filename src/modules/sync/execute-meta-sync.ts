@@ -130,6 +130,13 @@ export async function executeMetaSyncJob(jobId: string): Promise<void> {
 
     for (const p of posts.slice(0, 10)) {
       const insights = await fetchPostInsightTotals({ postId: p.id, pageAccessToken: pageToken });
+      const views = insights.post_media_view;
+      const clicks = insights.post_clicks;
+      const reactionsMap = insights.post_reactions_by_type_total;
+      const totalReactions = typeof reactionsMap === "object" && reactionsMap != null
+        ? Object.values(reactionsMap as Record<string, number>).reduce((a, b) => a + (b || 0), 0)
+        : null;
+
       postPayload.push({
         organization_id: job.organization_id,
         meta_page_id: job.meta_page_id,
@@ -139,13 +146,14 @@ export async function executeMetaSyncJob(jobId: string): Promise<void> {
         post_type: null,
         reach: null,
         impressions:
-          insights.post_impressions != null ? Math.round(insights.post_impressions) : null,
+          typeof views === "number" ? Math.round(views) : null,
         engagements:
-          insights.post_engaged_users != null ? Math.round(insights.post_engaged_users) : null,
-        reactions: null,
+          typeof clicks === "number" ? Math.round(clicks) : null,
+        reactions: totalReactions != null ? Math.round(totalReactions) : null,
         comments: null,
         shares: null,
-        clicks: null,
+        clicks:
+          typeof clicks === "number" ? Math.round(clicks) : null,
         raw_metrics: insights as Json
       });
     }

@@ -35,7 +35,7 @@ type GraphPostsResponse = {
 type GraphPostInsightsResponse = {
   data?: Array<{
     name: string;
-    values?: Array<{ value?: number }>;
+    values?: Array<{ value?: number | Record<string, number> }>;
   }>;
 };
 
@@ -55,10 +55,8 @@ async function graphGet<T>(url: URL, pageAccessToken: string): Promise<T> {
 }
 
 const DAILY_METRICS = [
-  "page_fans",
-  "page_impressions",
-  "page_post_engagements",
-  "page_engaged_users"
+  "page_follows",
+  "page_media_view"
 ] as const;
 
 export async function fetchPageDailyInsightsSeries(params: {
@@ -102,15 +100,19 @@ export async function fetchRecentPagePosts(params: {
 export async function fetchPostInsightTotals(params: {
   postId: string;
   pageAccessToken: string;
-}): Promise<Record<string, number>> {
+}): Promise<Record<string, number | Record<string, number>>> {
   const url = graphUrl(`/${params.postId}/insights`);
-  url.searchParams.set("metric", "post_impressions,post_engaged_users");
+  url.searchParams.set("metric", "post_media_view,post_clicks,post_reactions_by_type_total");
   try {
     const json = await graphGet<GraphPostInsightsResponse>(url, params.pageAccessToken);
-    const map: Record<string, number> = {};
+    const map: Record<string, number | Record<string, number>> = {};
     for (const row of json.data ?? []) {
       const v = row.values?.[0]?.value;
-      map[row.name] = typeof v === "number" ? v : 0;
+      if (typeof v === "number") {
+        map[row.name] = v;
+      } else if (typeof v === "object" && v != null) {
+        map[row.name] = v;
+      }
     }
     return map;
   } catch {
