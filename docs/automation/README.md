@@ -44,6 +44,10 @@ The automation model in this folder is designed for **human-directed, agent-assi
 3. Use `TASK_TEMPLATE.md` for new work
 4. Use `HANDOFFS.md` when passing tasks between agents
 5. Use `PLAYBOOKS.md` for standard operating patterns
+6. Use `MARTECH_SQUAD.md` for the actual MarTech role map
+7. Use `OPENCLAW_USAGE.md` for practical usage in OpenClaw
+8. Use `FIRST_WORKFLOWS.md` to classify the first real tasks
+9. Use `NEXT_STEPS.md` to decide what to operationalize next
 
 ## Initial operating mode
 

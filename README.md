@@ -64,6 +64,8 @@ Phase 2–7 foundations are implemented from `MarTech-MVP-v1-Spec.md`:
 - Start with `docs/automation/README.md`
 - Use `docs/automation/TASK_TEMPLATE.md` for new feature briefs
 - Use `docs/automation/AGENT_ROLES.md` and `docs/automation/WORKFLOW.md` as the operating model
+- Use `docs/automation/MARTECH_SQUAD.md` for the MarTech role map
+- Use `docs/automation/OPENCLAW_USAGE.md` for practical OpenClaw squad usage
 
 ## Notes
 
