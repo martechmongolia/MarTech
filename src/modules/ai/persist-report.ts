@@ -33,6 +33,11 @@ export async function persistAnalysisOutput(params: {
   const findingsJson = {
     deterministic_signals: params.signals,
     llm_extra_findings: params.llm.extra_findings,
+    recommendation_evidence: params.llm.recommendations.map((r) => ({
+      title: r.title,
+      source: r.source,
+      evidence_signal_ids: r.evidence_signal_ids
+    })),
     model_used: params.modelName != null,
     job_context: params.jobContext
   } as unknown as Json;

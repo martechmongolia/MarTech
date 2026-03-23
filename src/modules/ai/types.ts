@@ -17,6 +17,11 @@ export type AnalysisRecommendationDraft = {
   title: string;
   description: string;
   action_items: string[];
+  /**
+   * Traceability to deterministic signal ids used as evidence.
+   * Must contain at least one known signal id.
+   */
+  evidence_signal_ids: string[];
   source: "rule" | "model";
 };
 

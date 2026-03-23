@@ -34,10 +34,15 @@ export function buildAnalysisLlmUserPrompt(params: {
   posts: NormalizedPostMetric[];
 }): string {
   return [
-    "You are given deterministic analytics signals computed from normalized Facebook Page metrics (aggregated columns only).",
-    "Raw provider payloads are not included and must not be inferred.",
-    "Do not contradict the signals; interpret them for a non-technical page owner.",
-    "Return ONLY valid JSON matching this schema:",
+    "Танд нормчилсон Facebook Page метрикээс гаргасан deterministic signal болон богино metric context өгөгдөнө.",
+    "Deterministic signals бол үндсэн үнэн. Тэдэнтэй зөрчилдөж болохгүй.",
+    "Daily/post context нь зөвхөн signal-ийг тайлбарлах, бататгах зориулалттай.",
+    "Өгөгдлөөс шууд батлагдахгүй шалтгаан, audience intent, algorithm behavior бүү таамагла.",
+    "Техникийн бус page эзэмшигчид ойлгомжтой, товч, шийдвэр гаргахад туслах хэлээр бич.",
+    "Summary нь 2-4 өгүүлбэртэй бөгөөд: ерөнхий төлөв, гол evidence, гол эрсдэл/боломж, дараагийн фокусыг багтаана.",
+    "Recommendation бүр signal-тэй шууд холбоотой, хэрэгжүүлэхүйц, тодорхой action агуулсан байна.",
+    "Хэт ерөнхий зөвлөгөө бүү өг.",
+    "Зөвхөн хүчинтэй JSON буцаа:",
     JSON.stringify(
       {
         summary: "string, 2-4 sentences",
@@ -48,24 +53,26 @@ export function buildAnalysisLlmUserPrompt(params: {
             category: "content|timing|engagement|growth",
             title: "string",
             description: "string",
-            action_items: ["string"]
+            action_items: ["string"],
+            evidence_signal_ids: ["string (deterministic signal id)"]
           }
         ]
       },
       null,
       2
     ),
-    "Use at most 3 extra_findings and at most 5 recommendations. Recommendations must be actionable.",
+    "extra_findings хамгийн ихдээ 3, recommendations хамгийн ихдээ 5 байна. Recommendation бүр тодорхой хэрэгжүүлэх action агуулсан байна.",
+    "Recommendation бүрийн evidence_signal_ids талбарт дор хаяж 1 deterministic signal id оруул.",
     "",
-    `Page name: ${params.pageName}`,
+    `Хуудасны нэр: ${params.pageName}`,
     "",
-    "Deterministic signals (JSON):",
+    "Deterministic сигналууд (JSON):",
     JSON.stringify(params.signals, null, 2),
     "",
-    "Recent normalized daily metrics (JSON):",
+    "Сүүлийн нормчилсон daily метрикүүд (JSON):",
     JSON.stringify(compactDaily(params.daily), null, 2),
     "",
-    "Recent normalized post metrics sample (JSON):",
+    "Сүүлийн нормчилсон пост метрикийн жишээ (JSON):",
     JSON.stringify(compactPosts(params.posts), null, 2)
   ].join("\n");
 }

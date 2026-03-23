@@ -963,3 +963,8 @@ set
   report_retention_days = excluded.report_retention_days,
   is_active = excluded.is_active,
   updated_at = now();
+
+-- 202603230001_meta_connections_meta_user_id_idx.sql
+create index if not exists meta_connections_meta_user_id_idx
+  on public.meta_connections (meta_user_id)
+  where meta_user_id is not null;

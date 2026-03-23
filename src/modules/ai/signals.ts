@@ -134,6 +134,19 @@ export function extractDeterministicSignals(
     }
   }
 
+  if (signals.length === 0) {
+    signals.push({
+      id: "insufficient_signal_window",
+      severity: "info",
+      title: "Insufficient deterministic signal coverage",
+      detail: "Current synced window did not trigger strong deterministic patterns yet.",
+      evidence: {
+        daily_points: sorted.length,
+        post_points: posts.length
+      }
+    });
+  }
+
   return signals;
 }
 
@@ -145,12 +158,13 @@ export function draftRecommendationsFromSignals(signals: DeterministicSignal[]):
       out.push({
         priority: "high",
         category: "growth",
-        title: "Stabilize reach",
-        description: s.detail,
+        title: "Reach уналтыг тогтворжуулах",
+        description: "Сүүлийн 3 өдрийн impressions/reach дундаж өмнөх 3 өдрөөс мэдэгдэхүйц буурсан.",
         action_items: [
-          "Review top-performing post themes from stored metrics and repeat angles that drove impressions.",
-          "Test one additional post this week with a clear CTA to re-engage the audience."
+          "Сүүлийн метрикээс impressions өндөр авч байсан постын сэдэв/форматыг тодорхойлоод энэ долоо хоногт 1 хувилбарыг давтан турш.",
+          "Дараагийн 7 хоногт тод CTA-тай дор хаяж 1 пост нэмж, синкийн дараа impressions өөрчлөлтийг шалга."
         ],
+        evidence_signal_ids: [s.id],
         source: "rule"
       });
     }
@@ -158,12 +172,13 @@ export function draftRecommendationsFromSignals(signals: DeterministicSignal[]):
       out.push({
         priority: "high",
         category: "engagement",
-        title: "Refresh engagement tactics",
-        description: s.detail,
+        title: "Engagement сэргээх богино туршилт хийх",
+        description: "Сүүлийн цэгүүдэд engagement-ийн дундаж өмнөх цонхоос буурсан.",
         action_items: [
-          "Add questions or polls-style prompts in captions to invite comments.",
-          "Reply to comments within 24h on new posts to boost conversation signals."
+          "Ирэх 2 постын тайлбарт асуулт эсвэл санал асуулгын хэлбэрийн CTA оруулж сэтгэгдэл өдөө.",
+          "Шинэ постын сэтгэгдэлд 24 цагийн дотор хариу өгч, сэтгэгдлийн урсгалыг тогтвортой нэм."
         ],
+        evidence_signal_ids: [s.id],
         source: "rule"
       });
     }
@@ -171,12 +186,13 @@ export function draftRecommendationsFromSignals(signals: DeterministicSignal[]):
       out.push({
         priority: "medium",
         category: "timing",
-        title: "Increase posting cadence",
-        description: s.detail,
+        title: "Постын давтамжийг доод босго дээр тогтворжуулах",
+        description: "Сүүлийн 7 хоногт постын тоо бага байна.",
         action_items: [
-          "Schedule at least two posts per week while monitoring daily metrics after sync.",
-          "Batch-create short-form updates so publishing stays consistent."
+          "Ирэх 2 долоо хоногт долоо хоног бүр дор хаяж 2 постоор контент төлөвлөгөө үүсгэ.",
+          "Хэвлэлт тасалдахаас сэргийлж 3-5 богино постыг урьдчилан бэлдэж, тогтсон өдрүүдэд нийтэл."
         ],
+        evidence_signal_ids: [s.id],
         source: "rule"
       });
     }
@@ -184,12 +200,13 @@ export function draftRecommendationsFromSignals(signals: DeterministicSignal[]):
       out.push({
         priority: "medium",
         category: "growth",
-        title: "Investigate audience growth levers",
-        description: s.detail,
+        title: "Follower өсөлтийн саарлыг баталгаажуулж сайжруулах",
+        description: "Follower-ийн цэвэр өсөлт сүүлийн цонхонд эерэг биш байна.",
         action_items: [
-          "Cross-check follower_delta after the next sync to confirm trend.",
-          "Pair content with a simple follower CTA in stories or pinned post."
+          "Дараагийн 2 синкийн дараа follower_delta-ийн чиглэлийг дахин шалгаж, саарлыг баталгаажуул.",
+          "Story эсвэл pinned пост дээр тодорхой follower CTA нэмээд дараагийн цонхонд delta-д нөлөөг нь харьцуул."
         ],
+        evidence_signal_ids: [s.id],
         source: "rule"
       });
     }
@@ -197,9 +214,10 @@ export function draftRecommendationsFromSignals(signals: DeterministicSignal[]):
       out.push({
         priority: "low",
         category: "timing",
-        title: "Reduce long silent periods",
-        description: s.detail,
-        action_items: ["Plan a lightweight weekly slot so gaps rarely exceed 7–10 days."],
+        title: "Урт нийтлэлийн завсрыг багасгах",
+        description: "Пост хоорондын хамгийн урт завсар хэт урт байна.",
+        action_items: ["Долоо хоног бүр тогтмол нийтлэх нэг time slot тогтоож, завсрыг 7-10 өдрөөс хэтрүүлэхгүй байлга."],
+        evidence_signal_ids: [s.id],
         source: "rule"
       });
     }
@@ -207,21 +225,41 @@ export function draftRecommendationsFromSignals(signals: DeterministicSignal[]):
       out.push({
         priority: "low",
         category: "content",
-        title: "Lean into what you publish most",
-        description: s.detail,
-        action_items: ["Experiment with variants of the dominant format while tracking engagement_rate on daily rows."],
+        title: "Давамгай форматын хувилбаруудыг зорилготой турших",
+        description: "Сүүлийн sample-д нэг post төрөл давамгайлж байна.",
+        action_items: ["Давамгай post_type дээр 1-2 шинэ хувилбар туршиж, дараагийн синкийн дараа engagement_rate-ийн ялгааг харьцуул."],
+        evidence_signal_ids: [s.id],
+        source: "rule"
+      });
+    }
+    if (s.id === "insufficient_signal_window") {
+      out.push({
+        priority: "low",
+        category: "engagement",
+        title: "Сигналын цонхыг өргөжүүлэх тогтмол синк хийх",
+        description: "Одоогийн өгөгдлийн цонхонд хүчтэй deterministic pattern хангалтгүй байна.",
+        action_items: [
+          "Ирэх 7-14 хоногт синкийг тасралтгүй ажиллуулж daily болон post метрикийн цонхыг тэл.",
+          "Дараагийн цонх бүрт impressions, engagement, follower_delta-ийн чиглэлийг нэг ижил огнооны хүрээнд харьцуул."
+        ],
+        evidence_signal_ids: [s.id],
         source: "rule"
       });
     }
   }
 
   if (out.length === 0) {
+    const fallbackSignalId = signals[0]?.id;
+    if (!fallbackSignalId) {
+      throw new Error("Rule recommendation fallback requires at least one deterministic signal id.");
+    }
     out.push({
       priority: "low",
       category: "engagement",
-      title: "Keep monitoring after each sync",
-      description: "Limited rule-based triggers fired; continue syncing to widen the data window for trends.",
-      action_items: ["Run sync regularly and review daily metrics in the dashboard."],
+      title: "Синк бүрийн дараа өөрчлөлтөө тогтмол хянах",
+      description: "Одоогийн цонхонд хүчтэй deterministic trigger цөөн байна.",
+      action_items: ["Синкийг тогтмол ажиллуулж, dashboard дээр daily метрикийн өөрчлөлтийг долоо хоногоор харьцуулан шалга."],
+      evidence_signal_ids: [fallbackSignalId],
       source: "rule"
     });
   }
