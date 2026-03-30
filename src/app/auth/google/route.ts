@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 import type { Database } from "@/types/database";
 
 export async function GET(request: NextRequest) {
@@ -15,16 +14,24 @@ export async function GET(request: NextRequest) {
   const nextRaw = request.nextUrl.searchParams.get("next") ?? "/dashboard";
   const next = nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : "/dashboard";
 
-  const cookieStore = await cookies();
+  // We need a mutable response so that Supabase SSR can write the PKCE
+  // code_verifier cookie onto it. Using `cookies()` from next/headers writes
+  // to Next.js's implicit response store, which is NOT the same object as a
+  // manually constructed NextResponse — so cookies set that way never reach
+  // the browser when we return an explicit NextResponse.redirect().
+  //
+  // Instead we create a temporary placeholder response, let Supabase write its
+  // cookies there via setAll, then forward those cookies onto the final redirect.
+  let tempResponse = new NextResponse();
 
   const supabase = createServerClient<Database>(url, anonKey, {
     cookies: {
       getAll() {
-        return cookieStore.getAll();
+        return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
+          tempResponse.cookies.set(name, value, options);
         });
       },
     },
@@ -45,5 +52,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=oauth_failed", request.url));
   }
 
-  return NextResponse.redirect(data.url);
+  // Build the redirect and copy any cookies Supabase set (e.g. PKCE code_verifier)
+  const redirectResponse = NextResponse.redirect(data.url);
+  tempResponse.cookies.getAll().forEach(({ name, value, ...rest }) => {
+    redirectResponse.cookies.set(name, value, rest as Parameters<typeof redirectResponse.cookies.set>[2]);
+  });
+
+  return redirectResponse;
 }

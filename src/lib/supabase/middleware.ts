@@ -3,6 +3,9 @@ import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
 
 const PROTECTED_PREFIXES = ["/dashboard", "/setup-organization", "/billing", "/settings", "/pages", "/internal", "/admin"];
+// Paths where an already-authenticated user should be redirected away to /dashboard.
+// /auth/google is intentionally excluded: it initiates OAuth, and the Supabase client
+// needs to run (to write the PKCE code_verifier cookie) before the redirect happens.
 const PUBLIC_AUTH_PATHS = ["/login", "/auth/callback"];
 
 export function isProtectedPath(pathname: string): boolean {
