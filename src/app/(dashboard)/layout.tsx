@@ -25,11 +25,11 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     (isInternalOpsEmail(user.email) || (await hasActiveSystemAdminRecord(user.id)));
 
   const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: "📊" },
-    { href: "/pages", label: "Pages", icon: "📄" },
-    { href: "/billing", label: "Billing", icon: "💳" },
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/pages", label: "Pages" },
+    { href: "/billing", label: "Billing" },
     ...(showSystemAdminNav
-      ? [{ href: "/admin", label: "System Admin", icon: "⚙️", accent: true }]
+      ? [{ href: "/admin", label: "System Admin", accent: true }]
       : []),
   ];
 
@@ -51,7 +51,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
         <SidebarNav items={navItems} />
 
         <form action={signOutAction} className="app-shell__signout">
-          <Button type="submit" variant="ghost" size="sm" full>
+          <Button type="submit" variant="outline-white" size="sm" full>
             Sign out
           </Button>
         </form>

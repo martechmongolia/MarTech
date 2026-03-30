@@ -878,8 +878,8 @@ code {
 .app-shell__sidebar {
   width: 220px;
   flex-shrink: 0;
-  background: #fff;
-  border-right: 1px solid var(--border-default);
+  background: var(--brand-blue);
+  border-right: none;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 1rem;
@@ -914,7 +914,7 @@ code {
   gap: 0.6rem;
   padding: 0.6rem 0.75rem;
   border-radius: 8px;
-  color: var(--text-primary);
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 500;
@@ -922,12 +922,13 @@ code {
 }
 
 .app-shell__nav a:hover {
-  background: var(--bg-subtle);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 
 .app-shell__nav a.app-shell__nav-link--active {
-  background: var(--brand-blue-light);
-  color: var(--brand-blue);
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
 }
 
 .app-shell__nav-link--accent {
@@ -937,7 +938,7 @@ code {
 .app-shell__signout {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--border-default);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .app-shell__main {
@@ -961,7 +962,7 @@ code {
     align-items: center;
     padding: 0.75rem 1rem;
     border-right: none;
-    border-bottom: 1px solid var(--border-default);
+    border-bottom: none;
     gap: 0.5rem;
     overflow-x: auto;
     overflow-y: hidden;
@@ -993,7 +994,7 @@ code {
     margin-top: 0;
     padding-top: 0;
     border-top: none;
-    border-left: 1px solid var(--border-default);
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
     padding-left: 0.75rem;
     margin-left: 0.25rem;
     flex-shrink: 0;
