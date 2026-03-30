@@ -10,8 +10,8 @@ insert into public.plans (
   is_active
 )
 values
-  ('starter', 'Starter', 29.00, 'USD', 1, 1, 30, 30, true),
-  ('growth', 'Growth', 99.00, 'USD', 5, 4, 120, 90, true)
+  ('starter', 'Starter', 49900.00, 'MNT', 1, 1, 30, 30, true),
+  ('growth', 'Growth', 149900.00, 'MNT', 5, 4, 120, 90, true)
 on conflict (code) do update
 set
   name = excluded.name,
