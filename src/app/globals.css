@@ -163,8 +163,8 @@ code {
 }
 
 .marketing-brand__logo {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 8rem;
+  height: auto;
   display: block;
 }
 
