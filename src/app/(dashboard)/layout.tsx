@@ -1,7 +1,9 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui";
+import { SidebarNav } from "@/components/ui/sidebar-nav";
 import { signOutAction } from "@/modules/auth/actions";
 import { getCurrentUser } from "@/modules/auth/session";
 import { hasActiveSystemAdminRecord } from "@/modules/admin/guard";
@@ -22,26 +24,40 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     Boolean(user.id) &&
     (isInternalOpsEmail(user.email) || (await hasActiveSystemAdminRecord(user.id)));
 
+  const navItems = [
+    { href: "/dashboard", label: "Dashboard", icon: "📊" },
+    { href: "/pages", label: "Pages", icon: "📄" },
+    { href: "/billing", label: "Billing", icon: "💳" },
+    ...(showSystemAdminNav
+      ? [{ href: "/admin", label: "System Admin", icon: "⚙️", accent: true }]
+      : []),
+  ];
+
   return (
     <div className="app-shell">
-      <header className="app-shell__header">
-        <nav className="app-shell__nav">
-          <span className="app-shell__brand">MarTech</span>
-          <Link href="/dashboard">Dashboard</Link>
-          <Link href="/billing">Billing</Link>
-          <Link href="/pricing">Pricing</Link>
-          {showSystemAdminNav ? (
-            <Link href="/admin" className="app-shell__nav-link--accent">
-              System admin
-            </Link>
-          ) : null}
-        </nav>
-        <form action={signOutAction}>
-          <Button type="submit" variant="secondary">
+      {/* Sidebar */}
+      <aside className="app-shell__sidebar">
+        <Link href="/dashboard" className="app-shell__logo-link">
+          <Image
+            src="/brand/logo.svg"
+            alt="MarTech"
+            width={140}
+            height={40}
+            className="app-shell__logo"
+            priority
+          />
+        </Link>
+
+        <SidebarNav items={navItems} />
+
+        <form action={signOutAction} className="app-shell__signout">
+          <Button type="submit" variant="ghost" size="sm" full>
             Sign out
           </Button>
         </form>
-      </header>
+      </aside>
+
+      {/* Main content */}
       <main className="app-shell__main">{children}</main>
     </div>
   );

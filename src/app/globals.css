@@ -867,60 +867,141 @@ code {
   word-break: break-word;
 }
 
-/* Customer app shell */
+/* =============================================================================
+   App Shell — Sidebar layout
+   ============================================================================= */
 .app-shell {
-  min-height: 100vh;
   display: flex;
-  flex-direction: column;
+  min-height: 100vh;
 }
 
-.app-shell__header {
-  padding: var(--space-4) var(--space-8);
-  border-bottom: 1px solid var(--color-border-subtle);
+.app-shell__sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: #fff;
+  border-right: 1px solid var(--border-default);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  background: var(--color-bg-elevated);
-  min-width: 0;
+  flex-direction: column;
+  padding: 1.5rem 1rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.app-shell__logo-link {
+  display: block;
+  text-decoration: none;
+  margin-bottom: 2rem;
+}
+
+.app-shell__logo {
+  width: 140px;
+  height: auto;
+  display: block;
 }
 
 .app-shell__nav {
   display: flex;
-  gap: var(--space-4);
-  align-items: center;
-  flex-wrap: wrap;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.app-shell__brand {
-  font-weight: 700;
-  font-size: var(--text-sm);
-  letter-spacing: -0.02em;
-  color: var(--color-text-primary);
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
 }
 
 .app-shell__nav a {
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  color: var(--text-primary);
   text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.15s;
 }
 
 .app-shell__nav a:hover {
-  color: var(--color-text-primary);
+  background: var(--bg-subtle);
+}
+
+.app-shell__nav a.app-shell__nav-link--active {
+  background: var(--brand-blue-light);
+  color: var(--brand-blue);
 }
 
 .app-shell__nav-link--accent {
   color: var(--color-admin-accent) !important;
 }
 
+.app-shell__signout {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-default);
+}
+
 .app-shell__main {
-  padding: var(--space-8);
   flex: 1;
   min-width: 0;
+  background: var(--bg-subtle);
+  padding: 2rem;
+}
+
+/* Mobile: collapse to top bar */
+@media (max-width: 768px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .app-shell__sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-right: none;
+    border-bottom: 1px solid var(--border-default);
+    gap: 0.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .app-shell__logo-link {
+    margin-bottom: 0;
+    margin-right: 1rem;
+    flex-shrink: 0;
+  }
+
+  .app-shell__logo {
+    width: 100px;
+  }
+
+  .app-shell__nav {
+    flex-direction: row;
+    flex: 1;
+    gap: 0.25rem;
+  }
+
+  .app-shell__nav a {
+    white-space: nowrap;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .app-shell__signout {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    border-left: 1px solid var(--border-default);
+    padding-left: 0.75rem;
+    margin-left: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .app-shell__main {
+    padding: 1rem;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1349,6 +1430,138 @@ code {
 
 .ui-max-w-form {
   max-width: 52rem;
+}
+
+/* Dashboard top header row */
+.dash-top-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dash-plan-label {
+  margin: 0.25rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Dashboard empty state */
+.dash-empty-state {
+  padding: 2.5rem;
+  text-align: center;
+  background: #fff;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Dashboard page cards */
+.dash-page-card {
+  background: #fff;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.dash-page-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dash-page-card__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dash-page-card__meta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0.2rem 0 0;
+}
+
+.dash-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dash-metric {
+  padding: 1.25rem 1.5rem;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.dash-metric:last-child {
+  border-right: none;
+}
+
+.dash-metric__label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.35rem;
+}
+
+.dash-metric__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.dash-page-card__body {
+  padding: 1.5rem;
+}
+
+/* Sync jobs */
+.dash-jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dash-job-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-subtle);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  flex-wrap: wrap;
+}
+
+.dash-job-item__status {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.dash-job-item__status--succeeded { color: #16a34a; }
+.dash-job-item__status--failed { color: #dc2626; }
+.dash-job-item__status--running { color: var(--brand-blue); }
+.dash-job-item__status--queued { color: #d97706; }
+
+/* PageHeader subtitle */
+.ui-page-header__subtitle {
+  margin: 0.1rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
 }
 
 .ui-dashboard-page-list {

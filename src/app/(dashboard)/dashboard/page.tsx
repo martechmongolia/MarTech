@@ -6,14 +6,14 @@ import { OperationalHealthBanner } from "@/components/dashboard/operational-heal
 import { PageAnalyticsBlock } from "@/components/dashboard/page-analytics-block";
 import { ManualSyncForm } from "@/components/sync/manual-sync-form";
 import { RetrySyncJobForm } from "@/components/sync/retry-sync-job-form";
-import { Alert, Card, PageHeader } from "@/components/ui";
+import { Alert, PageHeader } from "@/components/ui";
 import {
   getLatestAnalysisJobForPage,
   getLatestFailedAnalysisJobForOrganization,
   getLatestReadyReportForPage,
   getRecentAnalysisJobsForPage,
   getRecommendationsForReport,
-  getReportHistoryForPage
+  getReportHistoryForPage,
 } from "@/modules/ai/data";
 import { getCurrentUser } from "@/modules/auth/session";
 import { getCurrentUserOrganization } from "@/modules/organizations/data";
@@ -27,8 +27,37 @@ import {
   getLatestSucceededSyncJobForPage,
   getLatestSyncJobForPage,
   getRecentPostMetricsForPage,
-  getRecentSyncJobsForOrganization
+  getRecentSyncJobsForOrganization,
 } from "@/modules/sync/data";
+
+function formatRelativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return "Never";
+  try {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+  } catch {
+    return "—";
+  }
+}
+
+function formatNumber(n: number | null | undefined): string {
+  if (n == null) return "—";
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+  return String(n);
+}
+
+function formatEngagement(n: number | null | undefined): string {
+  if (n == null) return "—";
+  if (n < 1) return `${(n * 100).toFixed(1)}%`;
+  return String(n);
+}
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -49,7 +78,7 @@ export default async function DashboardPage() {
       checkOrganizationFeatureLimit(user.id, "manual_sync"),
       checkOrganizationFeatureLimit(user.id, "generate_ai_report"),
       getLatestFailedSyncJobForOrganization(organization.id),
-      getLatestFailedAnalysisJobForOrganization(organization.id)
+      getLatestFailedAnalysisJobForOrganization(organization.id),
     ]);
 
   const selectedPages = pages.filter((p) => p.is_selected && p.status === "active");
@@ -66,7 +95,7 @@ export default async function DashboardPage() {
           getLatestReadyReportForPage(p.id),
           getLatestAnalysisJobForPage(p.id),
           getRecentAnalysisJobsForPage(p.id, 6),
-          getReportHistoryForPage(p.id, 10)
+          getReportHistoryForPage(p.id, 10),
         ]);
       const recs = aiReport ? await getRecommendationsForReport(aiReport.id) : [];
       return {
@@ -80,54 +109,50 @@ export default async function DashboardPage() {
         aiJob,
         aiJobRuns,
         reportHistory,
-        recs
+        recs,
       };
     })
   );
 
+  const planName = subscription?.plan.name ?? "Starter";
+
   return (
     <section className="ui-customer-stack">
-      <div>
-        <PageHeader title="Dashboard" />
-        <p className="ui-text-muted" style={{ margin: "var(--space-2) 0 0" }}>
-          Organization: {organization.name}
-        </p>
-        <p className="ui-text-muted" style={{ margin: "var(--space-1) 0 0" }}>
-          Subscription: {subscription ? `${subscription.plan.name} (${subscription.status})` : "Not configured"}
-        </p>
-        <p className="ui-text-muted" style={{ margin: "var(--space-1) 0 0" }}>
-          Meta pages:{" "}
-          <Link href="/pages" className="ui-table__link">
-            /pages
-          </Link>
-        </p>
+      {/* Header */}
+      <div className="dash-top-header">
+        <div>
+          <PageHeader title={organization.name} />
+          <p className="dash-plan-label">Plan: {planName}</p>
+        </div>
+        <Link href="/pages" className="ui-button ui-button--primary ui-button--sm">
+          + Connect page
+        </Link>
       </div>
+
+      {/* Operational alerts */}
       <OperationalHealthBanner failedSync={failedSync} failedAnalysis={failedAnalysis} />
+
+      {/* AI quota warning */}
       {!aiEntitlement.allowed ? (
         <Alert variant="warning">
-          AI report quota: {aiEntitlement.used}/{aiEntitlement.limit} this month — generation is skipped until quota
-          resets or plan allows more.
+          AI report quota reached ({aiEntitlement.used}/{aiEntitlement.limit} this month). Generation is paused until
+          your quota resets or you upgrade your plan.
         </Alert>
       ) : null}
 
-      <Card padded>
-        <h2 className="ui-section-title" style={{ marginTop: 0 }}>
-          Sync, metrics &amp; AI
+      {/* Page cards */}
+      <div>
+        <h2 className="ui-section-title" style={{ marginBottom: "1rem" }}>
+          Your pages
         </h2>
-        <p className="ui-text-muted" style={{ marginTop: 0 }}>
-          Metrics come from Meta Graph sync. AI uses normalized tables + rule-based signals; optional OpenAI refines
-          narrative. Billing uses QPay; see{" "}
-          <Link href="/billing" className="ui-table__link">
-            /billing
-          </Link>{" "}
-          for invoices and payment status.
-        </p>
 
-        <h3 style={{ fontSize: "var(--text-base)", fontWeight: 600, margin: "var(--space-5) 0 var(--space-3)" }}>
-          Selected pages
-        </h3>
         {pageCards.length === 0 ? (
-          <p>No pages selected. Connect Meta and select pages on /pages.</p>
+          <div className="dash-empty-state">
+            <p>No pages connected yet.</p>
+            <Link href="/pages" className="ui-button ui-button--primary ui-button--sm">
+              Connect a page
+            </Link>
+          </div>
         ) : (
           <ul className="ui-dashboard-page-list">
             {pageCards.map(
@@ -142,103 +167,129 @@ export default async function DashboardPage() {
                 aiJob,
                 aiJobRuns,
                 reportHistory,
-                recs
-              }) => (
-              <li key={page.id}>
-                <Card padded stack>
-                  <strong>{page.name}</strong>
-                  <p className="ui-text-muted" style={{ margin: 0 }}>
-                    Last synced (page): {page.last_synced_at ?? "—"}
-                  </p>
-                  <p className="ui-text-muted" style={{ margin: 0 }}>
-                    Latest sync job: {job ? `${job.status} (${job.job_type})` : "—"}
-                    {job?.finished_at ? ` · finished ${job.finished_at}` : null}
-                    {job?.error_message ? (
-                      <span className="ui-text-error" style={{ display: "block" }}>
-                        {job.error_message}
-                      </span>
-                    ) : null}
-                  </p>
-                  <p className="ui-text-muted" style={{ margin: 0 }}>
-                    Latest daily row:{" "}
-                    {metric
-                      ? `${metric.metric_date} · fans ${metric.followers_count ?? "—"} · impressions ${metric.impressions ?? "—"} · engaged ${metric.engaged_users ?? "—"}`
-                      : "—"}
-                  </p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", alignItems: "center" }}>
-                    <ManualSyncForm
-                      organizationId={organization.id}
-                      internalPageId={page.id}
-                      pageLabel={page.name}
-                      disabled={!manualEntitlement.allowed}
-                    />
-                    <RegenerateAnalysisForm
-                      organizationId={organization.id}
-                      internalPageId={page.id}
-                      disabled={!aiEntitlement.allowed}
-                    />
-                    {!manualEntitlement.allowed ? (
-                      <span className="ui-text-warning-emphasis" style={{ fontSize: "var(--text-xs)" }}>
-                        Manual sync quota: {manualEntitlement.used}/{manualEntitlement.limit} today
-                      </span>
-                    ) : null}
-                  </div>
+                recs,
+              }) => {
+                const lastSyncedAt = lastOkJob?.finished_at ?? page.last_synced_at;
+                return (
+                  <li key={page.id}>
+                    <div className="dash-page-card">
+                      {/* Card header */}
+                      <div className="dash-page-card__header">
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                            <span style={{ color: "var(--brand-blue)", fontSize: "0.75rem" }}>●</span>
+                            <p className="dash-page-card__title">{page.name}</p>
+                          </div>
+                          <p className="dash-page-card__meta">
+                            Last synced: {formatRelativeTime(lastSyncedAt)}
+                          </p>
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                          {!manualEntitlement.allowed ? (
+                            <span className="ui-text-warning-emphasis" style={{ fontSize: "var(--text-xs)" }}>
+                              Quota: {manualEntitlement.used}/{manualEntitlement.limit}
+                            </span>
+                          ) : null}
+                          <ManualSyncForm
+                            organizationId={organization.id}
+                            internalPageId={page.id}
+                            pageLabel={page.name}
+                            disabled={!manualEntitlement.allowed}
+                          />
+                          <RegenerateAnalysisForm
+                            organizationId={organization.id}
+                            internalPageId={page.id}
+                            disabled={!aiEntitlement.allowed}
+                          />
+                        </div>
+                      </div>
 
-                  <PageAnalyticsBlock
-                    pageName={page.name}
-                    dailySeries={dailySeries}
-                    posts={postMetrics}
-                    latestJob={job}
-                    lastSucceededJob={lastOkJob}
-                    latestMetricDate={metric?.metric_date ?? null}
-                    pageLastSyncedAt={page.last_synced_at}
-                  />
+                      {/* Metrics row */}
+                      <div className="dash-metrics-row">
+                        <div className="dash-metric">
+                          <div className="dash-metric__label">Fans</div>
+                          <div className="dash-metric__value">{formatNumber(metric?.followers_count)}</div>
+                        </div>
+                        <div className="dash-metric">
+                          <div className="dash-metric__label">Reach</div>
+                          <div className="dash-metric__value">
+                            {formatNumber(metric?.impressions ?? metric?.reach)}
+                          </div>
+                        </div>
+                        <div className="dash-metric">
+                          <div className="dash-metric__label">Engaged</div>
+                          <div className="dash-metric__value">
+                            {formatEngagement(metric?.engagement_rate ?? metric?.engaged_users)}
+                          </div>
+                        </div>
+                      </div>
 
-                  <AiInsightsBlock
-                    report={aiReport}
-                    recommendations={recs}
-                    analysisJob={aiJob}
-                    recentAnalysisJobs={aiJobRuns}
-                    reportHistory={reportHistory}
-                  />
-                </Card>
-              </li>
-            )
+                      {/* Analytics + AI */}
+                      <div className="dash-page-card__body">
+                        <PageAnalyticsBlock
+                          pageName={page.name}
+                          dailySeries={dailySeries}
+                          posts={postMetrics}
+                          latestJob={job}
+                          lastSucceededJob={lastOkJob}
+                          latestMetricDate={metric?.metric_date ?? null}
+                          pageLastSyncedAt={page.last_synced_at}
+                        />
+
+                        <AiInsightsBlock
+                          report={aiReport}
+                          recommendations={recs}
+                          analysisJob={aiJob}
+                          recentAnalysisJobs={aiJobRuns}
+                          reportHistory={reportHistory}
+                        />
+                      </div>
+                    </div>
+                  </li>
+                );
+              }
             )}
           </ul>
         )}
+      </div>
 
-        <h3 style={{ fontSize: "var(--text-base)", fontWeight: 600, margin: "var(--space-5) 0 var(--space-3)" }}>
-          Recent sync jobs
-        </h3>
+      {/* Recent sync jobs */}
+      <div>
+        <h2 className="ui-section-title" style={{ marginBottom: "0.75rem" }}>
+          Recent sync activity
+        </h2>
         {recentJobs.length === 0 ? (
-          <p>No jobs yet.</p>
+          <p className="ui-text-muted">No sync jobs yet.</p>
         ) : (
-          <ul style={{ paddingLeft: "1.1rem" }}>
+          <ul className="dash-jobs-list">
             {recentJobs.map((j) => (
-              <li key={j.id} style={{ marginBottom: "var(--space-2)" }}>
-                <code style={{ fontSize: "var(--text-xs)" }}>{j.id.slice(0, 8)}…</code> · {j.job_type} ·{" "}
-                <strong>{j.status}</strong>
+              <li key={j.id} className="dash-job-item">
+                <span
+                  className={`dash-job-item__status dash-job-item__status--${j.status}`}
+                >
+                  {j.status}
+                </span>
+                <span className="ui-text-muted" style={{ flex: 1 }}>
+                  {j.job_type.replace(/_/g, " ")}
+                </span>
+                {j.finished_at ? (
+                  <span className="ui-text-muted" style={{ fontSize: "var(--text-xs)" }}>
+                    {formatRelativeTime(j.finished_at)}
+                  </span>
+                ) : null}
                 {j.error_message ? (
-                  <span className="ui-text-error" style={{ display: "block", fontSize: "var(--text-sm)" }}>
+                  <span className="ui-text-error" style={{ fontSize: "var(--text-xs)", display: "block", width: "100%" }}>
                     {j.error_message}
                   </span>
                 ) : null}
                 {j.status === "failed" || j.status === "queued" ? (
-                  <div style={{ marginTop: "var(--space-2)" }}>
-                    <RetrySyncJobForm jobId={j.id} />
-                  </div>
+                  <RetrySyncJobForm jobId={j.id} />
                 ) : null}
               </li>
             ))}
           </ul>
         )}
-      </Card>
-
-      <p className="ui-text-muted" style={{ fontSize: "var(--text-xs)", margin: 0 }}>
-        Phase 5–6: sync runs inline after selection or manual trigger; analysis runs after successful sync when quota
-        allows. Queue/worker can call the same execute entrypoints later.
-      </p>
+      </div>
     </section>
   );
 }

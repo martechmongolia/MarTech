@@ -3,7 +3,7 @@ import type {
   AnalysisJobStatusView,
   AnalysisReportHistoryView,
   AnalysisReportView,
-  RecommendationRowView
+  RecommendationRowView,
 } from "@/modules/ai/data";
 
 const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
@@ -26,7 +26,7 @@ function parseRecommendationEvidence(raw: unknown): RecommendationEvidenceRow[] 
       source: typeof x.source === "string" ? x.source : undefined,
       evidence_signal_ids: Array.isArray(x.evidence_signal_ids)
         ? x.evidence_signal_ids.filter((y): y is string => typeof y === "string")
-        : undefined
+        : undefined,
     }));
 }
 
@@ -93,34 +93,21 @@ export function AiInsightsBlock(props: {
     (a, b) => (priorityOrder[a.priority] ?? 9) - (priorityOrder[b.priority] ?? 9)
   );
 
-  const showFailure =
-    !report && analysisJob?.status === "failed" && analysisJob.error_message;
+  const showFailure = !report && analysisJob?.status === "failed" && analysisJob.error_message;
 
   return (
     <div className="ui-ai-insights">
       <h4 className="ui-ai-insights__title">AI insights</h4>
-      <p className="ui-ai-insights__lead">
-        Signals come from normalized metrics only (no raw provider payloads in the model path). Recommendations are
-        stored in the <code>recommendations</code> table; the report row keeps pointers for audit.
-      </p>
 
       {showFailure ? (
         <Alert variant="danger" className="ui-operational-alert">
-          <strong>Last analysis failed</strong>
+          <strong>Analysis failed</strong>
           <p style={{ margin: "0.35rem 0 0" }}>{analysisJob?.error_message}</p>
           <ul className="ui-ai-insights__list" style={{ margin: "0.35rem 0 0" }}>
             <li>Status: {analysisJob?.status}</li>
             <li>Scheduled: {formatTs(analysisJob?.scheduled_at)}</li>
             <li>Started: {formatTs(analysisJob?.started_at)}</li>
             <li>Finished: {formatTs(analysisJob?.finished_at)}</li>
-            <li>
-              Source sync job:{" "}
-              {analysisJob?.source_sync_job_id ? (
-                <code style={{ fontSize: "0.75rem" }}>{analysisJob.source_sync_job_id.slice(0, 8)}…</code>
-              ) : (
-                "— (manual / scheduled)"
-              )}
-            </li>
           </ul>
         </Alert>
       ) : null}
@@ -132,18 +119,13 @@ export function AiInsightsBlock(props: {
           {report.model_name ? (
             <p className="ui-text-faint">Model: {report.model_name}</p>
           ) : (
-            <p className="ui-text-faint">Deterministic narrative (no LLM)</p>
+            <p className="ui-text-faint">Rule-based analysis</p>
           )}
 
-          <p className="ui-ai-insights__block-label">Key signals (rules)</p>
+          <p className="ui-ai-insights__block-label">Key signals</p>
           <ul className="ui-ai-insights__list">
             {signals.map((s, i) => (
               <li key={i}>
-                {typeof s.id === "string" && s.id ? (
-                  <code className="ui-text-faint" style={{ fontSize: "var(--text-xs)" }}>
-                    {s.id}
-                  </code>
-                ) : null}{" "}
                 <strong>{s.title ?? "Signal"}</strong> ({s.severity ?? "info"}): {s.detail ?? ""}
               </li>
             ))}
@@ -151,7 +133,7 @@ export function AiInsightsBlock(props: {
 
           {extras.length > 0 ? (
             <>
-              <p className="ui-ai-insights__block-label">Additional notes (model)</p>
+              <p className="ui-ai-insights__block-label">Additional notes</p>
               <ul className="ui-ai-insights__list">
                 {extras.map((e, i) => (
                   <li key={i}>
@@ -163,7 +145,7 @@ export function AiInsightsBlock(props: {
           ) : null}
 
           <p className="ui-ai-insights__block-label">
-            Recommendations ({sortedRecs.length}) — from <code>recommendations</code> table
+            Recommendations ({sortedRecs.length})
           </p>
           <ol className="ui-ai-insights__ol">
             {sortedRecs.map((r) => {
@@ -179,11 +161,11 @@ export function AiInsightsBlock(props: {
                   <strong>{r.title}</strong> — {r.description}
                   {ids.length > 0 ? (
                     <div className="ui-text-faint" style={{ marginTop: "0.25rem", fontSize: "var(--text-xs)" }}>
-                      Нотолгооны сигнал:{" "}
+                      Supporting signals:{" "}
                       {ids
                         .map((id) => {
                           const label = signalTitleById.get(id);
-                          return label && label !== id ? `${id} (${label})` : id;
+                          return label && label !== id ? label : id;
                         })
                         .join(", ")}
                     </div>
@@ -194,29 +176,22 @@ export function AiInsightsBlock(props: {
           </ol>
         </>
       ) : !showFailure ? (
-        <p className="ui-text-muted">No ready report yet. Run a successful sync (or use regenerate) when monthly AI quota allows.</p>
+        <p className="ui-text-muted">
+          No report yet. Run a sync to generate AI insights.
+        </p>
       ) : null}
 
       {recentAnalysisJobs.length > 0 ? (
         <details style={{ marginTop: "0.65rem" }}>
-          <summary>
-            Recent analysis runs ({recentAnalysisJobs.length})
-          </summary>
+          <summary>Recent analysis runs ({recentAnalysisJobs.length})</summary>
           <ul className="ui-ai-insights__list" style={{ margin: "0.35rem 0 0" }}>
             {recentAnalysisJobs.map((j) => (
               <li key={j.id} style={{ marginBottom: "0.35rem" }}>
-                <code>{j.id.slice(0, 8)}…</code> · <Badge variant={jobStatusBadgeVariant(j.status)}>{j.status}</Badge>
+                <Badge variant={jobStatusBadgeVariant(j.status)}>{j.status}</Badge>
                 {j.error_message ? <span className="ui-ai-insights__detail-error">{j.error_message}</span> : null}
                 <span className="ui-ai-insights__detail-meta">
                   scheduled {formatTs(j.scheduled_at)} · finished {formatTs(j.finished_at)}
                 </span>
-                {j.source_sync_job_id ? (
-                  <span className="ui-ai-insights__detail-meta">
-                    sync job <code>{j.source_sync_job_id.slice(0, 8)}…</code>
-                  </span>
-                ) : (
-                  <span className="ui-ai-insights__detail-meta">no sync linkage</span>
-                )}
               </li>
             ))}
           </ul>
@@ -225,7 +200,7 @@ export function AiInsightsBlock(props: {
 
       {reportHistory.length > 1 ? (
         <details style={{ marginTop: "0.5rem" }}>
-          <summary>Report history (compare over time)</summary>
+          <summary>Report history ({reportHistory.length})</summary>
           <ul className="ui-ai-insights__list" style={{ margin: "0.35rem 0 0" }}>
             {reportHistory.map((h) => (
               <li key={h.id} style={{ marginBottom: "0.35rem" }}>
