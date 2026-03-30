@@ -204,38 +204,19 @@ export default async function DashboardPage() {
                         </div>
                       </div>
 
-                      {/* Metrics row */}
-                      <div className="dash-metrics-row">
-                        <div className="dash-metric">
-                          <div className="dash-metric__label">Fans</div>
-                          <div className="dash-metric__value">{formatNumber(metric?.followers_count)}</div>
-                        </div>
-                        <div className="dash-metric">
-                          <div className="dash-metric__label">Reach</div>
-                          <div className="dash-metric__value">
-                            {formatNumber(metric?.impressions ?? metric?.reach)}
-                          </div>
-                        </div>
-                        <div className="dash-metric">
-                          <div className="dash-metric__label">Engaged</div>
-                          <div className="dash-metric__value">
-                            {formatEngagement(metric?.engagement_rate ?? metric?.engaged_users)}
-                          </div>
-                        </div>
-                      </div>
+                      {/* Analytics block — KPI strip, chart, donut, leaderboard, cadence */}
+                      <PageAnalyticsBlock
+                        pageName={page.name}
+                        dailySeries={dailySeries}
+                        posts={postMetrics}
+                        latestJob={job}
+                        lastSucceededJob={lastOkJob}
+                        latestMetricDate={metric?.metric_date ?? null}
+                        pageLastSyncedAt={page.last_synced_at}
+                      />
 
-                      {/* Analytics + AI */}
+                      {/* AI Insights */}
                       <div className="dash-page-card__body">
-                        <PageAnalyticsBlock
-                          pageName={page.name}
-                          dailySeries={dailySeries}
-                          posts={postMetrics}
-                          latestJob={job}
-                          lastSucceededJob={lastOkJob}
-                          latestMetricDate={metric?.metric_date ?? null}
-                          pageLastSyncedAt={page.last_synced_at}
-                        />
-
                         <AiInsightsBlock
                           report={aiReport}
                           recommendations={recs}

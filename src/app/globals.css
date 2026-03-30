@@ -1678,6 +1678,206 @@ code {
   font-size: var(--text-sm);
 }
 
+/* ── Analytics Redesign ── */
+.ana-hero-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.ana-kpi {
+  padding: 1.25rem 1.5rem;
+  border-right: 1px solid var(--border-subtle);
+}
+.ana-kpi:last-child { border-right: none; }
+.ana-kpi__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+}
+.ana-kpi__value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 0.4rem;
+}
+.ana-kpi__delta {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+.ana-kpi__delta--up { background: #dcfce7; color: #16a34a; }
+.ana-kpi__delta--down { background: #fee2e2; color: #dc2626; }
+.ana-kpi__delta--neutral { background: #f1f5f9; color: #64748b; }
+.ana-chart-wrap {
+  padding: 1.25rem 1.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.ana-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.ana-chart-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.ana-chart-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--bg-subtle);
+  border-radius: 8px;
+  padding: 3px;
+}
+.ana-chart-tab {
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.ana-chart-tab--active {
+  background: #fff;
+  color: var(--brand-blue);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.ana-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.ana-two-col > * {
+  padding: 1.25rem 1.5rem;
+}
+.ana-two-col > *:first-child {
+  border-right: 1px solid var(--border-subtle);
+}
+.ana-section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ana-donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+.ana-donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+.ana-donut-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+}
+.ana-donut-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ana-leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.ana-leaderboard__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+}
+.ana-leaderboard__row:last-child { border-bottom: none; }
+.ana-leaderboard__rank {
+  font-size: 0.85rem;
+  font-weight: 800;
+  width: 1.2rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+.ana-leaderboard__excerpt {
+  flex: 1;
+  color: var(--text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ana-leaderboard__badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.ana-leaderboard__num {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: right;
+  flex-shrink: 0;
+  min-width: 3.5rem;
+}
+.ana-cadence-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.ana-cadence-stat {
+  flex: 1 1 120px;
+  padding: 0.9rem 1.5rem;
+  border-right: 1px solid var(--border-subtle);
+}
+.ana-cadence-stat:last-child { border-right: none; }
+.ana-cadence-stat__label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+.ana-cadence-stat__value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.ana-cadence-stat__value--green { color: #16a34a; }
+.ana-cadence-stat__value--yellow { color: #d97706; }
+.ana-cadence-stat__value--red { color: #dc2626; }
+.ana-sync-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
 .ui-table--compact tbody td,
 .ui-table--compact thead th {
   padding: 0.35rem 0.5rem;
