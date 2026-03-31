@@ -31,7 +31,11 @@ async function openaiChat(messages: OAIMessage[], jsonMode = false): Promise<str
 }
 
 // ── System prompt per section ──────────────────────────────
-function buildSystemPrompt(bmName: string, section: SectionType, existing: Record<string, unknown>): string {
+function buildSystemPrompt(
+  bmName: string,
+  section: SectionType,
+  existing: Record<string, unknown>
+): string {
   const meta = SECTION_META[section];
   const hasContent = Object.keys(existing).length > 0;
   return `Та бол "${bmName}" брэндийн AI сургалтын туслах юм.
@@ -61,8 +65,14 @@ const SECTION_GUIDE: Record<SectionType, string> = {
 };
 
 // ── Extract structured content ─────────────────────────────
-async function extractContent(msgs: TrainingMessage[], section: SectionType): Promise<{ content: Record<string, unknown>; score: number }> {
-  const conv = msgs.map((m) => `${m.role === "user" ? "Хэрэглэгч" : "AI"}: ${m.content}`).join("\n");
+async function extractContent(
+  msgs: TrainingMessage[],
+  section: SectionType
+): Promise<{ content: Record<string, unknown>; score: number }> {
+  const conv = msgs
+    .map((m) => `${m.role === "user" ? "Хэрэглэгч" : "AI"}: ${m.content}`)
+    .join("\n");
+
   const result = await openaiChat(
     [
       {
@@ -106,10 +116,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const bm = await getBrandManager(brandManagerId);
+  // Fix #4a: parallel queries — 2x → 1x latency
+  const [bm, sections] = await Promise.all([
+    getBrandManager(brandManagerId),
+    getBrandKnowledgeSections(brandManagerId),
+  ]);
+
   if (!bm) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const sections = await getBrandKnowledgeSections(brandManagerId);
   const currentSection = sections.find((s) => s.section_type === sectionType);
   const existingContent = (currentSection?.content as Record<string, unknown>) ?? {};
 
@@ -118,10 +132,12 @@ export async function POST(req: NextRequest) {
     { role: "user", content: userMessage, timestamp: new Date().toISOString() },
   ];
 
-  // Build OpenAI messages
   const oaiMessages: OAIMessage[] = [
     { role: "system", content: buildSystemPrompt(bm.name, sectionType, existingContent) },
-    ...updatedMessages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+    ...updatedMessages.map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    })),
   ];
 
   const assistantRaw = await openaiChat(oaiMessages);
@@ -133,9 +149,16 @@ export async function POST(req: NextRequest) {
     { role: "assistant", content: cleanContent, timestamp: new Date().toISOString() },
   ];
 
-  // Save if complete or 10+ messages
   let score = currentSection?.completeness_score ?? 0;
-  if (isSectionComplete || updatedMessages.length >= 10) {
+
+  // Fix #4b: double-trigger guard
+  // — already complete: extract хийхгүй
+  // — SECTION_COMPLETE эсвэл 10+ msg threshold (нэг л удаа — is_complete болсны дараа дахин хийхгүй)
+  const alreadyComplete = currentSection?.is_complete ?? false;
+  const shouldExtract =
+    !alreadyComplete && (isSectionComplete || updatedMessages.length >= 10);
+
+  if (shouldExtract) {
     const extracted = await extractContent(allMessages, sectionType);
     score = extracted.score;
     await updateKnowledgeSection({
@@ -147,12 +170,13 @@ export async function POST(req: NextRequest) {
   }
 
   const currentIdx = SECTION_ORDER.indexOf(sectionType);
-  const nextSection = currentIdx < SECTION_ORDER.length - 1 ? SECTION_ORDER[currentIdx + 1] : null;
+  const nextSection =
+    currentIdx < SECTION_ORDER.length - 1 ? SECTION_ORDER[currentIdx + 1] : null;
 
   return NextResponse.json({
     assistantMessage: cleanContent,
     messages: allMessages,
-    sectionComplete: isSectionComplete,
+    sectionComplete: isSectionComplete || alreadyComplete,
     nextSection,
     score,
   });

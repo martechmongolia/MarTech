@@ -45,7 +45,7 @@ export type DesignTokens = {
   id: string;
   brand_manager_id: string;
   colors: BrandColor[];
-  fonts: BrandFont[];
+  fonts: BrandFont[]; // used in design-tokens-panel
   spacing_unit: number;
   border_radius: BorderRadius;
   visual_style: VisualStyle | null;

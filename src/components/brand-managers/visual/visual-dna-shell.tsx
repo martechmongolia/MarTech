@@ -63,7 +63,6 @@ export function VisualDNAShell({ brandManager, assetsByType, initialTokens }: Pr
         {activeTab !== "tokens" && (
           <AssetGallery
             brandManagerId={brandManager.id}
-            organizationId={brandManager.organization_id}
             assetType={activeTab as AssetType}
             assets={assetsByType[activeTab] ?? []}
             tokens={tokens}

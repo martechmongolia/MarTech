@@ -2622,3 +2622,11 @@ code {
 .ce-hex { font-size: 0.78rem; font-family: monospace; color: var(--text-secondary); width: 70px; }
 .ce-input { border: 1px solid var(--border); border-radius: 5px; padding: 0.3rem 0.5rem; font-size: 0.8rem; flex: 1; min-width: 100px; outline: none; }
 .ce-select { border: 1px solid var(--border); border-radius: 5px; padding: 0.3rem 0.5rem; font-size: 0.78rem; background: white; }
+
+/* ── Training wizard sidebar score indicator ─────────────── */
+.train-wizard__section-score {
+  font-size: 0.68rem;
+  color: var(--brand-blue);
+  font-weight: 600;
+  margin-left: auto;
+}

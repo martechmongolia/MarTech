@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useTransition } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui";
 import { createVisualAsset, deleteVisualAsset, auditVisualAsset, getAssetUrl } from "@/modules/brand-managers/visual-actions";
 import { ASSET_TYPE_META, type AssetType, type BrandVisualAsset, type DesignTokens } from "@/modules/brand-managers/visual-types";
@@ -8,7 +8,7 @@ import { ColorExtractor } from "./color-extractor";
 
 type Props = {
   brandManagerId: string;
-  organizationId: string;
+  // organizationId removed — unused (ownership enforced server-side)
   assetType: AssetType;
   assets: BrandVisualAsset[];
   tokens: DesignTokens | null;
@@ -16,7 +16,7 @@ type Props = {
 
 type UploadState = "idle" | "uploading" | "saving" | "done" | "error";
 
-export function AssetGallery({ brandManagerId, organizationId, assetType, assets: initialAssets, tokens }: Props) {
+export function AssetGallery({ brandManagerId, assetType, assets: initialAssets, tokens }: Props) {
   const [assets, setAssets] = useState(initialAssets);
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const [uploadProgress, setUploadProgress] = useState(0);

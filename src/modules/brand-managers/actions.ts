@@ -45,10 +45,12 @@ export async function getBrandManager(id: string): Promise<BrandManager | null> 
   return data as BrandManager;
 }
 
-export async function getBrandKnowledgeSections(brandManagerId: string): Promise<BrandKnowledgeSection[]> {
+export async function getBrandKnowledgeSections(
+  brandManagerId: string
+): Promise<BrandKnowledgeSection[]> {
   const { org } = await requireOrg();
   const admin = getSupabaseAdminClient();
-  // ownership check
+
   const { data: bm } = await admin
     .from("brand_managers")
     .select("id")
@@ -67,6 +69,7 @@ export async function getBrandKnowledgeSections(brandManagerId: string): Promise
 
 // ─── Write ─────────────────────────────────────────────────────────────────────
 
+// Fix #3: section insert алдаа барих — rollback pattern
 export async function createBrandManager(params: {
   name: string;
   description?: string;
@@ -99,7 +102,15 @@ export async function createBrandManager(params: {
     is_complete: false,
   }));
 
-  await admin.from("brand_knowledge_sections").insert(sections);
+  const { error: sectionsError } = await admin
+    .from("brand_knowledge_sections")
+    .insert(sections);
+
+  if (sectionsError) {
+    // Rollback: brand manager-г устгана — хагас үүссэн төлөв үлдэхгүй
+    await admin.from("brand_managers").delete().eq("id", data.id);
+    throw new Error(`Failed to initialize knowledge sections: ${sectionsError.message}`);
+  }
 
   revalidatePath("/brand-managers");
   return data as BrandManager;
@@ -114,7 +125,6 @@ export async function updateKnowledgeSection(params: {
   const { org } = await requireOrg();
   const admin = getSupabaseAdminClient();
 
-  // ownership check
   const { data: bm } = await admin
     .from("brand_managers")
     .select("id")
@@ -123,7 +133,7 @@ export async function updateKnowledgeSection(params: {
     .single();
   if (!bm) throw new Error("Brand manager not found");
 
-  await admin
+  const { error } = await admin
     .from("brand_knowledge_sections")
     .update({
       content: params.content as import("@/types/database").Json,
@@ -134,8 +144,11 @@ export async function updateKnowledgeSection(params: {
     .eq("brand_manager_id", params.brandManagerId)
     .eq("section_type", params.sectionType);
 
-  // Recalculate overall score
-  await admin.rpc("recalculate_brand_manager_score", { p_brand_manager_id: params.brandManagerId });
+  if (error) throw error;
+
+  await admin.rpc("recalculate_brand_manager_score", {
+    p_brand_manager_id: params.brandManagerId,
+  });
 
   revalidatePath(`/brand-managers/${params.brandManagerId}`);
 }
@@ -143,10 +156,11 @@ export async function updateKnowledgeSection(params: {
 export async function archiveBrandManager(id: string): Promise<void> {
   const { org } = await requireOrg();
   const admin = getSupabaseAdminClient();
-  await admin
+  const { error } = await admin
     .from("brand_managers")
     .update({ status: "archived" })
     .eq("id", id)
     .eq("organization_id", org.id);
+  if (error) throw error;
   revalidatePath("/brand-managers");
 }
