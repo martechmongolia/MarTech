@@ -1370,6 +1370,23 @@ export type Database = {
         }
         Returns: boolean
       }
+      reserve_quota: {
+        Args: {
+          p_organization_id: string
+          p_metric_key: string
+          p_period_key: string
+          p_limit: number
+        }
+        Returns: boolean
+      }
+      release_quota: {
+        Args: {
+          p_organization_id: string
+          p_metric_key: string
+          p_period_key: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

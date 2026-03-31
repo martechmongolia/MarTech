@@ -1,6 +1,5 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui";
 import { getCurrentUser } from "@/modules/auth/session";
 import { getCurrentUserOrganization } from "@/modules/organizations/data";
 import { getBrandManager } from "@/modules/brand-managers/actions";

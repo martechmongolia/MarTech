@@ -32,7 +32,9 @@ export async function executeMetaSyncJob(jobId: string): Promise<void> {
   const nextAttempt = job.attempt_count + 1;
   const startedAt = new Date().toISOString();
 
-  await admin
+  // CAS: only claim the job if it is still in a claimable state (pending or failed).
+  // If another process already set it to "running", this update returns 0 rows and we bail out.
+  const { data: claimed } = await admin
     .from("meta_sync_jobs")
     .update({
       status: "running",
@@ -40,7 +42,14 @@ export async function executeMetaSyncJob(jobId: string): Promise<void> {
       attempt_count: nextAttempt,
       error_message: null
     })
-    .eq("id", jobId);
+    .eq("id", jobId)
+    .in("status", ["pending", "failed"])
+    .select("id");
+
+  if (!claimed || claimed.length === 0) {
+    // Another process already claimed this job — skip silently.
+    return;
+  }
 
   try {
     const { data: pageRow, error: pageErr } = await admin

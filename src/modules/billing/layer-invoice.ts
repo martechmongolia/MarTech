@@ -92,3 +92,27 @@ export async function recordInvoiceVerificationAudit(params: {
     })
     .eq("id", params.invoiceId);
 }
+
+/**
+ * Cancel all pending invoices for this subscription that are NOT the newly created one.
+ * Called at checkout start to prevent stale invoices from activating an old plan later.
+ * Only cancels status='pending' rows — already paid/failed/expired rows are untouched.
+ */
+export async function cancelSupersededPendingInvoices(params: {
+  subscriptionId: string;
+  keepInvoiceId: string;
+}): Promise<void> {
+  const admin = getSupabaseAdminClient();
+  const { error } = await admin
+    .from("invoices")
+    .update({ status: "canceled" })
+    .eq("subscription_id", params.subscriptionId)
+    .eq("status", "pending")
+    .neq("id", params.keepInvoiceId);
+
+  if (error) {
+    // Non-fatal: log and continue — the activation guard in layer-subscription-activation
+    // provides a second line of defense.
+    console.warn("[checkout] cancelSupersededPendingInvoices failed (non-fatal):", error.message);
+  }
+}

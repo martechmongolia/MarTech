@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui";
 import { createVisualAsset, deleteVisualAsset, auditVisualAsset, getAssetUrl } from "@/modules/brand-managers/visual-actions";
 import { ASSET_TYPE_META, type AssetType, type BrandVisualAsset, type DesignTokens } from "@/modules/brand-managers/visual-types";
 import { ColorExtractor } from "./color-extractor";

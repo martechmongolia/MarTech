@@ -7,7 +7,8 @@ import { insertBillingEvent } from "@/modules/billing/billing-events";
 import {
   insertPendingInvoiceRecord,
   markInvoiceFailed,
-  updateInvoiceAfterProviderInvoiceCreated
+  updateInvoiceAfterProviderInvoiceCreated,
+  cancelSupersededPendingInvoices
 } from "@/modules/billing/layer-invoice";
 import { insertInitiatedPaymentTransaction } from "@/modules/billing/layer-payment-transaction";
 import { validateCheckoutTargetAgainstSubscription, type CheckoutTargetPlanSnapshot } from "@/modules/billing/layer-target-plan";
@@ -66,6 +67,13 @@ export async function createPaidPlanCheckout(params: {
     webhookVerifyToken: webhookToken,
     dueAtIso: dueIso,
     idempotencyKey: `checkout:${params.organizationId}:${params.target.planId}:${Date.now()}`
+  });
+
+  // Cancel any other pending invoices for this subscription so a stale invoice
+  // cannot later overwrite the plan the user actually paid for.
+  await cancelSupersededPendingInvoices({
+    subscriptionId: params.subscription.id,
+    keepInvoiceId: invoiceId
   });
 
   const appBase = getAppBaseUrl();

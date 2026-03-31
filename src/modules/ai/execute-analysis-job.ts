@@ -8,7 +8,7 @@ import { buildAnalysisLlmUserPrompt } from "@/modules/ai/llm-input-construction"
 import { buildDeterministicAnalysisResult, runAnalysisLlmLayer } from "@/modules/ai/llm-adapter";
 import { persistAnalysisOutput } from "@/modules/ai/persist-report";
 import { extractDeterministicSignals } from "@/modules/ai/signals";
-import { incrementAiReportGeneratedForOrganization } from "@/modules/subscriptions/usage-admin";
+import { reserveAiReportQuota, releaseAiReportQuota } from "@/modules/subscriptions/usage-admin";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const ERR_MAX = 4000;
@@ -59,7 +59,9 @@ export async function executeAnalysisJob(jobId: string): Promise<{ ok: boolean; 
   }
 
   const nextAttempt = job.attempt_count + 1;
-  await admin
+
+  // CAS: only claim the job if it is still in a claimable state.
+  const { data: claimed } = await admin
     .from("analysis_jobs")
     .update({
       status: "running",
@@ -67,15 +69,34 @@ export async function executeAnalysisJob(jobId: string): Promise<{ ok: boolean; 
       attempt_count: nextAttempt,
       error_message: null
     })
-    .eq("id", jobId);
+    .eq("id", jobId)
+    .in("status", ["pending", "failed"])
+    .select("id");
+
+  if (!claimed || claimed.length === 0) {
+    // Another process already claimed this job — return ok to avoid false error.
+    return { ok: true };
+  }
+
+  let quotaReserved = false;
 
   try {
+    // Validate subscription status + plan access first.
     const entitlement = await getOrganizationAiReportEntitlement(job.organization_id);
     if (!entitlement.allowed) {
       throw new Error(
         `AI generation blocked: ${entitlement.reason ?? "not_allowed"} (${entitlement.used}/${entitlement.limit} used)`
       );
     }
+
+    // Atomically reserve quota. This increments the counter only if under limit.
+    const reserved = await reserveAiReportQuota(job.organization_id, entitlement.limit);
+    if (!reserved) {
+      throw new Error(
+        `AI generation blocked: monthly_quota_exceeded (${entitlement.used}/${entitlement.limit} used)`
+      );
+    }
+    quotaReserved = true;
 
     const { daily, posts } = await loadNormalizedMetricsBundleForPage(job.meta_page_id);
     if (daily.length === 0 && posts.length === 0) {
@@ -125,12 +146,6 @@ export async function executeAnalysisJob(jobId: string): Promise<{ ok: boolean; 
       }
     });
 
-    try {
-      await incrementAiReportGeneratedForOrganization(job.organization_id);
-    } catch (e) {
-      console.warn("[ai] Usage increment failed (best-effort):", e instanceof Error ? e.message : e);
-    }
-
     await admin
       .from("analysis_jobs")
       .update({
@@ -144,6 +159,16 @@ export async function executeAnalysisJob(jobId: string): Promise<{ ok: boolean; 
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     const trimmed = msg.length > ERR_MAX ? msg.slice(0, ERR_MAX) : msg;
+
+    // Release quota reservation if the job failed after reserving.
+    if (quotaReserved) {
+      try {
+        await releaseAiReportQuota(job.organization_id);
+      } catch {
+        // best-effort
+      }
+    }
+
     await admin
       .from("analysis_jobs")
       .update({

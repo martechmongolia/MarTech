@@ -47,7 +47,9 @@ export async function applySubscriptionTransitionAfterVerifiedPayment(params: {
     return { status: "already_finalized" };
   }
 
-  const { error: subErr } = await admin
+  // Guard: only activate if the subscription is still in a state that allows this invoice's plan.
+  // This prevents a stale/superseded invoice from overwriting a plan the user already activated.
+  const { data: activatedSub, error: subErr } = await admin
     .from("subscriptions")
     .update({
       plan_id: params.invoice.target_plan_id,
@@ -57,11 +59,33 @@ export async function applySubscriptionTransitionAfterVerifiedPayment(params: {
       last_billed_at: now,
       updated_at: now
     })
-    .eq("id", params.invoice.subscription_id);
+    .eq("id", params.invoice.subscription_id)
+    .or(
+      `status.in.(bootstrap_pending_billing,trialing),` +
+      `and(status.eq.active,plan_id.eq.${params.invoice.target_plan_id})`
+    )
+    .select("id")
+    .maybeSingle();
 
   if (subErr) {
     await admin.from("invoices").update({ status: "pending", paid_at: null }).eq("id", invoiceId);
     return { status: "subscription_update_failed", rolledBack: true };
+  }
+
+  if (!activatedSub) {
+    // Subscription is already active on a different plan — this invoice is superseded.
+    // Mark it as canceled so it cannot be retried.
+    await admin.from("invoices").update({ status: "canceled" }).eq("id", invoiceId);
+    await insertBillingEvent({
+      organizationId: params.invoice.organization_id,
+      invoiceId,
+      eventType: "invoice_superseded",
+      payload: {
+        note: "superseded_invoice_blocked",
+        target_plan_id: params.invoice.target_plan_id
+      }
+    });
+    return { status: "already_finalized" };
   }
 
   const paidRow = params.verification.paidRow;

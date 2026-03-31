@@ -334,7 +334,7 @@ export function PageAnalyticsBlock(props: {
   const {
     dailySeries,
     posts,
-    latestJob,
+    latestJob: _latestJob,
     lastSucceededJob,
     latestMetricDate,
     pageLastSyncedAt,

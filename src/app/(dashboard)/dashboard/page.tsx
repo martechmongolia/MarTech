@@ -46,18 +46,6 @@ function formatRelativeTime(dateStr: string | null | undefined): string {
   }
 }
 
-function formatNumber(n: number | null | undefined): string {
-  if (n == null) return "—";
-  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-  return String(n);
-}
-
-function formatEngagement(n: number | null | undefined): string {
-  if (n == null) return "—";
-  if (n < 1) return `${(n * 100).toFixed(1)}%`;
-  return String(n);
-}
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
