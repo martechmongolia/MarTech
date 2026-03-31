@@ -116,6 +116,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
+  // Fix #8: Prompt injection guard — зөвхөн user/assistant role-г зөвшөөрнө
+  // Клиент role="system" эсвэл хуурамч role оруулж system prompt override хийхгүй
+  const ALLOWED_ROLES = new Set(["user", "assistant"]);
+  if (!Array.isArray(messages) || messages.some(
+    (m) => !m || typeof m.content !== "string" || !ALLOWED_ROLES.has(m.role)
+  )) {
+    return NextResponse.json({ error: "Invalid message format" }, { status: 400 });
+  }
+
+  // userMessage хэт урт байвал хайчлах (token bomb)
+  const safeUserMessage = userMessage.slice(0, 4000);
+
   // Fix #4a: parallel queries — 2x → 1x latency
   const [bm, sections] = await Promise.all([
     getBrandManager(brandManagerId),
@@ -129,7 +141,7 @@ export async function POST(req: NextRequest) {
 
   const updatedMessages: TrainingMessage[] = [
     ...messages,
-    { role: "user", content: userMessage, timestamp: new Date().toISOString() },
+    { role: "user", content: safeUserMessage, timestamp: new Date().toISOString() },
   ];
 
   const oaiMessages: OAIMessage[] = [

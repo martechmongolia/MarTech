@@ -16,14 +16,24 @@ export function CreateBrandManagerButton({ primary }: { primary?: boolean }) {
   const [desc, setDesc] = useState("");
   const [color, setColor] = useState(AVATAR_COLORS[0]);
   const [loading, setLoading] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const router = useRouter();
 
   async function handleCreate() {
     if (!name.trim()) return;
     setLoading(true);
+    setCreateError(null);
     try {
-      const bm = await createBrandManager({ name: name.trim(), description: desc.trim() || undefined, avatarColor: color });
+      const bm = await createBrandManager({
+        name: name.trim(),
+        description: desc.trim() || undefined,
+        avatarColor: color,
+      });
       router.push(`/brand-managers/${bm.id}/train`);
+    } catch (err) {
+      // Fix #4: error барьж хэрэглэгчид харуулна
+      const msg = err instanceof Error ? err.message : "Тодорхойгүй алдаа гарлаа";
+      setCreateError(msg);
     } finally {
       setLoading(false);
     }
@@ -77,6 +87,9 @@ export function CreateBrandManagerButton({ primary }: { primary?: boolean }) {
           </div>
         </div>
 
+        {createError && (
+          <p className="bm-create-modal__error">❌ {createError}</p>
+        )}
         <div className="bm-create-modal__actions">
           <Button variant="ghost" onClick={() => setOpen(false)} disabled={loading}>
             Болих

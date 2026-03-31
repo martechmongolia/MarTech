@@ -33,6 +33,7 @@ export function DesignTokensPanel({ brandManagerId, tokens, onUpdate }: Props) {
   const [logoDonts, setLogoDonts] = useState<string>((tokens?.logo_dont_rules ?? []).join("\n"));
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   function addColor() {
     setColors((prev) => [...prev, { name: "", hex: "#000000", role: "primary" }]);
@@ -59,20 +60,33 @@ export function DesignTokensPanel({ brandManagerId, tokens, onUpdate }: Props) {
   }
 
   function save() {
+    setSaveError(null);
     startTransition(async () => {
-      const updated = {
-        colors,
-        fonts,
-        visual_style: visualStyle,
-        visual_keywords: keywords.split(",").map((k) => k.trim()).filter(Boolean),
-        border_radius: borderRadius as DesignTokens["border_radius"],
-        logo_clear_space: logoClearSpace || null,
-        logo_dont_rules: logoDonts.split("\n").map((l) => l.trim()).filter(Boolean),
-      };
-      await upsertDesignTokens(brandManagerId, updated);
-      onUpdate({ ...tokens, brand_manager_id: brandManagerId, ...updated } as DesignTokens);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      try {
+        // Fix #6: Panel-аас colors бүгдийг replace хийнэ (full replace mode)
+        // upsertDesignTokens-д colors байвал merge хийдэг, гэвч
+        // Panel-аас save хийхэд хэрэглэгч intentionally өнгө устгасан байж болно
+        // → colors-г tokens.colors-тай merge хийлгэхгүй, шууд replace хийнэ
+        // Шийдэл: colors-г тусдаа replace endpoint-оор явуулна
+        const updated = {
+          colors,
+          fonts,
+          visual_style: visualStyle,
+          visual_keywords: keywords.split(",").map((k) => k.trim()).filter(Boolean),
+          border_radius: borderRadius as DesignTokens["border_radius"],
+          logo_clear_space: logoClearSpace || null,
+          logo_dont_rules: logoDonts.split("\n").map((l) => l.trim()).filter(Boolean),
+          _replaceColors: true, // server-д full replace гэдгийг заана
+        };
+        await upsertDesignTokens(brandManagerId, updated);
+        onUpdate({ ...tokens, brand_manager_id: brandManagerId, ...updated } as DesignTokens);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Тодорхойгүй алдаа";
+        setSaveError(msg);
+        setTimeout(() => setSaveError(null), 4000);
+      }
     });
   }
 
@@ -223,6 +237,9 @@ export function DesignTokensPanel({ brandManagerId, tokens, onUpdate }: Props) {
 
       {/* Save */}
       <div className="dt-actions">
+        {saveError && (
+          <span className="dt-save-error">❌ {saveError}</span>
+        )}
         <Button variant="primary" onClick={save} disabled={isPending}>
           {isPending ? "Хадгалж байна..." : saved ? "✅ Хадгалагдлаа" : "Хадгалах"}
         </Button>

@@ -65,7 +65,14 @@ export function ColorExtractor({ imageUrl, brandManagerId, onClose }: Props) {
     img.crossOrigin = "anonymous";
     img.onload = () => {
       imgRef.current = img;
-      const colors = extractPalette(img, 8);
+      let colors: string[] = [];
+      try {
+        // Fix #7: Canvas CORS taint error барина
+        colors = extractPalette(img, 8);
+      } catch {
+        // Taint error эсвэл canvas дэмжихгүй — порталыг хааж алдаа мэдэгдэнэ
+        console.warn("Canvas color extraction failed (possibly CORS taint)");
+      }
       setPalette(colors);
       const init: typeof selected = {};
       colors.forEach((hex, i) => {
@@ -104,8 +111,10 @@ export function ColorExtractor({ imageUrl, brandManagerId, onClose }: Props) {
           <button className="color-extractor__close" onClick={onClose}>✕</button>
         </div>
 
-        {palette.length === 0 ? (
+        {palette.length === 0 && !imgRef.current ? (
           <div className="color-extractor__loading">Зураг шинжилж байна...</div>
+        ) : palette.length === 0 && imgRef.current ? (
+          <div className="color-extractor__loading">⚠️ Өнгө гаргаж чадсангүй. Зургийн CORS тохиргоог шалгана уу.</div>
         ) : (
           <>
             <p className="color-extractor__hint">Зурагнаас олсон өнгөнүүд. Брэндийнхаа design tokens-д нэмэх өнгөнүүдийг сонгоно уу.</p>

@@ -95,9 +95,18 @@ export async function createVisualAsset(params: {
   isPrimary?: boolean;
 }): Promise<BrandVisualAsset> {
   const { org } = await requireOrg();
-  await requireBrandManagerOwnership(params.brandManagerId, org.id);
-
   const admin = getSupabaseAdminClient();
+
+  // Fix #12: requireOrg + requireBrandManagerOwnership → нэг query болгосон
+  // brand_managers JOIN organization_members шалгахын оронд
+  // admin client-аар org_id шалгана (service role — RLS bypass)
+  const { data: bmCheck } = await admin
+    .from("brand_managers")
+    .select("id")
+    .eq("id", params.brandManagerId)
+    .eq("organization_id", org.id)
+    .single();
+  if (!bmCheck) throw new Error("Brand manager not found or access denied");
 
   const { data, error } = await admin
     .from("brand_visual_assets")
@@ -161,8 +170,19 @@ export async function deleteVisualAsset(assetId: string, brandManagerId: string)
 
   if (!asset) throw new Error("Asset not found");
 
+  // Fix #5: Storage delete fail → DB record устгахгүй (orphan record эрсдэл)
   const supabase = await getSupabaseServerClient();
-  await supabase.storage.from(BUCKET).remove([asset.file_path as string]);
+  const { error: storageError } = await supabase.storage
+    .from(BUCKET)
+    .remove([asset.file_path as string]);
+
+  if (storageError) {
+    // Storage-д файл олдохгүй бол (already deleted) дэлгэрэнгүйг үргэлжлүүлнэ
+    // Бусад алдаанд abort хийж DB record хэвээр үлдээнэ
+    if (!storageError.message.includes("Not Found") && !storageError.message.includes("404")) {
+      throw new Error(`Storage устгах алдаа: ${storageError.message}`);
+    }
+  }
 
   await admin.from("brand_visual_assets").delete().eq("id", assetId);
   await admin.rpc("recalculate_brand_manager_score", { p_brand_manager_id: brandManagerId });
@@ -185,20 +205,26 @@ export async function getDesignTokens(brandManagerId: string): Promise<DesignTok
   return data as DesignTokens | null;
 }
 
-// Fix #2: Tokens merge — colors array-г replace биш merge хийнэ
+// Fix #2 + #6: Dual-mode upsert
+// • _replaceColors=true  → DesignTokensPanel-аас save: colors бүгдийг replace (DELETE дэмжинэ)
+// • _replaceColors=false → ColorExtractor-аас: existing-тэй merge (шинэ өнгө нэмэх)
 export async function upsertDesignTokens(
   brandManagerId: string,
   tokens: Partial<Omit<DesignTokens, "id" | "brand_manager_id" | "created_at" | "updated_at">>
+    & { _replaceColors?: boolean }
 ): Promise<void> {
   const { org } = await requireOrg();
   const admin = getSupabaseAdminClient();
 
   await requireBrandManagerOwnership(brandManagerId, org.id);
 
-  // Colors merge: color-extractor-аас ирж байвал (зөвхөн colors) existing-тэй merge хийнэ
-  let mergedTokens = { ...tokens };
+  // Strip internal flag before DB write
+  const { _replaceColors, ...rest } = tokens;
+  let mergedTokens: typeof rest = { ...rest };
 
-  if (tokens.colors !== undefined) {
+  // Colors merge logic
+  if (rest.colors !== undefined && !_replaceColors) {
+    // ColorExtractor mode: merge-only (add new, keep existing)
     const { data: existing } = await admin
       .from("brand_design_tokens")
       .select("colors")
@@ -207,13 +233,17 @@ export async function upsertDesignTokens(
 
     if (existing?.colors && Array.isArray(existing.colors)) {
       const existingColors = existing.colors as Array<{ hex: string; name: string; role: string }>;
-      const incomingColors = tokens.colors as Array<{ hex: string; name: string; role: string }>;
-      // Merge: incoming өнгийг нэмнэ, давхардахгүй (hex-ээр deduplicate)
+      const incomingColors = rest.colors as Array<{ hex: string; name: string; role: string }>;
       const existingHexes = new Set(existingColors.map((c) => c.hex.toLowerCase()));
       const newColors = incomingColors.filter((c) => !existingHexes.has(c.hex.toLowerCase()));
-      mergedTokens = { ...mergedTokens, colors: [...existingColors, ...newColors] as import("./visual-types").BrandColor[] };
+      mergedTokens = {
+        ...mergedTokens,
+        colors: [...existingColors, ...newColors] as import("./visual-types").BrandColor[],
+      };
     }
+    // else: no existing tokens yet → use incoming as-is
   }
+  // _replaceColors=true: Panel-аас ирсэн → colors бүгдийг шууд replace (mergedTokens-д аль хэдийн байна)
 
   await admin
     .from("brand_design_tokens")

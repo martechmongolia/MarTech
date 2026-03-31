@@ -6,7 +6,7 @@ import type { BrandVisualAsset, DesignTokens } from "@/modules/brand-managers/vi
 import { ASSET_TYPE_ORDER, ASSET_TYPE_META } from "@/modules/brand-managers/visual-types";
 import { AssetGallery } from "./asset-gallery";
 import { DesignTokensPanel } from "./design-tokens-panel";
-import { ColorExtractor } from "./color-extractor";
+// ColorExtractor is rendered inside AssetGallery, not here
 
 type Tab = "tokens" | AssetType;
 type AssetType = (typeof ASSET_TYPE_ORDER)[number];

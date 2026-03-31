@@ -8,7 +8,6 @@ import { ColorExtractor } from "./color-extractor";
 
 type Props = {
   brandManagerId: string;
-  // organizationId removed — unused (ownership enforced server-side)
   assetType: AssetType;
   assets: BrandVisualAsset[];
   tokens: DesignTokens | null;
@@ -16,20 +15,31 @@ type Props = {
 
 type UploadState = "idle" | "uploading" | "saving" | "done" | "error";
 
-export function AssetGallery({ brandManagerId, assetType, assets: initialAssets, tokens }: Props) {
+// Simple inline toast — нэмэлт library шаардахгүй
+function useToast() {
+  const [toast, setToast] = useState<{ msg: string; type: "error" | "success" } | null>(null);
+  function show(msg: string, type: "error" | "success" = "error") {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 4000);
+  }
+  return { toast, show };
+}
+
+export function AssetGallery({ brandManagerId, assetType, assets: initialAssets }: Props) {
   const [assets, setAssets] = useState(initialAssets);
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [auditingId, setAuditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const [extractTarget, setExtractTarget] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const meta = ASSET_TYPE_META[assetType];
+  const { toast, show: showToast } = useToast();
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-
     for (const file of files.slice(0, meta.maxFiles)) {
       await uploadFile(file);
     }
@@ -42,19 +52,21 @@ export function AssetGallery({ brandManagerId, assetType, assets: initialAssets,
 
     try {
       // 1. Get signed upload URL
+      // Fix #1: HTTP error шалгана
       const urlRes = await fetch("/api/brand-managers/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          brandManagerId,
-          assetType,
-          fileName: file.name,
-          mimeType: file.type,
-        }),
+        body: JSON.stringify({ brandManagerId, assetType, fileName: file.name, mimeType: file.type }),
       });
+
+      if (!urlRes.ok) {
+        const errBody = await urlRes.json().catch(() => ({})) as { error?: string };
+        throw new Error(errBody.error ?? `Upload URL алдаа (${urlRes.status})`);
+      }
+
       const { uploadUrl, filePath } = await urlRes.json() as { uploadUrl: string; filePath: string; token: string };
 
-      // 2. Upload directly to Supabase Storage via XHR (for progress)
+      // 2. Upload directly to Supabase Storage via XHR (progress tracking)
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("PUT", uploadUrl);
@@ -62,8 +74,8 @@ export function AssetGallery({ brandManagerId, assetType, assets: initialAssets,
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 90));
         };
-        xhr.onload = () => xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`));
-        xhr.onerror = () => reject(new Error("Network error"));
+        xhr.onload = () => xhr.status < 300 ? resolve() : reject(new Error(`Storage upload алдаа (${xhr.status})`));
+        xhr.onerror = () => reject(new Error("Сүлжээний алдаа гарлаа"));
         xhr.send(file);
       });
 
@@ -86,26 +98,45 @@ export function AssetGallery({ brandManagerId, assetType, assets: initialAssets,
       setUploadState("done");
       setTimeout(() => { setUploadState("idle"); setUploadProgress(0); }, 1500);
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "Тодорхойгүй алдаа";
       console.error("Upload error:", err);
       setUploadState("error");
+      showToast(`Байршуулж чадсангүй: ${msg}`);
       setTimeout(() => setUploadState("idle"), 3000);
     }
   }
 
+  // Fix #2a: handleDelete — try/catch + error toast
   async function handleDelete(asset: BrandVisualAsset) {
     if (!confirm(`"${asset.file_name}" файлыг устгах уу?`)) return;
-    await deleteVisualAsset(asset.id, brandManagerId);
-    setAssets((prev) => prev.filter((a) => a.id !== asset.id));
+    setDeletingId(asset.id);
+    try {
+      await deleteVisualAsset(asset.id, brandManagerId);
+      setAssets((prev) => prev.filter((a) => a.id !== asset.id));
+      showToast("Устгагдлаа", "success");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Тодорхойгүй алдаа";
+      showToast(`Устгаж чадсангүй: ${msg}`);
+    } finally {
+      setDeletingId(null);
+    }
   }
 
+  // Fix #2b: handleAudit — catch + error toast
   async function handleAudit(asset: BrandVisualAsset) {
     setAuditingId(asset.id);
     try {
       const result = await auditVisualAsset(asset.id, brandManagerId);
-      setAssets((prev) => prev.map((a) => a.id === asset.id
-        ? { ...a, ai_audit_score: result.score, ai_audit_notes: result.notes }
-        : a
-      ));
+      setAssets((prev) =>
+        prev.map((a) =>
+          a.id === asset.id
+            ? { ...a, ai_audit_score: result.score, ai_audit_notes: result.notes }
+            : a
+        )
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Тодорхойгүй алдаа";
+      showToast(`AI audit амжилтгүй: ${msg}`);
     } finally {
       setAuditingId(null);
     }
@@ -113,8 +144,12 @@ export function AssetGallery({ brandManagerId, assetType, assets: initialAssets,
 
   async function loadSignedUrl(asset: BrandVisualAsset) {
     if (signedUrls[asset.id]) return;
-    const url = await getAssetUrl(asset.file_path);
-    setSignedUrls((prev) => ({ ...prev, [asset.id]: url }));
+    try {
+      const url = await getAssetUrl(asset.file_path);
+      setSignedUrls((prev) => ({ ...prev, [asset.id]: url }));
+    } catch {
+      showToast("Зураг ачааллаж чадсангүй");
+    }
   }
 
   const isImage = (mime: string) => mime.startsWith("image/");
@@ -122,10 +157,17 @@ export function AssetGallery({ brandManagerId, assetType, assets: initialAssets,
 
   return (
     <div className="asset-gallery">
+      {/* Toast */}
+      {toast && (
+        <div className={`ag-toast ag-toast--${toast.type}`}>
+          {toast.type === "error" ? "❌" : "✅"} {toast.msg}
+        </div>
+      )}
+
       {/* Upload zone */}
       <div
         className={`asset-upload-zone${uploadState === "uploading" || uploadState === "saving" ? " asset-upload-zone--active" : ""}`}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => uploadState === "idle" && fileInputRef.current?.click()}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
@@ -144,9 +186,7 @@ export function AssetGallery({ brandManagerId, assetType, assets: initialAssets,
         {uploadState === "idle" && (
           <>
             <span className="asset-upload-zone__icon">{meta.emoji}</span>
-            <span className="asset-upload-zone__text">
-              Файл чирж оруулах эсвэл дарж сонгох
-            </span>
+            <span className="asset-upload-zone__text">Файл чирж оруулах эсвэл дарж сонгох</span>
             <span className="asset-upload-zone__hint">{meta.description} · Дээд хэмжээ 50MB</span>
           </>
         )}
@@ -156,11 +196,11 @@ export function AssetGallery({ brandManagerId, assetType, assets: initialAssets,
             <span>{uploadState === "uploading" ? `Байршуулж байна... ${uploadProgress}%` : "Хадгалж байна..."}</span>
           </div>
         )}
-        {uploadState === "done" && <span className="asset-upload-done">✅ Амжилттай байршлаа</span>}
-        {uploadState === "error" && <span className="asset-upload-error">❌ Алдаа гарлаа. Дахин оролдоно уу.</span>}
+        {uploadState === "done"  && <span className="asset-upload-done">✅ Амжилттай байршлаа</span>}
+        {uploadState === "error" && <span className="asset-upload-error">❌ Дахин оролдоно уу</span>}
       </div>
 
-      {/* Color extractor for image types */}
+      {/* Color extractor */}
       {extractTarget && (
         <ColorExtractor
           imageUrl={extractTarget}
@@ -173,7 +213,7 @@ export function AssetGallery({ brandManagerId, assetType, assets: initialAssets,
       {assets.length === 0 ? (
         <div className="asset-gallery__empty">
           <span>{meta.emoji}</span>
-          <p>"{meta.label}" файл байхгүй байна</p>
+          <p>&ldquo;{meta.label}&rdquo; файл байхгүй байна</p>
         </div>
       ) : (
         <div className="asset-grid">
@@ -201,7 +241,6 @@ export function AssetGallery({ brandManagerId, assetType, assets: initialAssets,
                 <p className="asset-card__name" title={asset.file_name}>{asset.file_name}</p>
                 <p className="asset-card__size">{(asset.file_size / 1024).toFixed(0)} KB</p>
 
-                {/* AI audit score */}
                 {asset.ai_audit_score !== null && (
                   <div className={`asset-card__audit${asset.ai_audit_score >= 70 ? " asset-card__audit--good" : asset.ai_audit_score >= 40 ? " asset-card__audit--ok" : " asset-card__audit--warn"}`}>
                     🤖 {asset.ai_audit_score}/100
@@ -210,8 +249,6 @@ export function AssetGallery({ brandManagerId, assetType, assets: initialAssets,
                 {asset.ai_audit_notes && (
                   <p className="asset-card__audit-notes">{asset.ai_audit_notes}</p>
                 )}
-
-                {/* Extracted colors */}
                 {asset.extracted_colors && asset.extracted_colors.length > 0 && (
                   <div className="asset-card__colors">
                     {asset.extracted_colors.slice(0, 5).map((hex, i) => (
@@ -228,9 +265,13 @@ export function AssetGallery({ brandManagerId, assetType, assets: initialAssets,
                     className="asset-card__action-btn"
                     title="Өнгө гаргаж авах"
                     onClick={async () => {
-                      const url = signedUrls[asset.id] ?? await getAssetUrl(asset.file_path);
-                      setSignedUrls((p) => ({ ...p, [asset.id]: url }));
-                      setExtractTarget(url);
+                      try {
+                        const url = signedUrls[asset.id] ?? await getAssetUrl(asset.file_path);
+                        setSignedUrls((p) => ({ ...p, [asset.id]: url }));
+                        setExtractTarget(url);
+                      } catch {
+                        showToast("Зурагны URL авч чадсангүй");
+                      }
                     }}
                   >🎨</button>
                 )}
@@ -253,8 +294,11 @@ export function AssetGallery({ brandManagerId, assetType, assets: initialAssets,
                 <button
                   className="asset-card__action-btn asset-card__action-btn--danger"
                   title="Устгах"
+                  disabled={deletingId === asset.id}
                   onClick={() => handleDelete(asset)}
-                >🗑️</button>
+                >
+                  {deletingId === asset.id ? "⏳" : "🗑️"}
+                </button>
               </div>
             </div>
           ))}

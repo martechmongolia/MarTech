@@ -88,6 +88,16 @@ export function TrainingWizard({ brandManager, sections, initialSection }: Props
     setInput("");
   }, []);
 
+  // Fix #10: Sliding window — API payload болон token хэт томрохоос сэргийлнэ
+  const MAX_HISTORY = 20;
+  function getWindowedMessages(msgs: TrainingMessage[]): TrainingMessage[] {
+    if (msgs.length <= MAX_HISTORY) return msgs;
+    // Эхний assistant мессежийг хадгалж (context), сүүлийн N-1-г авна
+    const first = msgs[0];
+    const tail = msgs.slice(-(MAX_HISTORY - 1));
+    return [first, ...tail];
+  }
+
   async function sendMessage() {
     if (!input.trim() || loading) return;
     const userMsg = input.trim();
@@ -101,7 +111,7 @@ export function TrainingWizard({ brandManager, sections, initialSection }: Props
         body: JSON.stringify({
           brandManagerId: brandManager.id,
           sectionType: currentSection,
-          messages,
+          messages: getWindowedMessages(messages),
           userMessage: userMsg,
         }),
       });

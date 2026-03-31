@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUploadUrl } from "@/modules/brand-managers/visual-actions";
 import type { AssetType } from "@/modules/brand-managers/visual-types";
+import { ASSET_TYPE_META } from "@/modules/brand-managers/visual-types";
 
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as {
@@ -21,6 +22,23 @@ export async function POST(req: NextRequest) {
 
   if (!brandManagerId || !assetType || !fileName || !mimeType) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  }
+
+  // Fix #9: MIME type server-side validation
+  const meta = ASSET_TYPE_META[assetType as AssetType];
+  if (!meta) {
+    return NextResponse.json({ error: "Invalid asset type" }, { status: 400 });
+  }
+
+  const ALLOWED_MIMES = new Set([
+    "image/png", "image/jpeg", "image/svg+xml", "image/webp", "image/gif",
+    "application/pdf", "application/zip", "application/x-zip-compressed",
+    "font/ttf", "font/otf", "font/woff", "font/woff2", "application/octet-stream",
+  ]);
+  // .js, .php, .exe гэх мэт хортой extension-г хаана
+  const BLOCKED_EXTENSIONS = /\.(js|ts|jsx|tsx|php|exe|sh|bat|cmd|py|rb|pl)$/i;
+  if (!ALLOWED_MIMES.has(mimeType) || BLOCKED_EXTENSIONS.test(fileName)) {
+    return NextResponse.json({ error: "Зөвшөөрөгдөөгүй файлын төрөл" }, { status: 400 });
   }
 
   try {
