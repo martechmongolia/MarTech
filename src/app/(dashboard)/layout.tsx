@@ -29,6 +29,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     { href: "/pages", label: "Pages" },
     { href: "/brand-managers", label: "AI Brand Managers" },
     { href: "/social-listening", label: "Social Listening" },
+    { href: "/creator-search", label: "Creator Search" },
     { href: "/billing", label: "Billing" },
     ...(showSystemAdminNav
       ? [{ href: "/admin", label: "System Admin", accent: true }]
