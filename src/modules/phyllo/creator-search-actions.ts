@@ -165,8 +165,10 @@ export async function searchCreatorsAction(
       success: false,
       error:
         error instanceof Error
-          ? error.message
-          : "Failed to search creators.",
+          ? error.message.includes("max_limit_reached") || error.message.includes("400")
+            ? "Staging API-ийн хүсэлтийн хязгаар (10 req) дууссан байна. Хэсэг хугацааны дараа дахин оролдоно уу."
+            : error.message
+          : "Creator хайлт хийхэд алдаа гарлаа.",
     };
   }
 }
