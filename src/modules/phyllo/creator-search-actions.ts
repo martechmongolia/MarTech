@@ -11,6 +11,8 @@
  */
 
 import { revalidatePath } from "next/cache";
+import { getCurrentUser } from "@/modules/auth/session";
+import { getCurrentUserOrganization } from "@/modules/organizations/data";
 import { searchCreators, PLATFORM_IDS } from "./creator-search";
 import type { PhylloCreatorProfile, SearchCreatorsParams, CreatorSortField, CreatorSortOrder } from "./creator-search";
 import {
@@ -55,19 +57,14 @@ function rowToProfile(row: PhylloCreatorRow): PhylloCreatorProfile {
   };
 }
 
-function getOrgId(): string {
-  // In a real app this comes from the authenticated session.
-  // Adjust to match your auth pattern (e.g. getServerSession, auth(), etc.)
-  const orgId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!orgId) throw new Error("DEFAULT_ORGANIZATION_ID env var is not set.");
-  return orgId;
-}
+
 
 // ---------------------------------------------------------------------------
 // searchCreatorsAction
 // ---------------------------------------------------------------------------
 
 export interface SearchCreatorsActionParams {
+  organizationId: string;
   /** 'tiktok' | 'instagram' — or a raw UUID */
   platform: string;
   sort_field?: CreatorSortField;
@@ -87,6 +84,7 @@ export async function searchCreatorsAction(
   params: SearchCreatorsActionParams
 ): Promise<ActionResult<PhylloCreatorProfile[]>> {
   const {
+    organizationId,
     platform,
     sort_field = "AVERAGE_VIEWS",
     sort_order = "DESCENDING",
@@ -95,6 +93,10 @@ export async function searchCreatorsAction(
     keywords,
     limit = 25,
   } = params;
+
+  if (!organizationId?.trim()) {
+    return { success: false, error: "organizationId is required." };
+  }
 
   // Resolve platform UUID
   const work_platform_id =
@@ -107,7 +109,11 @@ export async function searchCreatorsAction(
   }
 
   try {
-    const orgId = getOrgId();
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthorized." };
+    const org = await getCurrentUserOrganization(user.id);
+    if (!org) return { success: false, error: "Organization not found." };
+    const orgId = org.id;
 
     const cacheKey = {
       work_platform_id,
@@ -177,7 +183,11 @@ export async function getOrganizationCreatorsAction(
   filters?: CreatorFilters
 ): Promise<ActionResult<PhylloCreatorProfile[]>> {
   try {
-    const orgId = getOrgId();
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthorized." };
+    const org = await getCurrentUserOrganization(user.id);
+    if (!org) return { success: false, error: "Organization not found." };
+    const orgId = org.id;
     const rows = await getOrganizationCreators(orgId, filters);
     return { success: true, data: rows.map(rowToProfile) };
   } catch (error) {
@@ -207,7 +217,11 @@ export async function saveCreatorAction(
   }
 
   try {
-    const orgId = getOrgId();
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthorized." };
+    const org = await getCurrentUserOrganization(user.id);
+    if (!org) return { success: false, error: "Organization not found." };
+    const orgId = org.id;
     await saveCreatorToFavorites(orgId, creatorId);
     revalidatePath("/creator-search");
     return { success: true, data: undefined };
@@ -236,7 +250,11 @@ export async function removeSavedCreatorAction(
   }
 
   try {
-    const orgId = getOrgId();
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthorized." };
+    const org = await getCurrentUserOrganization(user.id);
+    if (!org) return { success: false, error: "Organization not found." };
+    const orgId = org.id;
     await removeSavedCreator(orgId, creatorId);
     revalidatePath("/creator-search");
     return { success: true, data: undefined };
@@ -262,7 +280,11 @@ export async function getSavedCreatorsAction(): Promise<
   ActionResult<PhylloCreatorProfile[]>
 > {
   try {
-    const orgId = getOrgId();
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthorized." };
+    const org = await getCurrentUserOrganization(user.id);
+    if (!org) return { success: false, error: "Organization not found." };
+    const orgId = org.id;
     const rows = await getSavedCreators(orgId);
     return { success: true, data: rows.map(rowToProfile) };
   } catch (error) {

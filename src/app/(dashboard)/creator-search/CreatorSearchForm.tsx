@@ -204,6 +204,7 @@ export function CreatorSearchForm({ organizationId }: { organizationId: string }
 
     try {
       const result = await searchCreatorsAction({
+        organizationId,
         platform,
         sort_field: sortBy as import("@/modules/phyllo/creator-search").CreatorSortField,
         follower_min: minFollowers ? Number(minFollowers) : undefined,
