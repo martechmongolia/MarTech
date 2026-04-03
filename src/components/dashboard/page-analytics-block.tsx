@@ -49,6 +49,13 @@ function formatPct(n: number | null | undefined): string {
   return `${(n * 100).toFixed(1)}%`;
 }
 
+/** Truncate by Unicode code points so we never split surrogate pairs (avoids hydration mismatches). */
+function truncateByCodePoints(s: string, max: number): { text: string; truncated: boolean } {
+  const units = Array.from(s);
+  if (units.length <= max) return { text: s, truncated: false };
+  return { text: units.slice(0, max).join(""), truncated: true };
+}
+
 function deltaClass(v: number | null | undefined): string {
   if (v == null) return "ana-kpi__delta--neutral";
   if (v > 0) return "ana-kpi__delta--up";
@@ -289,7 +296,11 @@ function LeaderboardBlock({ posts }: { posts: PostMetricSummary[] }) {
       ) : (
         <div className="ana-leaderboard">
           {top5.map((p, i) => {
-            const excerpt = (p.message_excerpt ?? "").slice(0, 45) || "—";
+            const { text: excerptRaw, truncated: excerptTruncated } = truncateByCodePoints(
+              p.message_excerpt ?? "",
+              45
+            );
+            const excerpt = excerptRaw || "—";
             const imp = p.impressions ?? 0;
             const eng = p.engagements ?? 0;
             const engPct = imp > 0 ? `${((eng / imp) * 100).toFixed(1)}%` : "—";
@@ -304,7 +315,7 @@ function LeaderboardBlock({ posts }: { posts: PostMetricSummary[] }) {
                 </span>
                 <span className="ana-leaderboard__excerpt" title={p.message_excerpt ?? ""}>
                   {excerpt}
-                  {(p.message_excerpt?.length ?? 0) > 45 ? "…" : ""}
+                  {excerptTruncated ? "…" : ""}
                 </span>
                 {p.post_type ? (
                   <span className="ana-leaderboard__badge">{p.post_type}</span>
