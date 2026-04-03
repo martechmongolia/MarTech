@@ -24,10 +24,15 @@ function formatDate(dateStr: string) {
   });
 }
 
+const PLATFORM_NAMES: Record<string, string> = {
+  tiktok: "TikTok",
+  instagram: "Instagram",
+  "de55aeec-0dc8-4119-bf90-16b3d1f0c987": "TikTok",
+  "9bb8913b-ddd9-430b-a66a-d74d846e6c66": "Instagram",
+};
+
 function getPlatformLabel(platform: string) {
-  if (platform === "tiktok") return "TikTok";
-  if (platform === "instagram") return "Instagram";
-  return platform;
+  return PLATFORM_NAMES[platform] ?? platform;
 }
 
 export default async function SocialListeningPage() {
