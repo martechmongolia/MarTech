@@ -4,6 +4,7 @@
  * Тэр хүртэл `as unknown as` assertion ашиглана.
  */
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { DigestSession, DigestItem, DigestSource, ProcessedDigestItem } from "./types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -56,9 +57,9 @@ export async function getRecentSessions(limit = 7): Promise<DigestSession[]> {
 }
 
 export async function createDigestSession(date: string): Promise<DigestSession> {
-  const supabase = await getSupabaseServerClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const supabase = getSupabaseAdminClient() as any;
+  const { data, error } = await supabase
     .from("digest_sessions")
     .insert({ digest_date: date, status: "processing" })
     .select()
@@ -72,9 +73,9 @@ export async function updateDigestSession(
   id: string,
   patch: Partial<Pick<DigestSession, "status" | "summary_mn" | "error_message" | "item_count">>
 ): Promise<void> {
-  const supabase = await getSupabaseServerClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const supabase = getSupabaseAdminClient() as any;
+  const { error } = await supabase
     .from("digest_sessions")
     .update(patch as AnyRecord)
     .eq("id", id);
@@ -102,10 +103,10 @@ export async function insertDigestItems(
 ): Promise<void> {
   if (items.length === 0) return;
 
-  const supabase = await getSupabaseServerClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = getSupabaseAdminClient() as any;
   const rows = items.map((item) => ({ ...item, session_id: sessionId }));
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).from("digest_items").insert(rows);
+  const { error } = await supabase.from("digest_items").insert(rows);
   if (error) throw new Error(`digest_items insert: ${error.message}`);
 }
