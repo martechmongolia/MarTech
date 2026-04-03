@@ -125,10 +125,18 @@ export default async function MorningDigestPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [{ session, items }, history] = await Promise.all([
-    getTodayDigest(),
-    getDigestHistory(),
-  ]);
+  let session = null, items: DigestItem[] = [], history: DigestSession[] = [];
+  try {
+    const [todayData, hist] = await Promise.all([
+      getTodayDigest(),
+      getDigestHistory(),
+    ]);
+    session = todayData.session;
+    items = todayData.items;
+    history = hist;
+  } catch (err) {
+    console.error("[morning-digest] page error:", err);
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const hasToday = Boolean(session);
