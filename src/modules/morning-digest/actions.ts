@@ -19,15 +19,22 @@ export async function getTodayDigest(): Promise<{
   session: DigestSession | null;
   items: DigestItem[];
 }> {
-  const session = await getTodaySession();
-  if (!session) return { session: null, items: [] };
-
-  const items = session.status === "ready" ? await getDigestItems(session.id) : [];
-  return { session, items };
+  try {
+    const session = await getTodaySession();
+    if (!session) return { session: null, items: [] };
+    const items = session.status === "ready" ? await getDigestItems(session.id) : [];
+    return { session, items };
+  } catch {
+    return { session: null, items: [] };
+  }
 }
 
 export async function getDigestHistory(): Promise<DigestSession[]> {
-  return getRecentSessions(14);
+  try {
+    return await getRecentSessions(14);
+  } catch {
+    return [];
+  }
 }
 
 export async function getDigestWithItems(sessionId: string): Promise<{
