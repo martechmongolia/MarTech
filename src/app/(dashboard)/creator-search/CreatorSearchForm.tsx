@@ -6,7 +6,7 @@ import { searchCreatorsAction } from "@/modules/phyllo/creator-search-actions";
 import type { PhylloCreatorProfile } from "@/modules/phyllo/creator-search";
 
 type Platform = "tiktok" | "instagram";
-type SortBy = "avg_views" | "follower_count" | "avg_likes";
+type SortBy = "AVERAGE_VIEWS" | "FOLLOWER_COUNT" | "AVERAGE_LIKES";
 
 type Creator = {
   id: string;
@@ -189,7 +189,7 @@ function CreatorResultCard({ creator }: { creator: PhylloCreatorProfile }) {
 
 export function CreatorSearchForm({ organizationId }: { organizationId: string }) {
   const [platform, setPlatform] = useState<Platform>("tiktok");
-  const [sortBy, setSortBy] = useState<SortBy>("avg_views");
+  const [sortBy, setSortBy] = useState<SortBy>("AVERAGE_VIEWS");
   const [minFollowers, setMinFollowers] = useState("");
   const [maxFollowers, setMaxFollowers] = useState("");
   const [loading, setLoading] = useState(false);
@@ -264,9 +264,9 @@ export function CreatorSearchForm({ organizationId }: { organizationId: string }
                   onChange={(e) => setSortBy(e.target.value as SortBy)}
                   disabled={loading}
                 >
-                  <option value="avg_views">Дундаж үзэлт</option>
-                  <option value="follower_count">Дагагчийн тоо</option>
-                  <option value="avg_likes">Дундаж лайк</option>
+                  <option value="AVERAGE_VIEWS">Дундаж үзэлт</option>
+                  <option value="FOLLOWER_COUNT">Дагагчийн тоо</option>
+                  <option value="AVERAGE_LIKES">Дундаж лайк</option>
                 </select>
               </div>
 

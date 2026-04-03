@@ -120,8 +120,6 @@ export async function searchCreators(
       field: sort_field,
       order: sort_order,
     },
-    limit,
-    offset,
   };
 
   // Only add follower_count filter if at least one bound is provided
