@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button, Card } from "@/components/ui";
 import { createSocialListeningSearch } from "@/modules/phyllo/actions";
 
@@ -8,6 +9,7 @@ type Platform = "tiktok" | "instagram";
 type SearchType = "keyword" | "hashtag";
 
 export function SearchForm({ organizationId }: { organizationId: string }) {
+  const router = useRouter();
   const [platform, setPlatform] = useState<Platform>("tiktok");
   const [searchType, setSearchType] = useState<SearchType>("keyword");
   const [query, setQuery] = useState("");
@@ -24,14 +26,19 @@ export function SearchForm({ organizationId }: { organizationId: string }) {
     setSuccess(false);
 
     try {
-      await createSocialListeningSearch({
+      const result = await createSocialListeningSearch({
         organizationId,
         platform,
         searchType,
         query: query.trim(),
       });
-      setSuccess(true);
-      setQuery("");
+      if (!result.success) {
+        setError(result.error);
+      } else {
+        setSuccess(true);
+        setQuery("");
+        router.refresh();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Хайлт үүсгэхэд алдаа гарлаа.");
     } finally {
