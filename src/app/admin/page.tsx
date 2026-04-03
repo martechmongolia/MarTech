@@ -80,6 +80,7 @@ export default async function AdminOverviewPage({ searchParams }: OverviewProps)
           <QuickLink href="/admin/audit">Audit log</QuickLink>
           <QuickLink href="/admin/plans">Plans</QuickLink>
           <QuickLink href="/admin/settings">Settings</QuickLink>
+          <QuickLink href="/admin/feature-flags">Feature Flags 🚩</QuickLink>
         </div>
       </Card>
 

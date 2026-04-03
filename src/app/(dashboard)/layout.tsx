@@ -8,6 +8,7 @@ import { signOutAction } from "@/modules/auth/actions";
 import { getCurrentUser } from "@/modules/auth/session";
 import { hasActiveSystemAdminRecord } from "@/modules/admin/guard";
 import { isInternalOpsEmail } from "@/lib/internal-ops";
+import { getFlagMap } from "@/modules/feature-flags";
 
 type DashboardLayoutProps = {
   children: ReactNode;
@@ -20,17 +21,19 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     redirect("/login");
   }
 
-  const showSystemAdminNav =
+  const [showSystemAdminNav, flags] = await Promise.all([
     Boolean(user.id) &&
-    (isInternalOpsEmail(user.email) || (await hasActiveSystemAdminRecord(user.id)));
+      (isInternalOpsEmail(user.email) || hasActiveSystemAdminRecord(user.id)),
+    getFlagMap(),
+  ]);
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard" },
-    { href: "/pages", label: "Pages" },
-    { href: "/brand-managers", label: "AI Brand Managers" },
-    { href: "/social-listening", label: "Social Listening" },
-    { href: "/creator-search", label: "Creator Search" },
-    { href: "/morning-digest", label: "Өглөөний Мэдээлэл" },
+    ...(flags["pages"] !== false ? [{ href: "/pages", label: "Pages" }] : []),
+    ...(flags["brand_managers"] !== false ? [{ href: "/brand-managers", label: "AI Brand Managers" }] : []),
+    ...(flags["social_listening"] !== false ? [{ href: "/social-listening", label: "Social Listening" }] : []),
+    ...(flags["creator_search"] !== false ? [{ href: "/creator-search", label: "Creator Search" }] : []),
+    ...(flags["morning_digest"] !== false ? [{ href: "/morning-digest", label: "Өглөөний Мэдээлэл" }] : []),
     { href: "/billing", label: "Billing" },
     ...(showSystemAdminNav
       ? [{ href: "/admin", label: "System Admin", accent: true }]
