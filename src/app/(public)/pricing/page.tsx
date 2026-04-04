@@ -1,210 +1,528 @@
 import Link from "next/link";
-import { SelectPlanForm } from "@/components/billing/select-plan-form";
+import { StartTrialForm } from "@/components/billing/start-trial-form";
 import { StartPaidCheckoutForm } from "@/components/billing/start-paid-checkout-form";
-import { Badge, Card, PageHeader } from "@/components/ui";
 import { getCurrentUser } from "@/modules/auth/session";
 import { getCurrentUserOrganization } from "@/modules/organizations/data";
-import { getCurrentOrganizationSubscription, getPublicActivePlans } from "@/modules/subscriptions/data";
+import { getCurrentOrganizationSubscription } from "@/modules/subscriptions/data";
+import { isTrialExpired } from "@/modules/subscriptions/billing-lifecycle";
 
-function getPlanFit(planCode: string): string {
-  switch (planCode) {
-    case "free":
-      return "Эхлэх гэж буй жижиг баг, туршиж үзэх хэрэглээнд тохирно.";
-    case "starter":
-      return "Тогтмол page хянах, сар бүр AI зөвлөмж авах үндсэн хэрэглээнд тохирно.";
-    case "growth":
-      return "Олон page удирддаг, илүү их sync ба AI тайлан хэрэгтэй багт тохирно.";
-    default:
-      return "Танай багийн өсөлт, page хяналтын хэрэгцээнд тохируулан сонгоно.";
-  }
-}
+// ─── Plan features ────────────────────────────────────────────────────────────
 
-function getSubscriptionDisplay(status?: string | null): { label: string; note: string } {
-  switch (status) {
-    case "active":
-      return {
-        label: "Идэвхтэй",
-        note: "Таны subscription идэвхтэй байна. Нэхэмжлэл болон төлбөрийн түүхийг Billing хэсгээс харна."
-      };
-    case "bootstrap_pending_billing":
-      return {
-        label: "Төлбөр баталгаажуулах хүлээлттэй",
-        note: "Starter plan-аа идэвхжүүлэхийн тулд QPay төлбөрөө дуусгаад баталгаажуулалт хүлээнэ."
-      };
-    case "canceled":
-      return {
-        label: "Цуцлагдсан",
-        note: "Төлөвлөгөө дахин идэвхжүүлэх шаардлагатай байж магадгүй. Дэлгэрэнгүйг Billing хэсгээс шалгана уу."
-      };
-    case "expired":
-      return {
-        label: "Хугацаа дууссан",
-        note: "Төлбөрийн төлөвөө шалгаад шаардлагатай бол шинэ төлөвлөгөө сонгоно уу."
-      };
-    case "suspended":
-      return {
-        label: "Түр хязгаарлагдсан",
-        note: "Төлбөр болон subscription төлөвөө Billing хэсгээс шалгаад дараагийн алхмаа тодруулна уу."
-      };
-    default:
-      return {
-        label: "Тодорхойгүй",
-        note: "Одоогийн subscription төлөвийг Billing хэсгээс шалгана уу."
-      };
-  }
-}
+const PLAN_FEATURES: Record<string, { icon: string; text: string }[]> = {
+  starter: [
+    { icon: "📄", text: "1 хуудас холбоно" },
+    { icon: "🔄", text: "Өдөрт 1 удаа шинэчилнэ" },
+    { icon: "🤖", text: "Сард 30 AI тайлан" },
+    { icon: "🧠", text: "Сард 5 Brainstorming session" },
+    { icon: "📊", text: "30 хоногийн мэдээлэл хадгалах" },
+  ],
+  growth: [
+    { icon: "📄", text: "5 хуудас холбоно" },
+    { icon: "🔄", text: "Өдөрт 4 удаа шинэчилнэ" },
+    { icon: "🤖", text: "Сард 120 AI тайлан" },
+    { icon: "🧠", text: "Сард 20 Brainstorming session" },
+    { icon: "📊", text: "90 хоногийн мэдээлэл хадгалах" },
+  ],
+};
+
+const PLAN_PRICES: Record<string, { monthly: string; currency: string }> = {
+  starter: { monthly: "9,000", currency: "₮" },
+  growth:  { monthly: "10,000", currency: "₮" },
+};
+
+const FAQS = [
+  {
+    q: "Trial дуусвал юу болох вэ?",
+    a: "14 хоногийн дараа subscription идэвхжүүлэхгүй бол үйлчилгээ зогсоно. Өгөгдөл 30 хоног хадгалагдана.",
+  },
+  {
+    q: "QPay гэж юу вэ?",
+    a: "Монголын дотоодын төлбөрийн систем. Монгол банкны апп-аар QR уншуулж тэр дор төлнө.",
+  },
+  {
+    q: "Subscription цуцлах боломжтой юу?",
+    a: "Тийм. Billing хэсгээс хүссэн үедээ цуцалж болно.",
+  },
+  {
+    q: "Brainstorming credit гэж юу вэ?",
+    a: "AI агентуудтай хамтран санаа боловсруулах session. Сар бүр шинэчлэгдэнэ, дуусвал нэг удаагийн төлбөрөөр нэмж болно.",
+  },
+];
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type UserPricingState =
+  | "guest"              // нэвтрээгүй
+  | "trialing"           // trial явагдаж байна
+  | "trial_ended"        // trial дуусч, төлөөгүй
+  | "active_starter"     // starter идэвхтэй
+  | "active_growth"      // growth идэвхтэй
+  | "pending_payment"    // QPay хүлээгдэж байна
+  | "no_subscription";   // org байгаа ч subscription үгүй
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function PricingPage() {
-  const [plans, user] = await Promise.all([getPublicActivePlans(), getCurrentUser()]);
+  const user = await getCurrentUser();
   const organization = user ? await getCurrentUserOrganization(user.id) : null;
-  const subscription = user ? await getCurrentOrganizationSubscription(user.id) : null;
-  const subscriptionDisplay = getSubscriptionDisplay(subscription?.status);
+  const subscription = organization ? await getCurrentOrganizationSubscription(user!.id) : null;
+
+  // Хэрэглэгчийн төлөв тодорхойлох
+  let pricingState: UserPricingState = "guest";
+
+  if (user && organization) {
+    if (!subscription) {
+      pricingState = "no_subscription";
+    } else {
+      const status = subscription.status;
+      const planCode = subscription.plan?.code ?? "";
+
+      if (status === "trialing") {
+        const expired = isTrialExpired(subscription.trial_ends_at ?? null);
+        pricingState = expired ? "trial_ended" : "trialing";
+      } else if (status === "active" && planCode === "starter") {
+        pricingState = "active_starter";
+      } else if (status === "active" && planCode === "growth") {
+        pricingState = "active_growth";
+      } else if (status === "bootstrap_pending_billing") {
+        pricingState = "pending_payment";
+      } else {
+        pricingState = "no_subscription";
+      }
+    }
+  } else if (user && !organization) {
+    pricingState = "no_subscription";
+  }
+
+  const isGuest = pricingState === "guest";
+  const isTrialingNow = pricingState === "trialing";
+  const isActive = pricingState === "active_starter" || pricingState === "active_growth";
+  const showHero = isGuest || pricingState === "no_subscription" || pricingState === "trial_ended";
+
+  const daysLeft = isTrialingNow && subscription?.trial_ends_at
+    ? Math.max(0, Math.ceil((new Date(subscription.trial_ends_at).getTime() - Date.now()) / 86400000))
+    : 0;
 
   return (
-    <main className="ui-page-main">
-      {user ? (
-        <p className="ui-text-muted" style={{ margin: 0 }}>
-          <Link href="/dashboard">← Dashboard</Link>
-          {organization ? (
-            <>
-              {" · "}
-              <Link href="/billing">Billing</Link>
-            </>
-          ) : null}
-        </p>
-      ) : null}
+    <main style={{
+      minHeight: "100vh",
+      background: "#0f172a",
+      color: "#e2e8f0",
+      fontFamily: "system-ui, -apple-system, sans-serif",
+    }}>
+      <div style={{ maxWidth: "900px", margin: "0 auto", padding: "0 1rem 4rem" }}>
 
-      <PageHeader
-        title="Төлөвлөгөө ба төлбөр"
-        description={
-          <>
-            MarTech-ийн төлөвлөгөөнүүд нь хэдэн page холбох, өдөрт хэдэн sync хийх, сар бүр хэдэн AI тайлан авахыг
-            тодорхойлно. Төлбөртэй төлөвлөгөөний төлбөрийг <strong>QPay</strong>-аар хийж, төлбөр баталгаажсаны дараа
-            subscription идэвхжинэ.
-          </>
-        }
-      />
-
-      <section style={{ display: "grid", gap: "var(--space-4)" }}>
-        <Card padded stack>
-          <h2 style={{ margin: 0, fontSize: "var(--text-lg)", fontWeight: 600 }}>Төлбөр хэрхэн явагдах вэ?</h2>
-          <ol style={{ margin: 0, paddingLeft: "1.2rem", display: "grid", gap: "var(--space-2)" }}>
-            <li>Өөрт тохирох төлөвлөгөөгөө сонгоно.</li>
-            <li>Төлбөртэй төлөвлөгөө бол QPay нэхэмжлэл үүсгээд төлнө.</li>
-            <li>MarTech төлбөр баталгаажсаны дараа subscription-ийг идэвхжүүлнэ.</li>
-          </ol>
-          <p className="ui-text-muted" style={{ margin: 0 }}>
-            Төлбөрийн явц, нэхэмжлэл, баталгаажуулалтын төлөвийг <Link href="/billing">Billing</Link> хэсгээс харж
-            болно.
-          </p>
-        </Card>
-
-        {user && organization ? (
-          <Card padded stack>
-            <h2 style={{ margin: 0, fontSize: "var(--text-lg)", fontWeight: 600 }}>Одоогийн subscription</h2>
-            {subscription ? (
+        {/* Nav breadcrumb */}
+        {user && (
+          <div style={{ padding: "1.25rem 0", fontSize: "0.875rem", color: "#64748b" }}>
+            <Link href="/dashboard" style={{ color: "#6366f1", textDecoration: "none" }}>← Dashboard</Link>
+            {organization && (
               <>
-                <p style={{ margin: 0 }}>
-                  <strong>{subscription.plan.name}</strong> ({subscription.plan.code}) · <strong>{subscriptionDisplay.label}</strong>
-                </p>
-                <p className="ui-text-muted" style={{ margin: 0 }}>
-                  {subscriptionDisplay.note}
-                </p>
+                {" · "}
+                <Link href="/billing" style={{ color: "#6366f1", textDecoration: "none" }}>Billing</Link>
               </>
-            ) : (
-              <p style={{ margin: 0 }}>Одоогоор subscription бүртгэгдээгүй байна. Тохирох төлөвлөгөөгөө сонгоод эхэлнэ үү.</p>
             )}
-            <p className="ui-text-muted" style={{ margin: 0 }}>
-              <Link href="/billing">Billing</Link> хэсэгт нэхэмжлэл, төлбөрийн төлөв, сүүлийн түүх харагдана.
-            </p>
-          </Card>
-        ) : (
-          <Card padded stack>
-            <h2 style={{ margin: 0, fontSize: "var(--text-lg)", fontWeight: 600 }}>Эхлэхийн өмнө</h2>
-            <p style={{ margin: 0 }}>
-              Эхлээд <Link href="/login">нэвтэрч</Link>, байгууллагаа үүсгээд дараа нь төлөвлөгөөгөө сонгон төлбөрөө
-              үргэлжлүүлнэ.
-            </p>
-          </Card>
+          </div>
         )}
-      </section>
 
-      <section style={{ display: "grid", gap: "var(--space-4)", marginTop: "var(--space-4)" }}>
-        {plans.map((plan) => {
-          const paid = Number(plan.price_monthly) > 0;
-          const isCurrentPlan = subscription?.plan_id === plan.id;
-          const isActive = subscription?.status === "active";
-          const isBootstrap = subscription?.status === "bootstrap_pending_billing";
-          const blocked = subscription && ["canceled", "expired", "suspended"].includes(subscription.status);
+        {/* ── Hero section ── */}
+        {showHero && (
+          <div style={{ textAlign: "center", padding: "3rem 1rem 2rem" }}>
+            <div style={{
+              display: "inline-block",
+              background: "rgba(99,102,241,0.1)",
+              border: "1px solid rgba(99,102,241,0.3)",
+              borderRadius: "2rem",
+              padding: "0.4rem 1rem",
+              fontSize: "0.85rem",
+              color: "#a5b4fc",
+              marginBottom: "1.25rem",
+            }}>
+              ✨ 14 хоног үнэгүй — карт шаардлагагүй
+            </div>
+            <h1 style={{ fontSize: "clamp(1.75rem, 5vw, 2.75rem)", fontWeight: 800, margin: "0 0 1rem", lineHeight: 1.2 }}>
+              MarTech-г туршиж үзнэ үү
+            </h1>
+            <p style={{ color: "#94a3b8", fontSize: "1.1rem", maxWidth: "480px", margin: "0 auto 2rem", lineHeight: 1.6 }}>
+              14 хоногийн турш Growth plan-ийн бүх боломжийг үнэгүй ашиглана уу.
+              Карт эсвэл урьдчилсан мэдэгдэл шаардлагагүй.
+            </p>
+            <div style={{ maxWidth: "320px", margin: "0 auto" }}>
+              {isGuest ? (
+                <Link
+                  href="/login"
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "0.875rem 2rem",
+                    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                    color: "white",
+                    textDecoration: "none",
+                    borderRadius: "0.75rem",
+                    fontSize: "1rem",
+                    fontWeight: 700,
+                    textAlign: "center",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  🚀 Нэвтрэж туршиж үзэх
+                </Link>
+              ) : organization ? (
+                <StartTrialForm organizationId={organization.id} />
+              ) : null}
+            </div>
+          </div>
+        )}
 
-          const alreadyThisActivePlan = Boolean(subscription && isActive && isCurrentPlan);
+        {/* ── Trial banner ── */}
+        {isTrialingNow && subscription && (
+          <div style={{
+            background: "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.15))",
+            border: "1px solid rgba(99,102,241,0.4)",
+            borderRadius: "1rem",
+            padding: "1.5rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "2rem",
+            gap: "1rem",
+            flexWrap: "wrap",
+          }}>
+            <div>
+              <p style={{ color: "#a5b4fc", fontWeight: 700, margin: "0 0 0.25rem", fontSize: "1rem" }}>
+                🎯 Growth trial идэвхтэй — {daysLeft} хоног үлдсэн
+              </p>
+              <p style={{ color: "#64748b", fontSize: "0.9rem", margin: 0 }}>
+                Subscription идэвхжүүлбэл бүх өгөгдөл хадгалагдана
+              </p>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+              <span style={{ color: "#f59e0b", fontWeight: 700, fontSize: "1.3rem" }}>
+                {daysLeft <= 3 ? "⚠️" : "✓"}
+              </span>
+              <Link
+                href="/billing"
+                style={{
+                  padding: "0.5rem 1.25rem",
+                  background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                  color: "white",
+                  textDecoration: "none",
+                  borderRadius: "0.5rem",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                }}
+              >
+                Subscription идэвхжүүлэх
+              </Link>
+            </div>
+          </div>
+        )}
 
-          const canStarterCheckout = Boolean(organization && subscription && paid && plan.code === "starter" && isBootstrap);
+        {/* ── Trial ended banner ── */}
+        {pricingState === "trial_ended" && (
+          <div style={{
+            background: "rgba(239,68,68,0.1)",
+            border: "1px solid rgba(239,68,68,0.4)",
+            borderRadius: "1rem",
+            padding: "1.25rem 1.5rem",
+            marginBottom: "2rem",
+          }}>
+            <p style={{ color: "#fca5a5", fontWeight: 700, margin: "0 0 0.25rem" }}>
+              ⚠️ Trial хугацаа дууссан
+            </p>
+            <p style={{ color: "#64748b", fontSize: "0.9rem", margin: 0 }}>
+              Subscription идэвхжүүлж үйлчилгээгээ үргэлжлүүлнэ үү.
+            </p>
+          </div>
+        )}
 
-          const canPaidPlanCheckout =
-            Boolean(organization && subscription && paid && plan.code !== "starter" && !blocked) && !alreadyThisActivePlan;
+        {/* ── Active plan banner ── */}
+        {isActive && subscription && (
+          <div style={{
+            background: "rgba(34,197,94,0.08)",
+            border: "1px solid rgba(34,197,94,0.3)",
+            borderRadius: "1rem",
+            padding: "1.25rem 1.5rem",
+            marginBottom: "2rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "1rem",
+            flexWrap: "wrap",
+          }}>
+            <div>
+              <p style={{ color: "#86efac", fontWeight: 700, margin: "0 0 0.25rem" }}>
+                ✅ {subscription.plan?.name} идэвхтэй
+              </p>
+              <p style={{ color: "#64748b", fontSize: "0.875rem", margin: 0 }}>
+                Нэхэмжлэл болон төлбөрийн түүхийг Billing хэсгээс харна.
+              </p>
+            </div>
+            <Link
+              href="/billing"
+              style={{ color: "#6366f1", textDecoration: "none", fontSize: "0.875rem", fontWeight: 600 }}
+            >
+              Billing →
+            </Link>
+          </div>
+        )}
 
-          const showCheckout = canStarterCheckout || canPaidPlanCheckout;
+        {/* ── Plan cards ── */}
+        <div style={{ marginTop: showHero ? "0" : "2rem" }}>
+          <h2 style={{ textAlign: "center", fontSize: "1.5rem", fontWeight: 700, marginBottom: "1.5rem" }}>
+            Төлөвлөгөөнүүд
+          </h2>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "1.25rem",
+          }}>
+            {(["starter", "growth"] as const).map((planCode) => {
+              const features = PLAN_FEATURES[planCode] ?? [];
+              const price = PLAN_PRICES[planCode];
+              const isCurrentPlan =
+                (pricingState === "active_starter" && planCode === "starter") ||
+                (pricingState === "active_growth" && planCode === "growth") ||
+                (isTrialingNow && planCode === "growth");
+              const isGrowth = planCode === "growth";
 
-          return (
-            <Card key={plan.id} padded stack>
-              <div style={{ display: "grid", gap: "var(--space-2)" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)", flexWrap: "wrap" }}>
-                  <h3 style={{ margin: 0, fontSize: "var(--text-lg)" }}>{plan.name}</h3>
-                  {alreadyThisActivePlan ? <Badge variant="success">Одоогийн төлөвлөгөө</Badge> : null}
+              // QPay checkout: pending_payment olan starter эсвэл active_starter-аас upgrade
+              const showCheckout =
+                organization &&
+                subscription &&
+                !isCurrentPlan &&
+                (pricingState === "pending_payment" || pricingState === "active_starter" || pricingState === "trial_ended") &&
+                planCode !== "starter";
+
+              const showStarterCheckout =
+                organization &&
+                subscription &&
+                pricingState === "pending_payment" &&
+                planCode === "starter";
+
+              return (
+                <div
+                  key={planCode}
+                  style={{
+                    background: isGrowth
+                      ? "linear-gradient(145deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))"
+                      : "rgba(255,255,255,0.04)",
+                    border: isGrowth
+                      ? "1px solid rgba(99,102,241,0.5)"
+                      : "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "1.25rem",
+                    padding: "1.75rem",
+                    position: "relative",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "1.25rem",
+                  }}
+                >
+                  {/* Badges */}
+                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    {isGrowth && (
+                      <span style={{
+                        background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                        color: "white",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        padding: "0.2rem 0.75rem",
+                        borderRadius: "2rem",
+                      }}>
+                        🏆 Хамгийн алдартай
+                      </span>
+                    )}
+                    {isCurrentPlan && (
+                      <span style={{
+                        background: "rgba(34,197,94,0.15)",
+                        color: "#86efac",
+                        border: "1px solid rgba(34,197,94,0.3)",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        padding: "0.2rem 0.75rem",
+                        borderRadius: "2rem",
+                      }}>
+                        ✓ Таны төлөвлөгөө
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Plan name & price */}
+                  <div>
+                    <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.25rem", fontWeight: 700 }}>
+                      {planCode === "starter" ? "Starter" : "Growth"}
+                    </h3>
+                    <p style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: isGrowth ? "#a5b4fc" : "#e2e8f0" }}>
+                      {price.monthly}
+                      <span style={{ fontSize: "1rem", fontWeight: 400, color: "#64748b" }}>
+                        {price.currency}/сар
+                      </span>
+                    </p>
+                  </div>
+
+                  {/* Features */}
+                  <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: "0.6rem" }}>
+                    {features.map((f, i) => (
+                      <li key={i} style={{ display: "flex", alignItems: "center", gap: "0.6rem", fontSize: "0.9rem", color: "#94a3b8" }}>
+                        <span style={{ fontSize: "1.1rem" }}>{f.icon}</span>
+                        {f.text}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* CTA */}
+                  <div style={{ marginTop: "auto" }}>
+                    {isCurrentPlan ? (
+                      <div style={{
+                        textAlign: "center",
+                        padding: "0.75rem",
+                        background: "rgba(34,197,94,0.08)",
+                        border: "1px solid rgba(34,197,94,0.2)",
+                        borderRadius: "0.75rem",
+                        color: "#86efac",
+                        fontSize: "0.875rem",
+                        fontWeight: 600,
+                      }}>
+                        {isTrialingNow ? `🎯 Trial — ${daysLeft} хоног үлдсэн` : "✅ Идэвхтэй"}
+                      </div>
+                    ) : showCheckout && subscription ? (
+                      <StartPaidCheckoutForm
+                        organizationId={organization!.id}
+                        planId={subscription.plan_id}
+                        planLabel={planCode === "growth" ? "Growth" : "Starter"}
+                      />
+                    ) : showStarterCheckout && subscription ? (
+                      <StartPaidCheckoutForm
+                        organizationId={organization!.id}
+                        planId={subscription.plan_id}
+                        planLabel="Starter"
+                      />
+                    ) : isGuest ? (
+                      <Link
+                        href="/login"
+                        style={{
+                          display: "block",
+                          textAlign: "center",
+                          padding: "0.75rem 1.5rem",
+                          background: isGrowth ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.06)",
+                          color: "white",
+                          textDecoration: "none",
+                          borderRadius: "0.75rem",
+                          fontSize: "0.9rem",
+                          fontWeight: 600,
+                          border: isGrowth ? "none" : "1px solid rgba(255,255,255,0.1)",
+                        }}
+                      >
+                        {isGrowth ? "🚀 Нэвтрэж туршиж үзэх" : "Эхлэх"}
+                      </Link>
+                    ) : organization && !subscription ? (
+                      <Link
+                        href="/login"
+                        style={{
+                          display: "block",
+                          textAlign: "center",
+                          padding: "0.75rem 1.5rem",
+                          background: isGrowth ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.06)",
+                          color: "white",
+                          textDecoration: "none",
+                          borderRadius: "0.75rem",
+                          fontSize: "0.9rem",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Сонгох
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
-                <p style={{ margin: 0, fontSize: "var(--text-xl)", fontWeight: 600 }}>
-                  {plan.price_monthly} {plan.currency} / сар
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Why Growth? section ── */}
+        {(pricingState === "active_starter" || isGuest || pricingState === "no_subscription") && (
+          <div style={{
+            textAlign: "center",
+            marginTop: "3rem",
+            padding: "2rem",
+            background: "rgba(99,102,241,0.06)",
+            border: "1px solid rgba(99,102,241,0.2)",
+            borderRadius: "1.25rem",
+          }}>
+            <h3 style={{ margin: "0 0 1.25rem", fontSize: "1.25rem", fontWeight: 700 }}>
+              Starter-аас Growth руу шилжвэл
+            </h3>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+              gap: "1rem",
+              marginBottom: "1.25rem",
+            }}>
+              {[
+                { icon: "🧠", label: "4x илүү Brainstorming" },
+                { icon: "📄", label: "5x илүү хуудас" },
+                { icon: "🤖", label: "4x илүү AI тайлан" },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    padding: "1rem",
+                    background: "rgba(99,102,241,0.08)",
+                    border: "1px solid rgba(99,102,241,0.2)",
+                    borderRadius: "0.75rem",
+                    fontSize: "0.9rem",
+                    color: "#a5b4fc",
+                    fontWeight: 600,
+                  }}
+                >
+                  <div style={{ fontSize: "1.5rem", marginBottom: "0.4rem" }}>{item.icon}</div>
+                  {item.label}
+                </div>
+              ))}
+            </div>
+            <p style={{ color: "#64748b", margin: 0, fontSize: "0.9rem" }}>
+              Зөвхөн <strong style={{ color: "#a5b4fc" }}>+1,000₮/сар</strong> нэмэлтээр
+            </p>
+          </div>
+        )}
+
+        {/* ── FAQ section ── */}
+        <div style={{ marginTop: "3rem" }}>
+          <h2 style={{ textAlign: "center", fontSize: "1.5rem", fontWeight: 700, marginBottom: "1.5rem" }}>
+            Түгээмэл асуултууд
+          </h2>
+          <div style={{ display: "grid", gap: "1rem" }}>
+            {FAQS.map((faq, i) => (
+              <div
+                key={i}
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  borderRadius: "1rem",
+                  padding: "1.25rem 1.5rem",
+                }}
+              >
+                <p style={{ margin: "0 0 0.5rem", fontWeight: 700, fontSize: "0.95rem", color: "#e2e8f0" }}>
+                  {faq.q}
                 </p>
-                <p className="ui-text-muted" style={{ margin: 0 }}>
-                  {getPlanFit(plan.code)}
+                <p style={{ margin: 0, color: "#94a3b8", fontSize: "0.875rem", lineHeight: 1.6 }}>
+                  {faq.a}
                 </p>
               </div>
+            ))}
+          </div>
+        </div>
 
-              <div style={{ display: "grid", gap: "var(--space-2)", fontSize: "var(--text-sm)" }}>
-                <p style={{ margin: 0 }}>Холбох page: <strong>{plan.max_pages}</strong></p>
-                <p style={{ margin: 0 }}>Өдөрт sync: <strong>{plan.syncs_per_day}</strong></p>
-                <p style={{ margin: 0 }}>Сарын AI тайлан: <strong>{plan.monthly_ai_reports}</strong></p>
-              </div>
-
-              {plan.code === "starter" && isBootstrap && paid ? (
-                <p style={{ margin: 0, fontSize: "var(--text-sm)", color: "var(--color-text-secondary)" }}>
-                  Энэ төлөвлөгөөг идэвхжүүлэхийн тулд QPay төлбөрөө дуусгаад баталгаажуулалт хүлээнэ.
-                </p>
-              ) : null}
-
-              {!paid && organization ? (
-                <SelectPlanForm
-                  organizationId={organization.id}
-                  planCode={plan.code}
-                  isCurrentPlan={Boolean(isCurrentPlan && isActive)}
-                  isSelectable
-                />
-              ) : null}
-
-              {showCheckout && organization && subscription ? (
-                <StartPaidCheckoutForm organizationId={organization.id} planId={plan.id} planLabel={plan.name} />
-              ) : null}
-
-              {paid && organization && subscription && !showCheckout && !alreadyThisActivePlan ? (
-                <p className="ui-text-muted" style={{ margin: 0, fontSize: "var(--text-xs)" }}>
-                  {plan.code === "starter" && !isBootstrap
-                    ? "Starter төлөвлөгөөний төлбөр энэ үед нээлттэй биш байна. Billing хэсгээс одоогийн төлвөө шалгана уу."
-                    : blocked
-                      ? "Одоогийн subscription төлөвөөс шалтгаалаад энэ төлөвлөгөөний төлбөрийг одоогоор эхлүүлэх боломжгүй байна."
-                      : "Одоогийн нөхцөлд энэ мөрөөс төлбөр эхлүүлэх боломжгүй байна. Billing хэсгээс дэлгэрэнгүй шалгана уу."}
-                </p>
-              ) : null}
-
-              {!organization && paid ? (
-                <p className="ui-text-muted" style={{ margin: 0, fontSize: "var(--text-xs)" }}>
-                  Энэ төлөвлөгөөг сонгож төлбөрөө үргэлжлүүлэхийн тулд эхлээд нэвтэрнэ үү.
-                </p>
-              ) : null}
-            </Card>
-          );
-        })}
-      </section>
+        {/* ── Footer note ── */}
+        <p style={{ textAlign: "center", color: "#475569", fontSize: "0.8rem", marginTop: "2.5rem" }}>
+          Асуулт байвал{" "}
+          <a href="mailto:support@martech.mn" style={{ color: "#6366f1", textDecoration: "none" }}>
+            support@martech.mn
+          </a>
+          -д холбогдоно уу.
+        </p>
+      </div>
     </main>
   );
 }

@@ -26,3 +26,14 @@ export function isBillingActivatedStatus(status: SubscriptionStatus): boolean {
 export function statusAllowsPlanFeatureAccess(status: SubscriptionStatus): boolean {
   return isBootstrapPendingBilling(status) || isBillingActivatedStatus(status);
 }
+
+/** Trial явагдаж байгаа эсэх шалгах. */
+export function isTrialing(status: SubscriptionStatus): boolean {
+  return status === "trialing";
+}
+
+/** Trial хугацаа дууссан эсэх шалгах. */
+export function isTrialExpired(trialEndsAt: string | null): boolean {
+  if (!trialEndsAt) return false;
+  return new Date(trialEndsAt) < new Date();
+}
