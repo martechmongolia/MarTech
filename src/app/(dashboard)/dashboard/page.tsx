@@ -105,7 +105,7 @@ export default async function DashboardPage() {
   const isGrowth = planName.toLowerCase().includes("growth");
 
   return (
-    <div className="dash-container dash-premium-env">
+    <div className="dash-container">
       {/* Header */}
       <header className="dash-top-header">
         <div>

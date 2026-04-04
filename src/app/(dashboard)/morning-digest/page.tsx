@@ -143,31 +143,30 @@ export default async function MorningDigestPage() {
   const hasToday = Boolean(session);
 
   return (
-    <div className="dash-premium-env">
-      <div className="digest-container">
-        {/* Header */}
-        <header className="digest-header">
-          <div>
-            <h1 className="digest-title">Morning Digest</h1>
-            <div style={{ marginTop: "0.5rem", display: "flex", gap: "0.75rem", alignItems: "center" }}>
-              {session ? (
-                <div className="digest-status-pill">
-                  <span>{STATUS_BADGE[session.status]?.emoji}</span>
-                  <span>{STATUS_BADGE[session.status]?.label}</span>
-                  {session.item_count > 0 && (
-                    <span style={{ opacity: 0.5, marginLeft: "0.25rem" }}>— {session.item_count} items</span>
-                  )}
-                </div>
-              ) : (
-                <div className="digest-status-pill">
-                  <span>📅</span>
-                  <span>Waiting for synthesis</span>
-                </div>
-              )}
-            </div>
+    <div className="digest-container">
+      {/* Header */}
+      <header className="digest-header">
+        <div>
+          <h1 className="digest-title">Morning Digest</h1>
+          <div style={{ marginTop: "0.5rem", display: "flex", gap: "0.75rem", alignItems: "center" }}>
+            {session ? (
+              <div className="digest-status-pill">
+                <span>{STATUS_BADGE[session.status]?.emoji}</span>
+                <span>{STATUS_BADGE[session.status]?.label}</span>
+                {session.item_count > 0 && (
+                  <span style={{ opacity: 0.5, marginLeft: "0.25rem" }}>— {session.item_count} items</span>
+                )}
+              </div>
+            ) : (
+              <div className="digest-status-pill">
+                <span>📅</span>
+                <span>Waiting for synthesis</span>
+              </div>
+            )}
           </div>
-          <DigestTriggerButton hasToday={hasToday} sessionStatus={session?.status ?? null} />
-        </header>
+        </div>
+        <DigestTriggerButton hasToday={hasToday} sessionStatus={session?.status ?? null} />
+      </header>
 
         {/* Content */}
         {session ? (
@@ -205,7 +204,6 @@ export default async function MorningDigestPage() {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }

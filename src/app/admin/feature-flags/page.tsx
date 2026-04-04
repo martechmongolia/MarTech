@@ -53,7 +53,7 @@ export default async function FeatureFlagsPage() {
                   <tr key={flag.key}>
                     <td style={{ color: "#f1f5f9", fontWeight: 600 }}>{flag.label}</td>
                     <td>
-                      <code style={{ fontSize: "0.75rem", color: "#818cf8", background: "rgba(129, 140, 248, 0.05)", padding: "0.2rem 0.4rem", borderRadius: "0.25rem" }}>
+                      <code style={{ fontSize: "0.75rem", color: "#0043ff", background: "rgba(0, 67, 255, 0.05)", padding: "0.2rem 0.4rem", borderRadius: "0.25rem" }}>
                         {flag.key}
                       </code>
                     </td>

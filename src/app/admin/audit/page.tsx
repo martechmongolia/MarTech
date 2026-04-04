@@ -179,7 +179,7 @@ function AuditRow({ row }: { row: OperatorAuditEventRow }) {
             </code>
             <Link
               href={`/admin/audit?org=${encodeURIComponent(row.organization_id)}`}
-              style={{ color: "#818cf8", fontSize: "0.72rem", textDecoration: "none" }}
+              style={{ color: "#0043ff", fontSize: "0.72rem", textDecoration: "none" }}
             >
               filter
             </Link>

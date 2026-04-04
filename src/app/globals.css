@@ -91,8 +91,138 @@
   --text-xl: 1.25rem;
   --text-2xl: 1.5rem;
 
-  /* Shadows */
+  /* shadows */
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+
+  /* =============================================================================
+     Obsidian Design System (ODS) — Premium Dark Tokens
+     ============================================================================= */
+  --ods-bg: #020617;
+  --ods-bg-radial: radial-gradient(circle at 20% 20%, #070d1a 0%, #020617 100%);
+  --ods-surface: rgba(255, 255, 255, 0.03);
+  --ods-surface-hover: rgba(255, 255, 255, 0.06);
+  --ods-border: rgba(255, 255, 255, 0.08);
+  --ods-border-hover: rgba(255, 255, 255, 0.15);
+  --ods-glass-blur: 16px;
+  
+  --ods-text-primary: #f8fafc;
+  --ods-text-secondary: #94a3b8;
+  --ods-text-dim: #64748b;
+  
+  --ods-accent: #0043FF; /* Original MarTech Blue */
+  --ods-accent-glow: rgba(0, 67, 255, 0.35);
+  
+  --ods-success: #10b981;
+  --ods-warning: #f59e0b;
+  --ods-danger: #ef4444;
+}
+
+/* =============================================================================
+   Global Obsidian Dark Shell
+   ============================================================================= */
+.ui-obsidian-dark {
+  --color-bg-app: var(--ods-bg);
+  --color-text-primary: var(--ods-text-primary);
+  background: var(--ods-bg-radial);
+  color: var(--ods-text-primary);
+  min-height: 100vh;
+}
+
+.ui-obsidian-dark .app-shell__main {
+  background: transparent !important;
+  color: var(--ods-text-primary);
+}
+
+/* =============================================================================
+   Global Premium UI Components
+   ============================================================================= */
+
+/* Glass Card */
+.ui-glass-card {
+  background: var(--ods-surface);
+  backdrop-filter: blur(var(--ods-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ods-glass-blur));
+  border: 1px solid var(--ods-border);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+}
+
+.ui-glass-card--hover:hover {
+  transform: translateY(-4px);
+  background: var(--ods-surface-hover);
+  border-color: var(--ods-border-hover);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+}
+
+/* Stat Grid */
+.ui-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Stat Card Premium */
+.ui-stat-card-premium {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ui-stat-card-premium .label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ods-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ui-stat-card-premium .value {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.ui-stat-card-premium .hint {
+  font-size: 0.75rem;
+  color: var(--ods-text-dim);
+}
+
+/* Badge (Pill) */
+.ui-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ui-badge-pill--success { background: rgba(16, 185, 129, 0.1); color: #34d399; border-color: rgba(16, 185, 129, 0.2); }
+.ui-badge-pill--warning { background: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: rgba(245, 158, 11, 0.2); }
+.ui-badge-pill--danger { background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2); }
+.ui-badge-pill--info { background: rgba(99, 102, 241, 0.1); color: #a5b4fc; border-color: rgba(99, 102, 241, 0.2); }
+
+/* Standard Inputs (Obsidian) */
+.ui-input-obsidian {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid var(--ods-border) !important;
+  color: #fff !important;
+  border-radius: 0.75rem !important;
+  padding: 0.75rem 1rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.ui-input-obsidian:focus {
+  border-color: var(--ods-accent) !important;
+  box-shadow: 0 0 0 4px var(--ods-accent-glow) !important;
+  outline: none !important;
 }
 
 * {

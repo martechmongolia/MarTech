@@ -1,17 +1,5 @@
 /* --- Morning Digest Premium Obsidian Dark --- */
 
-/* Force dark theme logic if premium env is present */
-:root:has(.dash-premium-env) {
-  --bg-subtle: #0a0a0c;
-  --color-bg-app: #0a0a0c;
-}
-
-.app-shell__main:has(.dash-premium-env) {
-  background: radial-gradient(circle at 0% 0%, #111827 0%, #0a0a0c 100%) !important;
-  color: #fff;
-  min-height: 100vh;
-}
-
 .digest-container {
   max-width: 960px;
   margin: 0 auto;
@@ -44,20 +32,20 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.4rem 1rem;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--ods-surface);
+  border: 1px solid var(--ods-border);
   border-radius: 999px;
   font-size: 0.875rem;
-  color: #e2e8f0;
+  color: var(--ods-text-primary);
 }
 
 /* Summary Card (Spotlight) */
 .digest-summary-card {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%),
-              rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(0, 67, 255, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%),
+              var(--ods-surface);
+  backdrop-filter: blur(var(--ods-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ods-glass-blur));
+  border: 1px solid var(--ods-border);
   padding: 2.5rem;
   border-radius: 2rem;
   position: relative;
@@ -72,7 +60,7 @@
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(0, 67, 255, 0.05) 0%, transparent 70%);
   animation: rotate 20s linear infinite;
   pointer-events: none;
 }
@@ -100,20 +88,14 @@
   font-weight: 400;
 }
 
-/* Grid layout for categories */
-.digest-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 3rem;
-}
-
 /* Category Card */
 .digest-category-card {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--ods-surface);
+  backdrop-filter: blur(var(--ods-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ods-glass-blur));
   border-radius: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--ods-border);
   padding: 2rem;
-  transition: transform 0.3s ease, background 0.3s ease;
 }
 
 .digest-category-header {
@@ -122,11 +104,11 @@
   gap: 0.75rem;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--ods-border);
 }
 
 .digest-category-title {
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #fff;
   text-transform: uppercase;
@@ -144,7 +126,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  position: relative;
 }
 
 .digest-item-meta {
@@ -158,15 +139,15 @@
 }
 
 .digest-importance {
-  color: #f59e0b;
+  color: var(--ods-warning);
   display: flex;
   align-items: center;
   gap: 2px;
 }
 
 .digest-source {
-  color: #94a3b8;
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--ods-text-secondary);
+  background: var(--ods-surface-hover);
   padding: 0.2rem 0.6rem;
   border-radius: 4px;
 }
@@ -184,14 +165,14 @@
 }
 
 .digest-item-title a:hover {
-  color: #6366f1;
-  text-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
+  color: var(--ods-accent);
+  text-shadow: 0 0 12px var(--ods-accent-glow);
 }
 
 .digest-item-summary {
   font-size: 0.9375rem;
   line-height: 1.65;
-  color: #94a3b8;
+  color: var(--ods-text-secondary);
   margin: 0;
 }
 
@@ -199,11 +180,11 @@
 .digest-history {
   margin-top: 5rem;
   padding-top: 3rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--ods-border);
 }
 
 .digest-history-title {
-  font-size: 1.125rem;
+  font-size: 0.875rem;
   font-weight: 800;
   color: #fff;
   margin-bottom: 1.5rem;
@@ -211,19 +192,13 @@
   letter-spacing: 0.1em;
 }
 
-.digest-history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
 .digest-history-item {
   display: flex;
   align-items: center;
   gap: 1.5rem;
   padding: 1rem 1.5rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--ods-surface);
+  border: 1px solid var(--ods-border);
   border-radius: 1rem;
   font-size: 0.875rem;
   color: #cbd5e1;
@@ -231,7 +206,7 @@
 }
 
 .digest-history-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--ods-surface-hover);
 }
 
 .digest-history-date {

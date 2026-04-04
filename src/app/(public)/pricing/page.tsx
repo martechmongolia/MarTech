@@ -101,22 +101,22 @@ export default async function PricingPage() {
     : 0;
 
   return (
-    <main style={{
+    <main className="ui-obsidian-dark" style={{
       minHeight: "100vh",
-      background: "#0f172a",
-      color: "#e2e8f0",
-      fontFamily: "system-ui, -apple-system, sans-serif",
+      background: "var(--ods-bg-radial)",
+      color: "var(--ods-text-primary)",
+      fontFamily: "inherit",
     }}>
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "0 1rem 4rem" }}>
 
         {/* Nav breadcrumb */}
         {user && (
-          <div style={{ padding: "1.25rem 0", fontSize: "0.875rem", color: "#64748b" }}>
-            <Link href="/dashboard" style={{ color: "#6366f1", textDecoration: "none" }}>← Dashboard</Link>
+          <div style={{ padding: "1.25rem 0", fontSize: "0.875rem", color: "var(--ods-text-dim)" }}>
+            <Link href="/dashboard" style={{ color: "var(--ods-accent)", textDecoration: "none" }}>← Dashboard</Link>
             {organization && (
               <>
                 {" · "}
-                <Link href="/billing" style={{ color: "#6366f1", textDecoration: "none" }}>Billing</Link>
+                <Link href="/billing" style={{ color: "var(--ods-accent)", textDecoration: "none" }}>Billing</Link>
               </>
             )}
           </div>
@@ -127,20 +127,20 @@ export default async function PricingPage() {
           <div style={{ textAlign: "center", padding: "3rem 1rem 2rem" }}>
             <div style={{
               display: "inline-block",
-              background: "rgba(99,102,241,0.1)",
-              border: "1px solid rgba(99,102,241,0.3)",
+              background: "var(--ods-accent-glow)",
+              border: "1px solid var(--ods-border-hover)",
               borderRadius: "2rem",
               padding: "0.4rem 1rem",
               fontSize: "0.85rem",
-              color: "#a5b4fc",
+              color: "#fff",
               marginBottom: "1.25rem",
             }}>
               ✨ 14 хоног үнэгүй - карт шаардлагагүй
             </div>
-            <h1 style={{ fontSize: "clamp(1.75rem, 5vw, 2.75rem)", fontWeight: 800, margin: "0 0 1rem", lineHeight: 1.2 }}>
+            <h1 className="ui-heading-premium" style={{ fontSize: "clamp(1.75rem, 5vw, 2.75rem)", fontWeight: 800, margin: "0 0 1rem", lineHeight: 1.2 }}>
               MarTech-г туршиж үзнэ үү
             </h1>
-            <p style={{ color: "#94a3b8", fontSize: "1.1rem", maxWidth: "480px", margin: "0 auto 2rem", lineHeight: 1.6 }}>
+            <p style={{ color: "var(--ods-text-secondary)", fontSize: "1.1rem", maxWidth: "480px", margin: "0 auto 2rem", lineHeight: 1.6 }}>
               14 хоногийн турш Growth plan-ийн бүх боломжийг үнэгүй ашиглана уу.
               Карт эсвэл урьдчилсан мэдэгдэл шаардлагагүй.
             </p>
@@ -152,7 +152,7 @@ export default async function PricingPage() {
                     display: "block",
                     width: "100%",
                     padding: "0.875rem 2rem",
-                    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                    background: "var(--ods-accent)",
                     color: "white",
                     textDecoration: "none",
                     borderRadius: "0.75rem",
@@ -160,6 +160,7 @@ export default async function PricingPage() {
                     fontWeight: 700,
                     textAlign: "center",
                     boxSizing: "border-box",
+                    boxShadow: "0 10px 20px -5px var(--ods-accent-glow)",
                   }}
                 >
                   🚀 Нэвтрэж туршиж үзэх
@@ -174,8 +175,8 @@ export default async function PricingPage() {
         {/* ── Trial banner ── */}
         {isTrialingNow && subscription && (
           <div style={{
-            background: "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.15))",
-            border: "1px solid rgba(99,102,241,0.4)",
+            background: "linear-gradient(135deg, var(--ods-accent-glow), rgba(0, 67, 255, 0.1))",
+            border: "1px solid var(--ods-accent-glow)",
             borderRadius: "1rem",
             padding: "1.5rem",
             display: "flex",
@@ -186,22 +187,22 @@ export default async function PricingPage() {
             flexWrap: "wrap",
           }}>
             <div>
-              <p style={{ color: "#a5b4fc", fontWeight: 700, margin: "0 0 0.25rem", fontSize: "1rem" }}>
+              <p style={{ color: "#fff", fontWeight: 700, margin: "0 0 0.25rem", fontSize: "1rem" }}>
                 🎯 Growth trial идэвхтэй - {daysLeft} хоног үлдсэн
               </p>
-              <p style={{ color: "#64748b", fontSize: "0.9rem", margin: 0 }}>
+              <p style={{ color: "var(--ods-text-secondary)", fontSize: "0.9rem", margin: 0 }}>
                 Subscription идэвхжүүлбэл бүх өгөгдөл хадгалагдана
               </p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-              <span style={{ color: "#f59e0b", fontWeight: 700, fontSize: "1.3rem" }}>
+              <span style={{ color: "var(--ods-warning)", fontWeight: 700, fontSize: "1.3rem" }}>
                 {daysLeft <= 3 ? "⚠️" : "✓"}
               </span>
               <Link
                 href="/billing"
                 style={{
                   padding: "0.5rem 1.25rem",
-                  background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                  background: "var(--ods-accent)",
                   color: "white",
                   textDecoration: "none",
                   borderRadius: "0.5rem",
@@ -224,10 +225,10 @@ export default async function PricingPage() {
             padding: "1.25rem 1.5rem",
             marginBottom: "2rem",
           }}>
-            <p style={{ color: "#fca5a5", fontWeight: 700, margin: "0 0 0.25rem" }}>
+            <p style={{ color: "var(--ods-danger)", fontWeight: 700, margin: "0 0 0.25rem" }}>
               ⚠️ Trial хугацаа дууссан
             </p>
-            <p style={{ color: "#64748b", fontSize: "0.9rem", margin: 0 }}>
+            <p style={{ color: "var(--ods-text-dim)", fontSize: "0.9rem", margin: 0 }}>
               Subscription идэвхжүүлж үйлчилгээгээ үргэлжлүүлнэ үү.
             </p>
           </div>
@@ -237,7 +238,7 @@ export default async function PricingPage() {
         {isActive && subscription && (
           <div style={{
             background: "rgba(34,197,94,0.08)",
-            border: "1px solid rgba(34,197,94,0.3)",
+            border: "1px solid var(--ods-success)",
             borderRadius: "1rem",
             padding: "1.25rem 1.5rem",
             marginBottom: "2rem",
@@ -248,16 +249,16 @@ export default async function PricingPage() {
             flexWrap: "wrap",
           }}>
             <div>
-              <p style={{ color: "#86efac", fontWeight: 700, margin: "0 0 0.25rem" }}>
+              <p style={{ color: "var(--ods-success)", fontWeight: 700, margin: "0 0 0.25rem" }}>
                 ✅ {subscription.plan?.name} идэвхтэй
               </p>
-              <p style={{ color: "#64748b", fontSize: "0.875rem", margin: 0 }}>
+              <p style={{ color: "var(--ods-text-dim)", fontSize: "0.875rem", margin: 0 }}>
                 Нэхэмжлэл болон төлбөрийн түүхийг Billing хэсгээс харна.
               </p>
             </div>
             <Link
               href="/billing"
-              style={{ color: "#6366f1", textDecoration: "none", fontSize: "0.875rem", fontWeight: 600 }}
+              style={{ color: "var(--ods-accent)", textDecoration: "none", fontSize: "0.875rem", fontWeight: 600 }}
             >
               Billing →
             </Link>
@@ -266,7 +267,7 @@ export default async function PricingPage() {
 
         {/* ── Plan cards ── */}
         <div style={{ marginTop: showHero ? "0" : "2rem" }}>
-          <h2 style={{ textAlign: "center", fontSize: "1.5rem", fontWeight: 700, marginBottom: "1.5rem" }}>
+          <h2 style={{ textAlign: "center", fontSize: "1.5rem", fontWeight: 700, marginBottom: "1.5rem", color: "#fff" }}>
             Төлөвлөгөөнүүд
           </h2>
           <div style={{
@@ -304,24 +305,25 @@ export default async function PricingPage() {
                   key={planCode}
                   style={{
                     background: isGrowth
-                      ? "linear-gradient(145deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))"
-                      : "rgba(255,255,255,0.04)",
+                      ? "var(--ods-surface)"
+                      : "var(--ods-surface)",
                     border: isGrowth
-                      ? "1px solid rgba(99,102,241,0.5)"
-                      : "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: "1.25rem",
-                    padding: "1.75rem",
+                      ? "1px solid var(--ods-accent)"
+                      : "1px solid var(--ods-border)",
+                    borderRadius: "1.5rem",
+                    padding: "2rem",
                     position: "relative",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "1.25rem",
+                    gap: "1.5rem",
+                    boxShadow: isGrowth ? "0 20px 40px -15px var(--ods-accent-glow)" : "none",
                   }}
                 >
                   {/* Badges */}
                   <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                     {isGrowth && (
                       <span style={{
-                        background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                        background: "var(--ods-accent)",
                         color: "white",
                         fontSize: "0.75rem",
                         fontWeight: 700,
@@ -334,8 +336,8 @@ export default async function PricingPage() {
                     {isCurrentPlan && (
                       <span style={{
                         background: "rgba(34,197,94,0.15)",
-                        color: "#86efac",
-                        border: "1px solid rgba(34,197,94,0.3)",
+                        color: "var(--ods-success)",
+                        border: "1px solid var(--ods-success)",
                         fontSize: "0.75rem",
                         fontWeight: 700,
                         padding: "0.2rem 0.75rem",
@@ -348,21 +350,21 @@ export default async function PricingPage() {
 
                   {/* Plan name & price */}
                   <div>
-                    <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.25rem", fontWeight: 700 }}>
+                    <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.25rem", fontWeight: 700, color: "#fff" }}>
                       {planCode === "starter" ? "Starter" : "Growth"}
                     </h3>
-                    <p style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: isGrowth ? "#a5b4fc" : "#e2e8f0" }}>
+                    <p style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: isGrowth ? "var(--ods-accent)" : "var(--ods-text-primary)" }}>
                       {priceMonthly}
-                      <span style={{ fontSize: "1rem", fontWeight: 400, color: "#64748b" }}>
+                      <span style={{ fontSize: "1rem", fontWeight: 400, color: "var(--ods-text-dim)" }}>
                         {priceCurrency}/сар
                       </span>
                     </p>
                   </div>
 
                   {/* Features */}
-                  <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: "0.6rem" }}>
+                  <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: "0.8rem" }}>
                     {features.map((f, i) => (
-                      <li key={i} style={{ display: "flex", alignItems: "center", gap: "0.6rem", fontSize: "0.9rem", color: "#94a3b8" }}>
+                      <li key={i} style={{ display: "flex", alignItems: "center", gap: "0.6rem", fontSize: "0.9rem", color: "var(--ods-text-secondary)" }}>
                         <span style={{ fontSize: "1.1rem" }}>{f.icon}</span>
                         {f.text}
                       </li>
@@ -378,7 +380,7 @@ export default async function PricingPage() {
                         background: "rgba(34,197,94,0.08)",
                         border: "1px solid rgba(34,197,94,0.2)",
                         borderRadius: "0.75rem",
-                        color: "#86efac",
+                        color: "var(--ods-success)",
                         fontSize: "0.875rem",
                         fontWeight: 600,
                       }}>
@@ -403,11 +405,6 @@ export default async function PricingPage() {
                           display: "block",
                           textAlign: "center",
                           padding: "0.75rem 1.5rem",
-                          background: isGrowth ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.06)",
-                          color: "white",
-                          textDecoration: "none",
-                          borderRadius: "0.75rem",
-                          fontSize: "0.9rem",
                           fontWeight: 600,
                           border: isGrowth ? "none" : "1px solid rgba(255,255,255,0.1)",
                         }}
@@ -444,19 +441,19 @@ export default async function PricingPage() {
           <div style={{
             textAlign: "center",
             marginTop: "3rem",
-            padding: "2rem",
-            background: "rgba(99,102,241,0.06)",
-            border: "1px solid rgba(99,102,241,0.2)",
-            borderRadius: "1.25rem",
+            padding: "2.5rem",
+            background: "var(--ods-accent-glow)",
+            border: "1px solid var(--ods-border-hover)",
+            borderRadius: "1.5rem",
           }}>
-            <h3 style={{ margin: "0 0 1.25rem", fontSize: "1.25rem", fontWeight: 700 }}>
+            <h3 style={{ margin: "0 0 1.25rem", fontSize: "1.25rem", fontWeight: 700, color: "#fff" }}>
               Starter-аас Growth руу шилжвэл
             </h3>
             <div style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
               gap: "1rem",
-              marginBottom: "1.25rem",
+              marginBottom: "1.5rem",
             }}>
               {[
                 { icon: "🧠", label: "4x илүү Brainstorming" },
@@ -466,25 +463,25 @@ export default async function PricingPage() {
                 <div
                   key={item.label}
                   style={{
-                    padding: "1rem",
-                    background: "rgba(99,102,241,0.08)",
-                    border: "1px solid rgba(99,102,241,0.2)",
-                    borderRadius: "0.75rem",
+                    padding: "1.25rem",
+                    background: "rgba(255, 255, 255, 0.05)",
+                    border: "1px solid var(--ods-border)",
+                    borderRadius: "1rem",
                     fontSize: "0.9rem",
-                    color: "#a5b4fc",
+                    color: "#fff",
                     fontWeight: 600,
                   }}
                 >
-                  <div style={{ fontSize: "1.5rem", marginBottom: "0.4rem" }}>{item.icon}</div>
+                  <div style={{ fontSize: "1.75rem", marginBottom: "0.5rem" }}>{item.icon}</div>
                   {item.label}
                 </div>
               ))}
             </div>
-            <p style={{ color: "#64748b", margin: 0, fontSize: "0.9rem" }}>
+            <p style={{ color: "var(--ods-text-secondary)", margin: 0, fontSize: "0.9rem" }}>
               {plans.find((p) => p.code === "growth") && plans.find((p) => p.code === "starter") ? (
                 <>
                   Зөвхөн{" "}
-                  <strong style={{ color: "#a5b4fc" }}>
+                  <strong style={{ color: "var(--ods-accent)" }}>
                     +{(Number(plans.find((p) => p.code === "growth")!.price_monthly) - Number(plans.find((p) => p.code === "starter")!.price_monthly)).toLocaleString()}₮/сар
                   </strong>{" "}
                   нэмэлтээр
@@ -495,8 +492,8 @@ export default async function PricingPage() {
         )}
 
         {/* ── FAQ section ── */}
-        <div style={{ marginTop: "3rem" }}>
-          <h2 style={{ textAlign: "center", fontSize: "1.5rem", fontWeight: 700, marginBottom: "1.5rem" }}>
+        <div style={{ marginTop: "4rem" }}>
+          <h2 style={{ textAlign: "center", fontSize: "1.5rem", fontWeight: 700, marginBottom: "2rem", color: "#fff" }}>
             Түгээмэл асуултууд
           </h2>
           <div style={{ display: "grid", gap: "1rem" }}>
@@ -504,16 +501,16 @@ export default async function PricingPage() {
               <div
                 key={i}
                 style={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderRadius: "1rem",
-                  padding: "1.25rem 1.5rem",
+                  background: "var(--ods-surface)",
+                  border: "1px solid var(--ods-border)",
+                  borderRadius: "1.25rem",
+                  padding: "1.5rem 2rem",
                 }}
               >
-                <p style={{ margin: "0 0 0.5rem", fontWeight: 700, fontSize: "0.95rem", color: "#e2e8f0" }}>
+                <p style={{ margin: "0 0 0.5rem", fontWeight: 700, fontSize: "0.95rem", color: "#fff" }}>
                   {faq.q}
                 </p>
-                <p style={{ margin: 0, color: "#94a3b8", fontSize: "0.875rem", lineHeight: 1.6 }}>
+                <p style={{ margin: 0, color: "var(--ods-text-secondary)", fontSize: "0.875rem", lineHeight: 1.6 }}>
                   {faq.a}
                 </p>
               </div>
@@ -522,9 +519,9 @@ export default async function PricingPage() {
         </div>
 
         {/* ── Footer note ── */}
-        <p style={{ textAlign: "center", color: "#475569", fontSize: "0.8rem", marginTop: "2.5rem" }}>
+        <p style={{ textAlign: "center", color: "var(--ods-text-dim)", fontSize: "0.8rem", marginTop: "3rem" }}>
           Асуулт байвал{" "}
-          <a href="mailto:support@martech.mn" style={{ color: "#6366f1", textDecoration: "none" }}>
+          <a href="mailto:support@martech.mn" style={{ color: "var(--ods-accent)", textDecoration: "none" }}>
             support@martech.mn
           </a>
           -д холбогдоно уу.

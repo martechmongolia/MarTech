@@ -15,7 +15,7 @@ export default async function AdminPlansPage() {
         </Link>
         <h1 className="admin-page-title">Subscription Plans</h1>
         <p className="admin-page-desc">
-          Manage product pricing and limits. Customer-facing: <Link href="/pricing" style={{ color: "#818cf8", textDecoration: "underline" }}>/pricing</Link>. 
+          Manage product pricing and limits. Customer-facing: <Link href="/pricing" style={{ color: "#0043ff", textDecoration: "underline" }}>/pricing</Link>. 
           Click <strong>Edit</strong> to modify (operator+ only).
         </p>
       </div>

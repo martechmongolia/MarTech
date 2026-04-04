@@ -223,7 +223,7 @@ export function PlanRow({
     <>
       <tr style={{ cursor: "pointer" }} onClick={() => setEditing((v) => !v)}>
         <td>
-          <code style={{ fontSize: "0.75rem", color: "#818cf8" }}>{plan.code}</code>
+          <code style={{ fontSize: "0.75rem", color: "#0043ff" }}>{plan.code}</code>
         </td>
         <td style={{ fontWeight: 600, color: "#f1f5f9" }}>{plan.name}</td>
         <td>

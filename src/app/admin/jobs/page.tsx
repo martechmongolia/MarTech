@@ -50,7 +50,7 @@ export default async function AdminJobsPage({ searchParams }: JobsPageProps) {
         <p className="admin-page-desc">
           Recent jobs across all orgs. Retry actions call the same execute entrypoints as the product; outcomes are audited.
           {orgFilter ? (
-            <span style={{ marginLeft: "0.5rem", color: "#818cf8" }}>
+            <span style={{ marginLeft: "0.5rem", color: "#0043ff" }}>
               Filtered to org <code>{orgFilter.slice(0, 8)}…</code> — <Link href="/admin/jobs" style={{ color: "#a5b4fc", textDecoration: "underline" }}>clear</Link>
             </span>
           ) : null}
@@ -127,7 +127,7 @@ function SyncJobsTable({ jobs }: { jobs: SyncJobOpsRow[] }) {
           {jobs.map((j) => (
             <tr key={j.id}>
               <td>
-                <code style={{ fontSize: "0.75rem", color: "#818cf8" }}>{j.id.slice(0, 8)}…</code>
+                <code style={{ fontSize: "0.75rem", color: "#0043ff" }}>{j.id.slice(0, 8)}…</code>
                 <div style={{ marginTop: "0.25rem", fontWeight: 700, fontSize: "0.875rem" }}>{j.job_type}</div>
               </td>
               <td>
@@ -172,7 +172,7 @@ function AnalysisJobsTable({ jobs }: { jobs: AnalysisJobOpsRow[] }) {
           {jobs.map((j) => (
             <tr key={j.id}>
               <td>
-                <code style={{ fontSize: "0.75rem", color: "#818cf8" }}>{j.id.slice(0, 8)}…</code>
+                <code style={{ fontSize: "0.75rem", color: "#0043ff" }}>{j.id.slice(0, 8)}…</code>
               </td>
               <td>
                 <div style={{ color: "#f1f5f9" }}>{j.organizations?.name ?? j.organization_id}</div>

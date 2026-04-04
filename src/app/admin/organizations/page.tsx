@@ -121,7 +121,7 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                 {filtered.map((o) => (
                   <tr key={o.id}>
                     <td>
-                      <Link href={`/admin/organizations/${o.id}`} style={{ color: "#818cf8", fontWeight: 600, textDecoration: "none" }}>
+                      <Link href={`/admin/organizations/${o.id}`} style={{ color: "#0043ff", fontWeight: 600, textDecoration: "none" }}>
                         {o.name}
                       </Link>
                       <div style={{ fontSize: "0.75rem", opacity: 0.5, marginTop: "0.25rem" }}>

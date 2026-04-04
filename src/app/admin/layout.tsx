@@ -24,7 +24,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     <div className="admin-layout">
       <header className="admin-header-glass">
         <nav className="admin-nav">
-          <strong style={{ color: "#818cf8", marginRight: "0.5rem", fontSize: "1rem", letterSpacing: "0.025em" }}>
+          <strong style={{ color: "#0043ff", marginRight: "0.5rem", fontSize: "1rem", letterSpacing: "0.025em" }}>
             Admin Control Room
           </strong>
           {NAV_ITEMS.map((item) => (
