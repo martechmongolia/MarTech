@@ -123,6 +123,8 @@
 .ui-obsidian-dark {
   --color-bg-app: var(--ods-bg);
   --color-text-primary: var(--ods-text-primary);
+  --color-bg-elevated: #1e293b; /* dark input bg for obsidian theme */
+  --color-border-strong: rgba(255,255,255,0.15);
   background: var(--ods-bg-radial);
   color: var(--ods-text-primary);
   min-height: 100vh;
