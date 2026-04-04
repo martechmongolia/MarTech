@@ -222,10 +222,15 @@
 /* Session View layout */
 .bs-session-layout {
   display: flex;
-  height: 100vh;
+  height: calc(100vh - 56px); /* bottom nav height */
   background: #000;
   color: #fff;
   overflow: hidden;
+}
+@media (min-width: 769px) {
+  .bs-session-layout {
+    height: 100vh;
+  }
 }
 
 .bs-session-header {
@@ -643,16 +648,20 @@
 }
 @media (max-width: 600px) {
   .bs-round-table-wrapper {
-    transform: scale(0.5);
-    height: 360px !important; /* 700 * 0.5 = 350, add some padding */
-    margin-bottom: -180px; /* compensate for scale */
+    transform: scale(0.48);
+    transform-origin: top center;
+    height: 340px !important;
+    margin-bottom: 0;
+    overflow: visible;
   }
 }
 @media (min-width: 601px) and (max-width: 900px) {
   .bs-round-table-wrapper {
-    transform: scale(0.75);
-    height: 530px !important;
-    margin-bottom: -90px;
+    transform: scale(0.7);
+    transform-origin: top center;
+    height: 500px !important;
+    margin-bottom: 0;
+    overflow: visible;
   }
 }
 
