@@ -3,6 +3,10 @@
     {
       "path": "/api/digest/generate",
       "schedule": "15 23 * * *"
+    },
+    {
+      "path": "/api/cron/trial-check",
+      "schedule": "0 1 * * *"
     }
   ]
 }

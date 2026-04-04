@@ -189,6 +189,34 @@ export async function verifyInvoiceAndActivateSubscription(invoiceId: string): P
     return { status: "verification_failed", reason: "subscription_update_failed" };
   }
 
+  // Төлбөр амжилттай болсон email
+  try {
+    const { sendPaymentSuccessEmail } = await import("@/lib/email");
+    const { data: memberData } = await admin
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", invoice.organization_id)
+      .eq("role", "owner")
+      .maybeSingle();
+    if (memberData?.user_id) {
+      const { data: userData } = await admin.auth.admin.getUserById(memberData.user_id);
+      if (userData?.user?.email) {
+        const { data: planData } = await admin
+          .from("plans")
+          .select("name")
+          .eq("id", invoice.target_plan_id)
+          .maybeSingle();
+        await sendPaymentSuccessEmail(
+          userData.user.email,
+          invoice.amount,
+          planData?.name ?? "Growth"
+        );
+      }
+    }
+  } catch (e) {
+    console.error("[verify-payment] Email send failed (non-fatal):", e instanceof Error ? e.message : e);
+  }
+
   return {
     status: "activated",
     invoiceId,

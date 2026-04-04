@@ -80,6 +80,18 @@ export async function deductCredit(
     description: "Brainstorming session ашигласан",
   });
 
+  // Credit ≤1 болмогц сануулга email явуулна (non-fatal)
+  const newBalance = credit.balance - 1;
+  if (newBalance <= 1) {
+    try {
+      const { sendCreditLowEmail } = await import("@/lib/email");
+      const { data: userData } = await admin.auth.admin.getUserById(userId);
+      if (userData?.user?.email) {
+        await sendCreditLowEmail(userData.user.email, newBalance);
+      }
+    } catch { /* non-fatal */ }
+  }
+
   return true;
 }
 

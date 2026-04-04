@@ -126,6 +126,14 @@ export async function startTrialAction(
     await refillCreditsForPlan(user.id, "growth", config);
   } catch { /* non-fatal */ }
 
+  // Trial эхэлсэн email
+  try {
+    const { sendTrialStartEmail } = await import("@/lib/email");
+    if (user.email) {
+      await sendTrialStartEmail(user.email, trialEndsAt.toISOString());
+    }
+  } catch { /* non-fatal */ }
+
   revalidatePath("/pricing");
   revalidatePath("/billing");
   revalidatePath("/dashboard");
