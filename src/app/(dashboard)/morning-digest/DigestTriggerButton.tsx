@@ -39,23 +39,25 @@ export function DigestTriggerButton({ hasToday, sessionStatus }: Props) {
 
   if (isProcessing) {
     return (
-      <Button disabled variant="ghost">
-        🔄 Боловсруулж байна...
+      <Button disabled variant="ghost" style={{ border: "1px solid rgba(255,255,255,0.1)", color: "#94a3b8" }}>
+        <span style={{ marginRight: "0.5rem" }}>🔄</span> Analyzing...
       </Button>
     );
   }
 
   return (
-    <div className="digest__trigger">
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
       <Button
         onClick={handleClick}
         disabled={loading}
-        variant={isReady ? "ghost" : "primary"}
+        variant={isReady ? "outline-white" : "primary"}
+        style={isReady ? { border: "1px solid rgba(255,255,255,0.1)", color: "#fff" } : {}}
       >
-        {loading ? "⏳ Үүсгэж байна..." : isReady ? "🔄 Дахин үүсгэх" : "✨ Digest үүсгэх"}
+        <span style={{ marginRight: "0.5rem" }}>{loading ? "⏳" : isReady ? "🔄" : "✨"}</span>
+        {loading ? "Synthesizing..." : isReady ? "Regenerate Digest" : "Generate Morning Digest"}
       </Button>
       {message && (
-        <span className="digest__trigger-message">{message}</span>
+        <span style={{ fontSize: "0.75rem", color: "var(--dash-text-dim)" }}>{message}</span>
       )}
     </div>
   );

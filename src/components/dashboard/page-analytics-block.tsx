@@ -406,24 +406,39 @@ export function PageAnalyticsBlock(props: {
   // Helper: reach delta badge
   function ReachDeltaBadge() {
     if (!reachCompare?.change) {
-      return <div className="ana-kpi__delta ana-kpi__delta--neutral">— өгөгдөл дутмаг</div>;
+      return (
+        <div className="dash-kpi-delta dash-delta-neutral">
+          <span>—</span>
+          <span>Insufficient data</span>
+        </div>
+      );
     }
     const isUp = !reachCompare.change.startsWith("-");
     return (
-      <div className={`ana-kpi__delta ${isUp ? "ana-kpi__delta--up" : "ana-kpi__delta--down"}`}>
-        {isUp ? "↑" : "↓"} {reachCompare.change} 7 хоног
+      <div className={`dash-kpi-delta ${isUp ? "dash-delta-up" : "dash-delta-down"}`}>
+        <span>{isUp ? "↑" : "↓"}</span>
+        <span>{Math.abs(parseFloat(reachCompare.change))}%</span>
+        <span style={{ fontSize: "0.65rem", opacity: 0.7, fontWeight: 400 }}>vs last 7d</span>
       </div>
     );
   }
 
   function EngDeltaBadge() {
     if (!engCompare?.change) {
-      return <div className="ana-kpi__delta ana-kpi__delta--neutral">— өгөгдөл дутмаг</div>;
+      return (
+        <div className="dash-kpi-delta dash-delta-neutral">
+          <span>—</span>
+          <span>Insufficient data</span>
+        </div>
+      );
     }
     const isUp = !engCompare.change.startsWith("-");
+    const val = Math.abs(parseFloat(engCompare.change));
     return (
-      <div className={`ana-kpi__delta ${isUp ? "ana-kpi__delta--up" : "ana-kpi__delta--down"}`}>
-        {isUp ? "↑" : "↓"} {engCompare.change} 7 хоног
+      <div className={`dash-kpi-delta ${isUp ? "dash-delta-up" : "dash-delta-down"}`}>
+        <span>{isUp ? "↑" : "↓"}</span>
+        <span>{val}%</span>
+        <span style={{ fontSize: "0.65rem", opacity: 0.7, fontWeight: 400 }}>vs last 7d</span>
       </div>
     );
   }
@@ -431,108 +446,94 @@ export function PageAnalyticsBlock(props: {
   return (
     <>
       {/* LAYER 1 — Hero KPI Strip */}
-      <div className="ana-hero-strip">
-        {/* Fans */}
-        <div className="ana-kpi">
-          <div className="ana-kpi__label">Дагагчид</div>
-          <div className="ana-kpi__value">{formatNum(followers)}</div>
+      <div className="dash-kpi-grid">
+        {/* Followers */}
+        <div className="dash-kpi-card">
+          <div className="dash-kpi-label">Followers</div>
+          <div className="dash-kpi-value">{formatNum(followers)}</div>
           {followerDelta != null ? (
-            <div className={`ana-kpi__delta ${deltaClass(followerDelta)}`}>
-              {deltaSign(followerDelta)} {Math.abs(followerDelta)} өнөөдөр
+            <div className={`dash-kpi-delta ${followerDelta >= 0 ? "dash-delta-up" : "dash-delta-down"}`}>
+              <span>{followerDelta >= 0 ? "↑" : "↓"}</span>
+              <span>{Math.abs(followerDelta)} today</span>
             </div>
           ) : (
-            <div className="ana-kpi__delta ana-kpi__delta--neutral">— мэдээлэл байхгүй</div>
+            <div className="dash-kpi-delta dash-delta-neutral">— no daily delta</div>
           )}
         </div>
 
         {/* Reach */}
-        <div className="ana-kpi">
-          <div className="ana-kpi__label">Хүрэлцээ</div>
-          <div className="ana-kpi__value">{formatNum(reach)}</div>
+        <div className="dash-kpi-card">
+          <div className="dash-kpi-label">Reach (28d)</div>
+          <div className="dash-kpi-value">{formatNum(reach)}</div>
           <ReachDeltaBadge />
         </div>
 
         {/* Engagement Rate */}
-        <div className="ana-kpi">
-          <div className="ana-kpi__label">Engagement</div>
-          <div className="ana-kpi__value">
+        <div className="dash-kpi-card">
+          <div className="dash-kpi-label">Engagement</div>
+          <div className="dash-kpi-value">
             {engRate != null ? formatPct(engRate) : formatNum(latestMetric?.engaged_users)}
           </div>
           <EngDeltaBadge />
         </div>
 
-        {/* Posts / 7d */}
-        <div className="ana-kpi">
-          <div className="ana-kpi__label">Пост / 7 хоног</div>
-          <div className="ana-kpi__value">{posts7dCount}</div>
-          <div
-            className={`ana-kpi__delta ${
-              posts7dCount >= 3
-                ? "ana-kpi__delta--up"
-                : posts7dCount >= 1
-                ? "ana-kpi__delta--neutral"
-                : "ana-kpi__delta--down"
-            }`}
-          >
-            {posts7dCount >= 3
-              ? "✓ Идэвхтэй"
-              : posts7dCount >= 1
-              ? "~ Дунд зэрэг"
-              : "✗ Пост байхгүй"}
+        {/* Posts Status */}
+        <div className="dash-kpi-card">
+          <div className="dash-kpi-label">Activity (7d)</div>
+          <div className="dash-kpi-value">{posts7dCount} posts</div>
+          <div className={`dash-kpi-delta ${posts7dCount >= 3 ? "dash-delta-up" : posts7dCount >= 1 ? "dash-delta-neutral" : "dash-delta-down"}`}>
+            <span>{posts7dCount >= 3 ? "● Active" : posts7dCount >= 1 ? "● Moderate" : "○ Inactive"}</span>
           </div>
         </div>
       </div>
 
       {/* LAYER 2 — Bar Chart */}
-      <MetricBarChart
-        reachSeries={reachSeries}
-        engSeries={engChartSeries}
-        dates={chartDates}
-        postDates={postDates}
-      />
+      <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "1rem", padding: "1.25rem", border: "1px solid rgba(255,255,255,0.04)" }}>
+        <MetricBarChart
+          reachSeries={reachSeries}
+          engSeries={engChartSeries}
+          dates={chartDates}
+          postDates={postDates}
+        />
+      </div>
 
       {/* LAYER 3 — Two columns */}
-      <div className="ana-two-col">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2.5rem", marginTop: "2.5rem" }}>
         <DonutChart posts={posts} />
         <LeaderboardBlock posts={posts} />
       </div>
 
       {/* LAYER 4 — Cadence Row */}
-      <div className="ana-cadence-row">
-        <div className="ana-cadence-stat">
-          <div className="ana-cadence-stat__label">Пост / 7 хоног</div>
-          <div
-            className={`ana-cadence-stat__value ${
-              posts7dCount >= 3
-                ? "ana-cadence-stat__value--green"
-                : posts7dCount >= 1
-                ? "ana-cadence-stat__value--yellow"
-                : "ana-cadence-stat__value--red"
-            }`}
-          >
-            {posts7dCount}
+      <div style={{ 
+        marginTop: "2.5rem", 
+        display: "grid", 
+        gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", 
+        gap: "1.5rem", 
+        paddingTop: "1.5rem",
+        borderTop: "1px solid rgba(255,255,255,0.06)"
+      }}>
+        <div>
+          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--dash-text-muted)", textTransform: "uppercase", marginBottom: "0.25rem" }}>Daily Cadence</div>
+          <div style={{ fontSize: "1.125rem", fontWeight: 700, color: posts7dCount >= 3 ? "#10b981" : "#f59e0b" }}>
+            {posts7dCount} <span style={{ fontSize: "0.75rem", fontWeight: 400, color: "var(--dash-text-dim)" }}>posts/week</span>
           </div>
         </div>
-        <div className="ana-cadence-stat">
-          <div className="ana-cadence-stat__label">Дундаж завсар</div>
-          <div className="ana-cadence-stat__value">
-            {avgGapDays != null ? `${avgGapDays.toFixed(1)} өдөр` : "—"}
+        <div>
+          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--dash-text-muted)", textTransform: "uppercase", marginBottom: "0.25rem" }}>Avg Interval</div>
+          <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff" }}>
+            {avgGapDays != null ? `${avgGapDays.toFixed(1)}d` : "—"}
           </div>
         </div>
-        <div className="ana-cadence-stat">
-          <div className="ana-cadence-stat__label">Хамгийн урт завсар</div>
-          <div className="ana-cadence-stat__value">
-            {maxGapDays > 0 ? `${Math.round(maxGapDays)} өдөр` : "—"}
+        <div>
+          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--dash-text-muted)", textTransform: "uppercase", marginBottom: "0.25rem" }}>Max Gap</div>
+          <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff" }}>
+            {maxGapDays > 0 ? `${Math.round(maxGapDays)}d` : "—"}
           </div>
         </div>
-        <div className="ana-cadence-stat">
-          <div className="ana-cadence-stat__label">Сүүлийн синк</div>
-          <div className="ana-cadence-stat__value" style={{ fontSize: "0.85rem" }}>
+        <div>
+          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--dash-text-muted)", textTransform: "uppercase", marginBottom: "0.25rem" }}>Last Sync</div>
+          <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff" }}>
             {formatRelativeTime(lastSyncTime)}
-          </div>
-          <div className="ana-sync-pill">
-            <span>●</span>
-            <span>{latestMetricDate ?? "—"}</span>
           </div>
         </div>
       </div>

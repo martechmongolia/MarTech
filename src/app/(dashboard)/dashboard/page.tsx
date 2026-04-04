@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import "./dashboard.css";
 import { AiInsightsBlock } from "@/components/ai/ai-insights-block";
 import { RegenerateAnalysisForm } from "@/components/ai/regenerate-analysis-form";
 import { OperationalHealthBanner } from "@/components/dashboard/operational-health-banner";
 import { PageAnalyticsBlock } from "@/components/dashboard/page-analytics-block";
 import { ManualSyncForm } from "@/components/sync/manual-sync-form";
 import { RetrySyncJobForm } from "@/components/sync/retry-sync-job-form";
-import { Alert, PageHeader } from "@/components/ui";
 import {
   getLatestAnalysisJobForPage,
   getLatestFailedAnalysisJobForOrganization,
@@ -45,7 +45,6 @@ function formatRelativeTime(dateStr: string | null | undefined): string {
     return "—";
   }
 }
-
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -103,50 +102,55 @@ export default async function DashboardPage() {
   );
 
   const planName = subscription?.plan.name ?? "Starter";
+  const isGrowth = planName.toLowerCase().includes("growth");
 
   return (
-    <section className="ui-customer-stack">
+    <div className="dash-container dash-premium-env">
       {/* Header */}
-      <div className="dash-top-header">
+      <header className="dash-top-header">
         <div>
-          <PageHeader title={organization.name} />
-          <p className="dash-plan-label">Plan: {planName}</p>
+          <h1 className="ui-page-header__title" style={{ color: "#fff" }}>{organization.name}</h1>
+          <p className="dash-plan-label">
+            Active Plan: <strong style={{ color: "var(--brand-blue)" }}>{isGrowth ? "Growth" : "Starter"}</strong>
+          </p>
         </div>
         <Link href="/pages" className="ui-button ui-button--primary ui-button--sm">
-          + Connect page
+          + Connect Page
         </Link>
-      </div>
+      </header>
 
       {/* Operational alerts */}
       <OperationalHealthBanner failedSync={failedSync} failedAnalysis={failedAnalysis} />
 
       {/* AI quota warning */}
       {!aiEntitlement.allowed ? (
-        <Alert variant="warning">
-          AI report quota reached ({aiEntitlement.used}/{aiEntitlement.limit} this month). Generation is paused until
-          your quota resets or you upgrade your plan.
-        </Alert>
+        <div className="dash-alert" style={{ borderLeftColor: "#f59e0b", background: "rgba(245, 158, 11, 0.05)" }}>
+          <span style={{ fontSize: "1.25rem" }}>⚠️</span>
+          <p style={{ color: "#fbbf24", fontSize: "0.875rem", margin: 0 }}>
+            AI report quota reached ({aiEntitlement.used}/{aiEntitlement.limit} this month). 
+            Upgrade to continue generating insights.
+          </p>
+        </div>
       ) : null}
 
-      {/* Page cards */}
-      <div>
-        <h2 className="ui-section-title" style={{ marginBottom: "1rem" }}>
-          Your pages
-        </h2>
+      {/* Main Pages Section */}
+      <section>
+        <h2 className="dash-section-title">Your Analytics Pages</h2>
 
         {pageCards.length === 0 ? (
-          <div className="dash-empty-state">
-            <p>No pages connected yet.</p>
-            <Link href="/pages" className="ui-button ui-button--primary ui-button--sm">
-              Connect a page
-            </Link>
+          <div className="dash-glass-card" style={{ padding: "4rem", textAlign: "center", display: "grid", gap: "1rem" }}>
+            <p style={{ color: "var(--dash-text-dim)" }}>No pages connected yet.</p>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <Link href="/pages" className="ui-button ui-button--primary">
+                Connect a page
+              </Link>
+            </div>
           </div>
         ) : (
-          <ul className="ui-dashboard-page-list">
+          <div className="dash-grid">
             {pageCards.map(
               ({
                 page,
-                metric,
                 job,
                 lastOkJob,
                 dailySeries,
@@ -156,43 +160,38 @@ export default async function DashboardPage() {
                 aiJobRuns,
                 reportHistory,
                 recs,
+                metric,
               }) => {
                 const lastSyncedAt = lastOkJob?.finished_at ?? page.last_synced_at;
                 return (
-                  <li key={page.id}>
-                    <div className="dash-page-card">
-                      {/* Card header */}
-                      <div className="dash-page-card__header">
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                            <span style={{ color: "var(--brand-blue)", fontSize: "0.75rem" }}>●</span>
-                            <p className="dash-page-card__title">{page.name}</p>
-                          </div>
-                          <p className="dash-page-card__meta">
-                            Last synced: {formatRelativeTime(lastSyncedAt)}
-                          </p>
+                  <div key={page.id} className="dash-glass-card">
+                    <div className="dash-card-header">
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                          <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#4f46e5", boxShadow: "0 0 10px rgba(79, 70, 225, 0.5)" }} />
+                          <h3 style={{ margin: 0, fontSize: "1.125rem", color: "#fff", fontWeight: 700 }}>{page.name}</h3>
                         </div>
-                        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                          {!manualEntitlement.allowed ? (
-                            <span className="ui-text-warning-emphasis" style={{ fontSize: "var(--text-xs)" }}>
-                              Quota: {manualEntitlement.used}/{manualEntitlement.limit}
-                            </span>
-                          ) : null}
-                          <ManualSyncForm
-                            organizationId={organization.id}
-                            internalPageId={page.id}
-                            pageLabel={page.name}
-                            disabled={!manualEntitlement.allowed}
-                          />
-                          <RegenerateAnalysisForm
-                            organizationId={organization.id}
-                            internalPageId={page.id}
-                            disabled={!aiEntitlement.allowed}
-                          />
-                        </div>
+                        <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", color: "var(--dash-text-dim)" }}>
+                          Last Update: {formatRelativeTime(lastSyncedAt)}
+                        </p>
                       </div>
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <ManualSyncForm
+                          organizationId={organization.id}
+                          internalPageId={page.id}
+                          pageLabel={page.name}
+                          disabled={!manualEntitlement.allowed}
+                        />
+                        <RegenerateAnalysisForm
+                          organizationId={organization.id}
+                          internalPageId={page.id}
+                          disabled={!aiEntitlement.allowed}
+                        />
+                      </div>
+                    </div>
 
-                      {/* Analytics block — KPI strip, chart, donut, leaderboard, cadence */}
+                    <div className="dash-card-body">
+                      {/* Analytics Components */}
                       <PageAnalyticsBlock
                         pageName={page.name}
                         dailySeries={dailySeries}
@@ -203,62 +202,61 @@ export default async function DashboardPage() {
                         pageLastSyncedAt={page.last_synced_at}
                       />
 
-                      {/* AI Insights */}
-                      <div className="dash-page-card__body">
-                        <AiInsightsBlock
-                          report={aiReport}
-                          recommendations={recs}
-                          analysisJob={aiJob}
-                          recentAnalysisJobs={aiJobRuns}
-                          reportHistory={reportHistory}
-                        />
-                      </div>
+                      <AiInsightsBlock
+                        report={aiReport}
+                        recommendations={recs}
+                        analysisJob={aiJob}
+                        recentAnalysisJobs={aiJobRuns}
+                        reportHistory={reportHistory}
+                      />
                     </div>
-                  </li>
+                  </div>
                 );
               }
             )}
-          </ul>
+          </div>
         )}
-      </div>
+      </section>
 
-      {/* Recent sync jobs */}
-      <div>
-        <h2 className="ui-section-title" style={{ marginBottom: "0.75rem" }}>
-          Recent sync activity
-        </h2>
+      {/* Sync Activity Section */}
+      <section style={{ maxWidth: "800px" }}>
+        <h2 className="dash-section-title">Recent Sync Activity</h2>
         {recentJobs.length === 0 ? (
-          <p className="ui-text-muted">No sync jobs yet.</p>
+          <p style={{ color: "var(--dash-text-dim)", padding: "1rem" }}>No sync activity recorded.</p>
         ) : (
-          <ul className="dash-jobs-list">
+          <div className="dash-list">
             {recentJobs.map((j) => (
-              <li key={j.id} className="dash-job-item">
-                <span
-                  className={`dash-job-item__status dash-job-item__status--${j.status}`}
-                >
+              <div key={j.id} className="dash-list-item">
+                <div style={{ 
+                  padding: "0.25rem 0.625rem", 
+                  borderRadius: "999px", 
+                  fontSize: "0.6875rem", 
+                  fontWeight: 700, 
+                  textTransform: "uppercase", 
+                  background: j.status === "succeeded" ? "rgba(16, 185, 129, 0.1)" : "rgba(244, 63, 94, 0.1)",
+                  color: j.status === "succeeded" ? "#10b981" : "#f43f5e"
+                }}>
                   {j.status}
-                </span>
-                <span className="ui-text-muted" style={{ flex: 1 }}>
-                  {j.job_type.replace(/_/g, " ")}
-                </span>
-                {j.finished_at ? (
-                  <span className="ui-text-muted" style={{ fontSize: "var(--text-xs)" }}>
-                    {formatRelativeTime(j.finished_at)}
-                  </span>
-                ) : null}
-                {j.error_message ? (
-                  <span className="ui-text-error" style={{ fontSize: "var(--text-xs)", display: "block", width: "100%" }}>
-                    {j.error_message}
-                  </span>
-                ) : null}
-                {j.status === "failed" || j.status === "queued" ? (
-                  <RetrySyncJobForm jobId={j.id} />
-                ) : null}
-              </li>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, fontSize: "0.875rem", color: "#fff", fontWeight: 500 }}>
+                    {j.job_type.replace(/_/g, " ")}
+                  </p>
+                  {j.error_message && (
+                    <p style={{ margin: "0.125rem 0 0", fontSize: "0.75rem", color: "#f43f5e" }}>{j.error_message}</p>
+                  )}
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--dash-text-dim)" }}>
+                    {formatRelativeTime(j.finished_at || j.created_at)}
+                  </p>
+                  {(j.status === "failed" || j.status === "queued") && <RetrySyncJobForm jobId={j.id} />}
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }

@@ -96,123 +96,101 @@ export function AiInsightsBlock(props: {
   const showFailure = !report && analysisJob?.status === "failed" && analysisJob.error_message;
 
   return (
-    <div className="ui-ai-insights">
-      <h4 className="ui-ai-insights__title">AI insights</h4>
+    <div className="dash-ai-block">
+      <div className="dash-ai-title">
+        <span style={{ fontSize: "1.25rem" }}>✨</span>
+        <span>AI Analysis & Insights</span>
+      </div>
 
       {showFailure ? (
-        <Alert variant="danger" className="ui-operational-alert">
-          <strong>Analysis failed</strong>
-          <p style={{ margin: "0.35rem 0 0" }}>{analysisJob?.error_message}</p>
-          <ul className="ui-ai-insights__list" style={{ margin: "0.35rem 0 0" }}>
-            <li>Status: {analysisJob?.status}</li>
-            <li>Scheduled: {formatTs(analysisJob?.scheduled_at)}</li>
-            <li>Started: {formatTs(analysisJob?.started_at)}</li>
-            <li>Finished: {formatTs(analysisJob?.finished_at)}</li>
-          </ul>
-        </Alert>
+        <div style={{ padding: "1rem", background: "rgba(239, 68, 68, 0.05)", borderRadius: "0.75rem", border: "1px solid rgba(239, 68, 68, 0.1)", marginBottom: "1rem" }}>
+          <strong style={{ color: "#f87171", fontSize: "0.875rem" }}>Analysis Failed</strong>
+          <p style={{ margin: "0.35rem 0 0", fontSize: "0.8125rem", color: "var(--dash-text-dim)" }}>{analysisJob?.error_message}</p>
+        </div>
       ) : null}
 
       {report ? (
         <>
-          <p className="ui-ai-insights__block-label">Summary</p>
-          <p className="ui-ai-insights__summary">{report.summary}</p>
-          {report.model_name ? (
-            <p className="ui-text-faint">Model: {report.model_name}</p>
-          ) : (
-            <p className="ui-text-faint">Rule-based analysis</p>
-          )}
-
-          <p className="ui-ai-insights__block-label">Key signals</p>
-          <ul className="ui-ai-insights__list">
-            {signals.map((s, i) => (
-              <li key={i}>
-                <strong>{s.title ?? "Signal"}</strong> ({s.severity ?? "info"}): {s.detail ?? ""}
-              </li>
-            ))}
-          </ul>
-
-          {extras.length > 0 ? (
-            <>
-              <p className="ui-ai-insights__block-label">Additional notes</p>
-              <ul className="ui-ai-insights__list">
-                {extras.map((e, i) => (
-                  <li key={i}>
-                    <strong>{e.title}</strong>: {e.detail}
+          <div className="dash-ai-summary">
+            {report.summary}
+          </div>
+          
+          <div style={{ marginTop: "1.5rem", display: "grid", gap: "1.5rem" }}>
+            {/* Key Signals */}
+            <div>
+              <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--dash-text-muted)", textTransform: "uppercase", marginBottom: "0.75rem", letterSpacing: "0.05em" }}>
+                Key Performance Signals
+              </p>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "0.5rem" }}>
+                {signals.map((s, i) => (
+                  <li key={i} style={{ display: "flex", gap: "0.75rem", fontSize: "0.875rem", color: "var(--dash-text-bright)" }}>
+                    <span style={{ color: s.severity === "danger" ? "#f43f5e" : s.severity === "warning" ? "#f59e0b" : "#6366f1" }}>●</span>
+                    <div>
+                      <strong style={{ fontWeight: 600 }}>{s.title}</strong>
+                      <span style={{ color: "var(--dash-text-dim)", marginLeft: "0.5rem" }}>{s.detail}</span>
+                    </div>
                   </li>
                 ))}
               </ul>
-            </>
-          ) : null}
+            </div>
 
-          <p className="ui-ai-insights__block-label">
-            Recommendations ({sortedRecs.length})
-          </p>
-          <ol className="ui-ai-insights__ol">
-            {sortedRecs.map((r) => {
-              const ev = evidenceForRecommendation(r.title, recommendationEvidence);
-              const ids = ev?.evidence_signal_ids ?? [];
-              return (
-                <li key={r.id} style={{ marginBottom: "0.35rem" }}>
-                  <span className="ui-ai-insights__rec-meta">
-                    {r.priority} · {r.category}
-                    {ev?.source ? ` · ${ev.source}` : null}
-                  </span>
-                  <br />
-                  <strong>{r.title}</strong> — {r.description}
-                  {ids.length > 0 ? (
-                    <div className="ui-text-faint" style={{ marginTop: "0.25rem", fontSize: "var(--text-xs)" }}>
-                      Supporting signals:{" "}
-                      {ids
-                        .map((id) => {
-                          const label = signalTitleById.get(id);
-                          return label && label !== id ? label : id;
-                        })
-                        .join(", ")}
+            {/* Recommendations */}
+            <div>
+              <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--dash-text-muted)", textTransform: "uppercase", marginBottom: "0.75rem", letterSpacing: "0.05em" }}>
+                Strategic Recommendations ({sortedRecs.length})
+              </p>
+              <div style={{ display: "grid", gap: "0.75rem" }}>
+                {sortedRecs.map((r, idx) => {
+                  const ev = evidenceForRecommendation(r.title, recommendationEvidence);
+                  const ids = ev?.evidence_signal_ids ?? [];
+                  return (
+                    <div key={r.id} style={{ 
+                      padding: "1rem", 
+                      background: "rgba(255,255,255,0.02)", 
+                      borderRadius: "1rem", 
+                      border: "1px solid rgba(255,255,255,0.04)" 
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+                        <span style={{ fontSize: "0.6875rem", fontWeight: 700, textTransform: "uppercase", color: r.priority === "high" ? "#f43f5e" : "#94a3b8" }}>
+                          {r.priority} Priority
+                        </span>
+                        <span style={{ fontSize: "0.6875rem", color: "var(--dash-text-dim)" }}>{r.category}</span>
+                      </div>
+                      <h5 style={{ margin: 0, fontSize: "0.9375rem", color: "#fff", fontWeight: 600 }}>{r.title}</h5>
+                      <p style={{ margin: "0.5rem 0 0", fontSize: "0.875rem", color: "var(--dash-text-dim)", lineHeight: 1.5 }}>{r.description}</p>
+                      {ids.length > 0 && (
+                        <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.03)", fontSize: "0.75rem", color: "var(--dash-text-muted)" }}>
+                          Based on: {ids.map(id => signalTitleById.get(id) || id).join(", ")}
+                        </div>
+                      )}
                     </div>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ol>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Metadata Footer */}
+          <div style={{ marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.03)", display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--dash-text-muted)" }}>
+            <span>Engine: {report.model_name || "MarTech Vision v3"}</span>
+            <div style={{ display: "flex", gap: "1rem" }}>
+              {recentAnalysisJobs.length > 0 && (
+                <details style={{ cursor: "pointer" }}>
+                  <summary>Run history</summary>
+                  <div style={{ padding: "0.5rem 0" }}>
+                    {recentAnalysisJobs.slice(0, 3).map(j => (
+                      <div key={j.id}>{j.status} · {formatTs(j.finished_at)}</div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+          </div>
         </>
       ) : !showFailure ? (
-        <p className="ui-text-muted">
-          No report yet. Run a sync to generate AI insights.
-        </p>
-      ) : null}
-
-      {recentAnalysisJobs.length > 0 ? (
-        <details style={{ marginTop: "0.65rem" }}>
-          <summary>Recent analysis runs ({recentAnalysisJobs.length})</summary>
-          <ul className="ui-ai-insights__list" style={{ margin: "0.35rem 0 0" }}>
-            {recentAnalysisJobs.map((j) => (
-              <li key={j.id} style={{ marginBottom: "0.35rem" }}>
-                <Badge variant={jobStatusBadgeVariant(j.status)}>{j.status}</Badge>
-                {j.error_message ? <span className="ui-ai-insights__detail-error">{j.error_message}</span> : null}
-                <span className="ui-ai-insights__detail-meta">
-                  scheduled {formatTs(j.scheduled_at)} · finished {formatTs(j.finished_at)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
-
-      {reportHistory.length > 1 ? (
-        <details style={{ marginTop: "0.5rem" }}>
-          <summary>Report history ({reportHistory.length})</summary>
-          <ul className="ui-ai-insights__list" style={{ margin: "0.35rem 0 0" }}>
-            {reportHistory.map((h) => (
-              <li key={h.id} style={{ marginBottom: "0.35rem" }}>
-                <Badge variant={historyStatusBadgeVariant(h.status)}>{h.status}</Badge> · {formatTs(h.created_at)}
-                <div className="ui-ai-insights__history-snippet">
-                  {h.summary.slice(0, 140)}
-                  {h.summary.length > 140 ? "…" : ""}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </details>
+        <div style={{ padding: "2rem", textAlign: "center", color: "var(--dash-text-dim)", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: "1rem" }}>
+          No AI report generated yet. Sync your data to trigger analysis.
+        </div>
       ) : null}
     </div>
   );
