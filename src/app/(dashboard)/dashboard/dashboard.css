@@ -263,17 +263,52 @@
     padding: 1rem 1.25rem;
   }
 
+  /* Page name: wrap instead of truncate */
+  .dash-card-header h3 {
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    font-size: 1rem !important;
+    max-width: 100%;
+  }
+
+  /* Button container: stack vertically, full width */
   .dash-card-header > div:last-child {
     width: 100%;
-    flex-wrap: wrap;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-wrap: unset;
+  }
+
+  /* Forms (ManualSyncForm / RegenerateAnalysisForm) full width */
+  .dash-card-header form,
+  .dash-card-header form button {
+    width: 100%;
   }
 
   .dash-card-body {
-    padding: 1rem;
+    padding: 1rem !important;
   }
 
+  /* KPI grid: force 2 columns on mobile */
   .dash-kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem;
+  }
+
+  /* KPI cards: reduce padding */
+  .dash-kpi-card {
+    padding: 1rem !important;
+  }
+
+  /* KPI label & value: smaller text */
+  .dash-kpi-label {
+    font-size: 0.7rem !important;
+  }
+
+  .dash-kpi-value {
+    font-size: 1.25rem !important;
   }
 
   .dash-section-title {
@@ -281,9 +316,10 @@
     font-size: 1.1rem;
   }
 
+  /* Glass card: remove outer padding so card-body controls spacing */
   .dash-glass-card {
-    padding: 1rem;
-    border-radius: 1rem;
+    padding: 0 !important;
+    border-radius: 1rem !important;
   }
 
   .dash-alert {

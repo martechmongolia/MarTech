@@ -498,7 +498,7 @@ export function PageAnalyticsBlock(props: {
       </div>
 
       {/* LAYER 3 — Two columns */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2.5rem", marginTop: "2.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "2.5rem", marginTop: "2.5rem" }}>
         <DonutChart posts={posts} />
         <LeaderboardBlock posts={posts} />
       </div>
