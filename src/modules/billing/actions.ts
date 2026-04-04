@@ -10,6 +10,7 @@ import { buildCheckoutTargetPlanSnapshot } from "@/modules/billing/layer-target-
 import { getCurrentUser } from "@/modules/auth/session";
 import { getCurrentUserOrganization } from "@/modules/organizations/data";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { verifyInvoiceAndActivateSubscription } from "@/modules/billing/verify-payment";
 import type { Database } from "@/types/database";
 
 export type StartCheckoutState = {
@@ -80,5 +81,63 @@ export async function startPaidPlanCheckoutAction(
     const raw = e instanceof Error ? e.message : "";
     console.error("[billing] Checkout failed:", raw);
     return { error: "Checkout failed. Please try again or contact support." };
+  }
+}
+
+// ─── Төлбөр шалгах (хэрэглэгч дарж гараар verify хийх) ──────────────────────
+
+export type VerifyPaymentState = {
+  error?: string;
+  result?: string;
+};
+
+export async function verifyPaymentAction(
+  _prev: VerifyPaymentState,
+  formData: FormData
+): Promise<VerifyPaymentState> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Нэвтрэх шаардлагатай." };
+
+  const invoiceId = formData.get("invoiceId");
+  if (typeof invoiceId !== "string" || !invoiceId) {
+    return { error: "Invoice ID олдсонгүй." };
+  }
+
+  // Хэрэглэгч өөрийн invoice мөн эсэхийг шалгах
+  const supabase = await getSupabaseServerClient();
+  const org = await getCurrentUserOrganization(user.id);
+  if (!org) return { error: "Байгууллага олдсонгүй." };
+
+  const { data: invoice } = await supabase
+    .from("invoices")
+    .select("id, organization_id, status")
+    .eq("id", invoiceId)
+    .eq("organization_id", org.id)
+    .maybeSingle();
+
+  if (!invoice) return { error: "Нэхэмжлэл олдсонгүй эсвэл эрх байхгүй." };
+  if (invoice.status === "paid") {
+    revalidatePath("/pricing");
+    revalidatePath("/billing");
+    return { result: "Төлбөр аль хэдийн баталгаажсан байна. Хуудсыг шинэчилнэ үү." };
+  }
+
+  const result = await verifyInvoiceAndActivateSubscription(invoiceId);
+
+  revalidatePath("/pricing");
+  revalidatePath("/billing");
+  revalidatePath("/dashboard");
+
+  switch (result.status) {
+    case "activated":
+      return { result: "✅ Төлбөр баталгаажлаа! Subscription идэвхжлээ." };
+    case "not_paid_yet":
+      return { error: "QPay-д төлбөр бүртгэгдсэнгүй. Хэдэн минут хүлээгээд дахин шалгаарай." };
+    case "already_finalized":
+      return { result: "Аль хэдийн баталгаажсан байна." };
+    case "verification_failed":
+      return { error: `Баталгаажуулалт амжилтгүй: ${result.reason}` };
+    default:
+      return { error: "Алдаа гарлаа. Дахин оролдоно уу." };
   }
 }

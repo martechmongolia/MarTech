@@ -1,9 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 import { Button, Card } from "@/components/ui";
-import { startPaidPlanCheckoutAction, type StartCheckoutState } from "@/modules/billing/actions";
+import {
+  startPaidPlanCheckoutAction,
+  verifyPaymentAction,
+  type StartCheckoutState,
+  type VerifyPaymentState,
+} from "@/modules/billing/actions";
 
 type Props = {
   organizationId: string;
@@ -75,12 +79,41 @@ export function StartPaidCheckoutForm({ organizationId, planId, planLabel, disab
               QR payload: {state.checkout.qrText.slice(0, 120)}…
             </p>
           ) : null}
-          <p className="ui-text-faint" style={{ margin: "var(--space-3) 0 0" }}>
-            Төлбөрийн дараа <Link href="/billing" className="ui-table__link">Billing</Link> хэсгээс нэхэмжлэлийн төлөвөө
-            шалгана уу. Subscription нь төлбөр баталгаажсаны дараа идэвхжинэ.
-          </p>
+
+          {/* ✅ Төлбөр шалгах товч */}
+          <VerifyButton invoiceId={state.checkout.invoiceId} />
         </Card>
       ) : null}
     </div>
+  );
+}
+
+// ─── Төлбөр шалгах товч ───────────────────────────────────────────────────────
+
+function VerifyButton({ invoiceId }: { invoiceId: string }) {
+  const [state, formAction, pending] = useActionState(
+    verifyPaymentAction,
+    {} as VerifyPaymentState
+  );
+  return (
+    <form action={formAction} style={{ marginTop: "var(--space-3)" }}>
+      <input type="hidden" name="invoiceId" value={invoiceId} />
+      <Button type="submit" variant="secondary" disabled={pending} full>
+        {pending ? "Шалгаж байна..." : "✅ Төлбөр шалгах"}
+      </Button>
+      {state.result && (
+        <p style={{ color: "#10b981", fontSize: "var(--text-sm)", margin: "var(--space-2) 0 0", textAlign: "center" }}>
+          {state.result}
+        </p>
+      )}
+      {state.error && (
+        <p style={{ color: "#ef4444", fontSize: "var(--text-sm)", margin: "var(--space-2) 0 0", textAlign: "center" }}>
+          {state.error}
+        </p>
+      )}
+      <p className="ui-text-faint" style={{ margin: "var(--space-2) 0 0", fontSize: "var(--text-xs)", textAlign: "center" }}>
+        QPay-д төлсний дараа дээ дар — хэдэн секунд хүлээгд шалгаарай
+      </p>
+    </form>
   );
 }
