@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui";
 import { SidebarNav } from "@/components/ui/sidebar-nav";
+import { MobileShell } from "@/components/ui/mobile-shell";
 import { signOutAction } from "@/modules/auth/actions";
 import { getCurrentUser } from "@/modules/auth/session";
 import { hasActiveSystemAdminRecord } from "@/modules/admin/guard";
@@ -42,9 +43,17 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
       : []),
   ];
 
+  const signOutForm = (
+    <form action={signOutAction}>
+      <Button type="submit" variant="outline-white" size="sm" full>
+        Sign out
+      </Button>
+    </form>
+  );
+
   return (
     <div className="app-shell ui-obsidian-dark">
-      {/* Sidebar */}
+      {/* Desktop sidebar — hidden on mobile */}
       <aside className="app-shell__sidebar">
         <Link href="/dashboard" className="app-shell__logo-link">
           <Image
@@ -65,6 +74,11 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
           </Button>
         </form>
       </aside>
+
+      {/* Mobile shell — visible only on mobile */}
+      <div className="mobile-only">
+        <MobileShell items={navItems} signOutForm={signOutForm} />
+      </div>
 
       {/* Main content */}
       <main className="app-shell__main">{children}</main>
