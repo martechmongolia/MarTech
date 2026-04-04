@@ -167,9 +167,9 @@ export default async function DashboardPage() {
                   <div key={page.id} className="dash-glass-card">
                     <div className="dash-card-header">
                       <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                          <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#4f46e5", boxShadow: "0 0 10px rgba(79, 70, 225, 0.5)" }} />
-                          <h3 style={{ margin: 0, fontSize: "1.125rem", color: "#fff", fontWeight: 700 }}>{page.name}</h3>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", minWidth: 0 }}>
+                          <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#4f46e5", boxShadow: "0 0 10px rgba(79, 70, 225, 0.5)", flexShrink: 0, marginTop: "4px" }} />
+                          <h3 style={{ margin: 0, fontSize: "1.125rem", color: "#fff", fontWeight: 700, wordBreak: "break-word", overflowWrap: "break-word", minWidth: 0 }}>{page.name}</h3>
                         </div>
                         <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", color: "var(--dash-text-dim)" }}>
                           Last Update: {formatRelativeTime(lastSyncedAt)}

@@ -16,7 +16,7 @@ const initial: SyncActionState = {};
 export function ManualSyncForm({
   organizationId,
   internalPageId,
-  pageLabel,
+  pageLabel: _pageLabel,
   disabled = false
 }: ManualSyncFormProps) {
   const [state, formAction, pending] = useActionState(manualSyncPageAction, initial);
@@ -26,7 +26,7 @@ export function ManualSyncForm({
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="internalPageId" value={internalPageId} />
       <Button type="submit" variant="secondary" disabled={pending || disabled}>
-        {pending ? "Syncing…" : `Manual sync (${pageLabel})`}
+        {pending ? "Syncing…" : "Manual sync"}
       </Button>
       {state.error ? <span className="ui-inline-feedback ui-inline-feedback--error">{state.error}</span> : null}
       {state.message ? (
