@@ -3191,6 +3191,145 @@ code {
   }
 }
 
+/* =============================================================================
+   MOBILE SPRINT 3 — Touch Polish
+   ============================================================================= */
+
+/* 1. Toast — mobile position (below topbar) */
+@media (max-width: 768px) {
+  .toast-container,
+  [data-sonner-toaster],
+  .ag-toast {
+    top: 70px !important;
+    bottom: auto !important;
+  }
+}
+
+/* 2. Form Input Touch Targets — 44px min-height + prevent iOS zoom */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"],
+  input[type="tel"],
+  textarea,
+  select {
+    min-height: 44px;
+    font-size: 16px; /* prevents iOS Safari zoom on focus */
+  }
+}
+
+/* 3. Skeleton loading screens */
+.loading-skeleton-page { padding: 1.5rem; }
+.skeleton-header {
+  height: 2rem;
+  width: 40%;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.skeleton-card {
+  height: 100px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+.skeleton-block {
+  height: 200px;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+.skeleton-block--short { height: 120px; }
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (max-width: 768px) {
+  .skeleton-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* 4. Scroll improvements */
+html { scroll-behavior: smooth; }
+.overflow-x-auto,
+.ui-table-wrapper,
+.mobile-drawer,
+.mobile-bottom-nav,
+[class*="scroll"] {
+  -webkit-overflow-scrolling: touch;
+}
+.app-shell__main {
+  overscroll-behavior-y: contain;
+}
+
+/* 5. Tap feedback */
+* { -webkit-tap-highlight-color: transparent; }
+button:active,
+a:active,
+[role="button"]:active {
+  opacity: 0.75;
+  transform: scale(0.98);
+  transition: opacity 0.1s, transform 0.1s;
+}
+
+/* 6. Mobile typography */
+@media (max-width: 480px) {
+  h1, h2, h3 {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  p, li {
+    line-height: 1.6;
+  }
+  .app-shell__main {
+    font-size: 0.9rem;
+  }
+}
+
+/* 8. Empty state polish */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  gap: 1rem;
+}
+.empty-state__cta {
+  width: auto;
+}
+@media (max-width: 640px) {
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+  .empty-state__cta {
+    width: 100%;
+  }
+  /* brand-managers empty state CTA */
+  .brand-managers-empty a,
+  .brand-managers-empty button {
+    width: 100%;
+    justify-content: center;
+  }
+  /* social-listening / creator-search empty text */
+  .ui-text-muted {
+    text-align: center;
+  }
+}
+
 /* ── Pricing Page Mobile ────────────────────────────────── */
 @media (max-width: 640px) {
   /* Hero text */

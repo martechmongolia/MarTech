@@ -17,24 +17,38 @@ export default function GlobalError({
             alignItems: "center",
             justifyContent: "center",
             fontFamily: "system-ui, sans-serif",
-            padding: "2rem",
+            padding: "2rem 1.5rem",
             textAlign: "center"
           }}
         >
-          <h1 style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>Something went wrong</h1>
-          <p style={{ color: "#64748b", marginBottom: "1.5rem", maxWidth: 480 }}>
+          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>💥</div>
+          <h1 style={{ fontSize: "1.5rem", marginBottom: "0.5rem", margin: "0 0 0.5rem" }}>
+            Something went wrong
+          </h1>
+          <p
+            style={{
+              color: "#64748b",
+              marginBottom: "1.5rem",
+              maxWidth: 480,
+              margin: "0 auto 1.5rem",
+              lineHeight: 1.6
+            }}
+          >
             An unexpected error occurred. Please try again, or contact support if the problem persists.
           </p>
           <button
             onClick={reset}
             style={{
-              padding: "0.625rem 1.25rem",
-              background: "#0f172a",
+              padding: "0.75rem 1.5rem",
+              background: "#0043FF",
               color: "#fff",
               border: "none",
-              borderRadius: "0.375rem",
+              borderRadius: "999px",
               cursor: "pointer",
-              fontSize: "0.875rem"
+              fontSize: "0.9375rem",
+              fontWeight: 600,
+              width: "100%",
+              maxWidth: "320px"
             }}
           >
             Try again
