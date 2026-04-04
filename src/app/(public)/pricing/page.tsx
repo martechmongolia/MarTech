@@ -384,17 +384,17 @@ export default async function PricingPage() {
                       }}>
                         {isTrialingNow ? `🎯 Trial - ${daysLeft} хоног үлдсэн` : "✅ Идэвхтэй"}
                       </div>
-                    ) : showCheckout && subscription ? (
+                    ) : showCheckout && subscription && planRow ? (
                       <StartPaidCheckoutForm
                         organizationId={organization!.id}
-                        planId={subscription.plan_id}
-                        planLabel={planCode === "growth" ? "Growth" : "Starter"}
+                        planId={planRow.id}
+                        planLabel={planRow.name}
                       />
-                    ) : showStarterCheckout && subscription ? (
+                    ) : showStarterCheckout && subscription && planRow ? (
                       <StartPaidCheckoutForm
                         organizationId={organization!.id}
-                        planId={subscription.plan_id}
-                        planLabel="Starter"
+                        planId={planRow.id}
+                        planLabel={planRow.name}
                       />
                     ) : isGuest ? (
                       <Link
