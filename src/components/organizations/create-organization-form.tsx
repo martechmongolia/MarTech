@@ -16,12 +16,12 @@ export function CreateOrganizationForm() {
     <form action={formAction} className="ui-form-stack ui-form-stack--wide">
       <div>
         <label className="ui-label" htmlFor="name">
-          Organization name
+          Байгууллагын нэр
         </label>
-        <Input id="name" name="name" type="text" required maxLength={120} />
+        <Input id="name" name="name" type="text" required maxLength={120} placeholder="Жишээ: SkinAid Mongolia" />
       </div>
       <Button type="submit" variant="primary" disabled={pending}>
-        {pending ? "Creating..." : "Create organization"}
+        {pending ? "Үүсгэж байна..." : "Байгууллага үүсгэх"}
       </Button>
       {state.error ? (
         <p className="ui-inline-feedback ui-inline-feedback--error" style={{ margin: 0 }}>

@@ -18,8 +18,8 @@ export default async function SetupOrganizationPage() {
   return (
     <section className="ui-customer-stack">
       <PageHeader
-        title="Create organization"
-        description="Set up your organization to start using the dashboard."
+        title="Байгууллага үүсгэх"
+        description="Dashboard ашиглаж эхлэхийн тулд байгууллагаа тохируулна уу."
       />
       <CreateOrganizationForm />
     </section>
