@@ -22,3 +22,15 @@ export function getMetaEnv() {
     tokenEncryptionKey: getRequiredEnv("META_TOKEN_ENCRYPTION_KEY")
   };
 }
+
+export function getFacebookAiEnv() {
+  return {
+    appId: process.env.FACEBOOK_APP_ID ?? "",
+    appSecret: process.env.FACEBOOK_APP_SECRET ?? "",
+    webhookVerifyToken: process.env.FACEBOOK_WEBHOOK_VERIFY_TOKEN ?? ""
+  };
+}
+
+export function getOpenAiKey(): string {
+  return process.env.OPENAI_API_KEY ?? "";
+}
