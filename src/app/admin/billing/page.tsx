@@ -1,230 +1,165 @@
 import Link from "next/link";
-import { Badge, PageHeader } from "@/components/ui";
-import { OperatorInvoiceReverifyForm } from "@/components/internal/operator-invoice-reverify-form";
-import {
-  computeInvoiceReconciliationFlags,
-  getPendingInvoicesForReconciliationOverview
-} from "@/modules/billing/reconciliation";
-import type { BillingEventRow, PaymentTransactionRow } from "@/modules/billing/data";
-import {
-  getGlobalRecentBillingEventsForOps,
-  getGlobalRecentInvoicesForOps,
-  getGlobalRecentPaymentTransactionsForOps
-} from "@/modules/admin/data";
+import { PageHeader } from "@/components/ui";
+import { getBillingMetrics } from "@/modules/admin/data";
+import { getCurrentUser } from "@/modules/auth/session";
+import { hasActiveSystemAdminRecord } from "@/modules/admin/guard";
+import { isInternalOpsEmail } from "@/lib/internal-ops";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminBillingPage() {
-  const [invoices, txns, events, pending] = await Promise.all([
-    getGlobalRecentInvoicesForOps(25),
-    getGlobalRecentPaymentTransactionsForOps(35),
-    getGlobalRecentBillingEventsForOps(45),
-    getPendingInvoicesForReconciliationOverview(40)
-  ]);
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
 
-  const now = new Date();
+  const isAdmin =
+    isInternalOpsEmail(user.email) || (await hasActiveSystemAdminRecord(user.id));
+  if (!isAdmin) redirect("/admin?error=insufficient_permissions");
 
-  const pendingSorted = [...pending].sort((a, b) => {
-    const fa = computeInvoiceReconciliationFlags(a, now);
-    const fb = computeInvoiceReconciliationFlags(b, now);
-    const score = (inv: (typeof pending)[number], f: ReturnType<typeof computeInvoiceReconciliationFlags>) =>
-      (f.pastDueWhilePending ? 4 : 0) + (f.oldPending ? 2 : 0) + (inv.provider_last_error ? 1 : 0);
-    return score(b, fb) - score(a, fa);
-  });
-
-  const txnNeedsAttention = txns.filter(isPaymentTxnAnomalous);
-  const txnOther = txns.filter((t) => !isPaymentTxnAnomalous(t));
-
-  const eventsWithErrors = events.filter((ev) => !!ev.processing_error);
-  const eventsClean = events.filter((ev) => !ev.processing_error);
+  const metrics = await getBillingMetrics();
 
   return (
-    <div className="ui-admin-subpage">
+    <div className="ui-admin-stack">
       <div className="ui-admin-pagehead">
         <Link href="/admin" className="ui-admin-back">
           ← Overview
         </Link>
         <PageHeader
           className="ui-page-header--admin"
-          title="Billing & reconciliation"
-          description="Platform billing operations (read-oriented + safe re-verify). Re-verify calls the same idempotent path as
-          webhooks; stale markers are advisory. Audit events record outcomes."
+          title="Billing Dashboard"
+          description="Орлого, subscription, invoice тойм."
         />
       </div>
 
-      <section className="ui-admin-section">
-        <h2 className="ui-section-title">Pending invoices (reconciliation)</h2>
-        {pendingSorted.length === 0 ? (
-          <p className="ui-text-muted">No pending invoices.</p>
-        ) : (
-          <ul className="ui-admin-list ui-admin-list--loose">
-            {pendingSorted.map((inv) => {
-              const flags = computeInvoiceReconciliationFlags(inv, now);
-              return (
-                <li key={inv.id}>
-                  <code>{inv.id.slice(0, 8)}…</code> · {inv.organizations?.name ?? inv.organization_id} ·{" "}
-                  <strong>{inv.status}</strong> · {inv.amount} {inv.currency}
-                  <div className="ui-text-faint" style={{ marginTop: "0.15rem" }}>
-                    created {inv.created_at} · due {inv.due_at}
-                  </div>
-                  {(flags.pastDueWhilePending || flags.oldPending) && (
-                    <div style={{ fontSize: "var(--text-xs)", marginTop: "0.2rem", display: "flex", flexWrap: "wrap", gap: "0.35rem" }}>
-                      {flags.pastDueWhilePending ? <Badge variant="warning">Past due</Badge> : null}
-                      {flags.oldPending ? <Badge variant="warning">Pending 3d+</Badge> : null}
-                    </div>
-                  )}
-                  {inv.provider_last_error ? (
-                    <span className="ui-text-error" style={{ display: "block" }}>
-                      {inv.provider_last_error}
-                    </span>
-                  ) : null}
-                  <div style={{ marginTop: "0.35rem" }}>
-                    <OperatorInvoiceReverifyForm invoiceId={inv.id} />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+      {/* MRR + Тоо */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
+        {[
+          { label: "MRR", value: `${metrics.mrr.toLocaleString()}₮`, sub: "Сарын тогтмол орлого" },
+          { label: "Идэвхтэй", value: metrics.activeCount, sub: "Subscription" },
+          { label: "Trial", value: metrics.trialingCount, sub: "Туршилтын хугацаанд" },
+          { label: "Pending Invoice", value: metrics.pendingInvoices, sub: "Төлбөр хүлээгдэж байна" },
+        ].map((m) => (
+          <div
+            key={m.label}
+            style={{
+              background: "var(--color-surface-raised, #1e293b)",
+              border: "1px solid var(--color-border, rgba(255,255,255,0.08))",
+              borderRadius: "0.75rem",
+              padding: "1.25rem",
+            }}
+          >
+            <p
+              style={{
+                color: "var(--color-text-muted)",
+                fontSize: "0.8rem",
+                margin: "0 0 0.25rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              {m.label}
+            </p>
+            <p style={{ fontSize: "1.75rem", fontWeight: 700, margin: "0 0 0.25rem" }}>{m.value}</p>
+            <p style={{ color: "var(--color-text-muted)", fontSize: "0.8rem", margin: 0 }}>{m.sub}</p>
+          </div>
+        ))}
+      </div>
 
-      <section className="ui-admin-section">
-        <h2 className="ui-section-title">Recent invoices (all statuses)</h2>
-        {invoices.length === 0 ? (
-          <p className="ui-text-muted">No invoices.</p>
-        ) : (
-          <ul className="ui-admin-list ui-admin-list--spaced">
-            {invoices.map((inv) => (
-              <li key={inv.id}>
-                <code>{inv.id.slice(0, 8)}…</code> · {inv.organizations?.name ?? inv.organization_id} ·{" "}
-                <strong>{inv.status}</strong> · {inv.amount} {inv.currency}
-                {inv.provider_invoice_id ? (
-                  <span className="ui-text-muted">
-                    {" "}
-                    · QPay <code>{inv.provider_invoice_id.slice(0, 8)}…</code>
-                  </span>
-                ) : null}
-                {inv.provider_last_error ? (
-                  <span className="ui-text-error" style={{ display: "block" }}>
-                    {inv.provider_last_error}
-                  </span>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {/* Plan тархалт */}
+      <div
+        style={{
+          background: "var(--color-surface-raised, #1e293b)",
+          border: "1px solid var(--color-border, rgba(255,255,255,0.08))",
+          borderRadius: "0.75rem",
+          padding: "1.25rem",
+        }}
+      >
+        <h3
+          style={{
+            margin: "0 0 1rem",
+            fontSize: "0.9rem",
+            color: "var(--color-text-muted)",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+          }}
+        >
+          Plan тархалт
+        </h3>
+        <div style={{ display: "flex", gap: "2rem" }}>
+          {Object.entries(metrics.planDistribution).map(([code, count]) => (
+            <div key={code}>
+              <span style={{ fontWeight: 700, fontSize: "1.25rem" }}>{count}</span>
+              <span style={{ color: "var(--color-text-muted)", marginLeft: "0.5rem", fontSize: "0.9rem" }}>
+                {code}
+              </span>
+            </div>
+          ))}
+          {Object.keys(metrics.planDistribution).length === 0 && (
+            <p style={{ color: "var(--color-text-muted)", margin: 0 }}>Subscription байхгүй</p>
+          )}
+        </div>
+      </div>
 
-      <section className="ui-admin-section">
-        <h2 className="ui-section-title">Recent payment transactions</h2>
-        {txns.length === 0 ? (
-          <p className="ui-text-muted">No transactions.</p>
+      {/* Сүүлийн төлбөрүүд */}
+      <div>
+        <h3 style={{ margin: "0 0 0.75rem", fontSize: "var(--text-base)", fontWeight: 600 }}>
+          Сүүлийн төлбөрүүд
+        </h3>
+        {metrics.recentInvoices.length === 0 ? (
+          <p style={{ color: "var(--color-text-muted)" }}>Төлбөр байхгүй</p>
         ) : (
-          <>
-            {txnNeedsAttention.length > 0 ? (
-              <>
-                <h3 className="ui-subsection-heading ui-subsection-heading--warning">
-                  Needs attention (failed or verification error)
-                </h3>
-                <ul className="ui-admin-list ui-admin-list--spaced" style={{ marginBottom: "var(--space-4)" }}>
-                  {txnNeedsAttention.map((t) => (
-                    <PaymentTxnItem key={t.id} t={t} emphasize />
-                  ))}
-                </ul>
-              </>
-            ) : null}
-            {txnOther.length > 0 ? (
-              <>
-                <h3 className="ui-subsection-heading ui-subsection-heading--muted">Other recent</h3>
-                <ul className="ui-admin-list ui-admin-list--spaced">
-                  {txnOther.map((t) => (
-                    <PaymentTxnItem key={t.id} t={t} />
-                  ))}
-                </ul>
-              </>
-            ) : null}
-          </>
+          <div className="ui-table-wrap">
+            <table className="ui-table" style={{ fontSize: "var(--text-sm)" }}>
+              <thead>
+                <tr>
+                  <th>Огноо</th>
+                  <th>Invoice</th>
+                  <th>Дүн</th>
+                  <th>Төлөв</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics.recentInvoices.map((inv: any) => (
+                  <tr key={inv.id}>
+                    <td>
+                      {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString("mn-MN") : "—"}
+                    </td>
+                    <td>
+                      <code style={{ fontSize: "0.75rem" }}>{String(inv.id).slice(0, 8)}…</code>
+                    </td>
+                    <td>
+                      {Number(inv.amount).toLocaleString()}
+                      {inv.currency === "MNT" ? "₮" : ` ${inv.currency}`}
+                    </td>
+                    <td>
+                      <span style={{ color: "#10b981" }}>✓ Төлсөн</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </section>
+      </div>
 
-      <section className="ui-admin-section">
-        <h2 className="ui-section-title">Recent billing events</h2>
-        {events.length === 0 ? (
-          <p className="ui-text-muted">No events.</p>
-        ) : (
-          <>
-            {eventsWithErrors.length > 0 ? (
-              <>
-                <h3 className="ui-subsection-heading ui-subsection-heading--warning">Processing errors</h3>
-                <ul className="ui-admin-list ui-admin-list--spaced" style={{ marginBottom: "var(--space-4)" }}>
-                  {eventsWithErrors.map((ev) => (
-                    <BillingEventItem key={ev.id} ev={ev} />
-                  ))}
-                </ul>
-              </>
-            ) : null}
-            {eventsClean.length > 0 ? (
-              <>
-                <h3 className="ui-subsection-heading ui-subsection-heading--muted">Other recent</h3>
-                <ul className="ui-admin-list ui-admin-list--spaced">
-                  {eventsClean.map((ev) => (
-                    <BillingEventItem key={ev.id} ev={ev} />
-                  ))}
-                </ul>
-              </>
-            ) : null}
-          </>
-        )}
-      </section>
+      {/* Quick links */}
+      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+        <Link href="/admin/plans" style={{ color: "var(--color-link)", fontSize: "var(--text-sm)" }}>
+          → Plan тохиргоо
+        </Link>
+        <Link
+          href="/admin/brainstorm-config"
+          style={{ color: "var(--color-link)", fontSize: "var(--text-sm)" }}
+        >
+          → Brainstorm тохиргоо
+        </Link>
+        <Link
+          href="/admin/organizations"
+          style={{ color: "var(--color-link)", fontSize: "var(--text-sm)" }}
+        >
+          → Байгууллагууд
+        </Link>
+      </div>
     </div>
-  );
-}
-
-function isPaymentTxnAnomalous(t: PaymentTransactionRow): boolean {
-  const s = String(t.status).toLowerCase();
-  if (s === "failed" || s === "canceled" || s === "cancelled") {
-    return true;
-  }
-  return Boolean(t.last_verification_error);
-}
-
-function PaymentTxnItem({ t, emphasize }: { t: PaymentTransactionRow; emphasize?: boolean }) {
-  return (
-    <li className={emphasize ? "ui-admin-list-item--attention" : undefined}>
-      <code>{t.id.slice(0, 8)}…</code> · org <code>{t.organization_id.slice(0, 8)}…</code> · invoice{" "}
-      <code>{t.invoice_id.slice(0, 8)}…</code> · <strong>{t.status}</strong>
-      {t.provider_txn_id ? (
-        <span>
-          {" "}
-          · txn <code>{String(t.provider_txn_id).slice(0, 14)}…</code>
-        </span>
-      ) : null}
-      {t.last_verification_error ? (
-        <span className="ui-text-error" style={{ display: "block" }}>
-          {t.last_verification_error}
-        </span>
-      ) : null}
-    </li>
-  );
-}
-
-function BillingEventItem({ ev }: { ev: BillingEventRow }) {
-  return (
-    <li>
-      <strong>{ev.event_type}</strong> · org{" "}
-      {ev.organization_id ? <code>{ev.organization_id.slice(0, 8)}…</code> : "—"} · inv{" "}
-      {ev.invoice_id ? <code>{ev.invoice_id.slice(0, 8)}…</code> : "—"}
-      {ev.provider_event_id ? (
-        <span className="ui-text-muted">
-          {" "}
-          · <code>{ev.provider_event_id}</code>
-        </span>
-      ) : null}
-      {ev.processing_error ? (
-        <span className="ui-text-error" style={{ display: "block" }}>
-          {ev.processing_error}
-        </span>
-      ) : null}
-    </li>
   );
 }

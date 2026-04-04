@@ -644,6 +644,57 @@ export type OpsOverviewCounts = {
   failedAnalysisRecentCount: number;
 };
 
+/**
+ * MRR болон billing тойм тооцоо.
+ * as any: subscriptions/invoices дээр шинэ column-уудыг ашигладаг тул migration-аас хойш type генерат хийгдээгүй байж болно.
+ */
+export async function getBillingMetrics() {
+  const supabase = getSupabaseAdminClient();
+
+  // Идэвхтэй subscriptions + plan мэдээлэл
+  const { data: subs } = await (supabase as any)
+    .from("subscriptions")
+    .select("status, plan:plans(code, price_monthly)")
+    .in("status", ["active", "trialing"]);
+
+  const active = (subs ?? []).filter((s: any) => s.status === "active");
+  const trialing = (subs ?? []).filter((s: any) => s.status === "trialing");
+
+  const mrr = active.reduce((sum: number, s: any) => {
+    return sum + (Number(s.plan?.price_monthly) || 0);
+  }, 0);
+
+  // Plan тархалт
+  const planDist: Record<string, number> = {};
+  for (const s of subs ?? []) {
+    const code = s.plan?.code ?? "unknown";
+    planDist[code] = (planDist[code] ?? 0) + 1;
+  }
+
+  // Pending (төлөгдөөгүй) invoice тоо
+  const { count: pendingInvoices } = await (supabase as any)
+    .from("invoices")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending");
+
+  // Сүүлийн 10 амжилттай invoice
+  const { data: recentInvoices } = await (supabase as any)
+    .from("invoices")
+    .select("id, amount, currency, status, paid_at, organization_id")
+    .eq("status", "paid")
+    .order("paid_at", { ascending: false })
+    .limit(10);
+
+  return {
+    mrr,
+    activeCount: active.length,
+    trialingCount: trialing.length,
+    pendingInvoices: pendingInvoices ?? 0,
+    planDistribution: planDist,
+    recentInvoices: recentInvoices ?? [],
+  };
+}
+
 export async function getOpsOverviewCounts(): Promise<OpsOverviewCounts> {
   const admin = getSupabaseAdminClient();
   const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();

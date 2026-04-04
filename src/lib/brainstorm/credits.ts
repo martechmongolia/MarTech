@@ -249,6 +249,10 @@ export async function updateBrainstormConfig(params: {
   session_price_amount: number;
   starter_monthly_credits: number;
   growth_monthly_credits: number;
+  /** Trial хугацаа (хоног) — migration-аас шинэ column */
+  trial_days?: number;
+  /** Trial-д өгөх brainstorm session credit — migration-аас шинэ column */
+  trial_brainstorm_credits?: number;
   updatedBy: string;
 }) {
   // as any: brainstorm_config not in DB type
@@ -259,6 +263,11 @@ export async function updateBrainstormConfig(params: {
       session_price_amount: params.session_price_amount,
       starter_monthly_credits: params.starter_monthly_credits,
       growth_monthly_credits: params.growth_monthly_credits,
+      // as any: trial_days / trial_brainstorm_credits are migration-added columns not yet in DB type
+      ...(params.trial_days !== undefined ? { trial_days: params.trial_days } : {}),
+      ...(params.trial_brainstorm_credits !== undefined
+        ? { trial_brainstorm_credits: params.trial_brainstorm_credits }
+        : {}),
       updated_at: new Date().toISOString(),
       updated_by: params.updatedBy,
     })

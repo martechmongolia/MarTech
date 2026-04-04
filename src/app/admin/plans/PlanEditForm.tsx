@@ -27,6 +27,9 @@ function EditForm({
   const [monthlyAiReports, setMonthlyAiReports] = useState(plan.monthly_ai_reports);
   const [reportRetentionDays, setReportRetentionDays] = useState(plan.report_retention_days);
   const [isActive, setIsActive] = useState(plan.is_active);
+  const [brainstormCreditsMonthly, setBrainstormCreditsMonthly] = useState(
+    (plan as any).brainstorm_credits_monthly ?? 0
+  );
 
   function handleSave() {
     setError(null);
@@ -40,6 +43,7 @@ function EditForm({
         monthly_ai_reports: Number(monthlyAiReports),
         report_retention_days: Number(reportRetentionDays),
         is_active: isActive,
+        brainstorm_credits_monthly: Number(brainstormCreditsMonthly),
       });
       if (result.error) {
         setError(result.error);
@@ -166,6 +170,18 @@ function EditForm({
         />
       </label>
 
+      <label style={labelStyle}>
+        <span style={labelTextStyle}>Сарын Brainstorm credit 🧠</span>
+        <input
+          style={inputStyle}
+          type="number"
+          min={0}
+          value={brainstormCreditsMonthly}
+          onChange={(e) => setBrainstormCreditsMonthly(parseInt(e.target.value) || 0)}
+          disabled={isPending}
+        />
+      </label>
+
       <label
         style={{
           ...labelStyle,
@@ -240,6 +256,7 @@ export function PlanRow({
         <td>{plan.syncs_per_day}</td>
         <td>{plan.monthly_ai_reports}</td>
         <td>{plan.report_retention_days}</td>
+        <td>{(plan as any).brainstorm_credits_monthly ?? 0}</td>
         <td>{subCount}</td>
         <td className="ui-text-faint">{plan.updated_at?.replace("T", " ").slice(0, 19) ?? "—"}</td>
         <td>
@@ -253,7 +270,7 @@ export function PlanRow({
       </tr>
       {editing && (
         <tr>
-          <td colSpan={11} style={{ padding: "0 8px 12px" }}>
+          <td colSpan={12} style={{ padding: "0 8px 12px" }}>
             <EditForm plan={plan} onClose={() => setEditing(false)} />
           </td>
         </tr>

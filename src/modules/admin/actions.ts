@@ -22,6 +22,8 @@ export type UpdatePlanData = {
   monthly_ai_reports: number;
   report_retention_days: number;
   is_active: boolean;
+  /** Сарын Brainstorm credit лимит (migration-аас шинэ column байна) */
+  brainstorm_credits_monthly?: number;
 };
 
 export async function updatePlanAction(
@@ -40,7 +42,7 @@ export async function updatePlanAction(
   if (!data.currency || data.currency.length !== 3) return { error: "Currency must be a 3-letter code." };
 
   const admin = getSupabaseAdminClient();
-  const { error } = await admin
+  const { error } = await (admin as any)
     .from("plans")
     .update({
       name: data.name.trim(),
@@ -51,6 +53,8 @@ export async function updatePlanAction(
       monthly_ai_reports: data.monthly_ai_reports,
       report_retention_days: data.report_retention_days,
       is_active: data.is_active,
+      // as any: brainstorm_credits_monthly migration-аас шинэ column
+      brainstorm_credits_monthly: data.brainstorm_credits_monthly ?? 0,
       updated_at: new Date().toISOString(),
     })
     .eq("id", planId);

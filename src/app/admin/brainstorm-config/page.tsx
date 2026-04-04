@@ -28,6 +28,8 @@ export default async function BrainstormConfigPage() {
       session_price_amount: Number(formData.get("session_price_amount")),
       starter_monthly_credits: Number(formData.get("starter_monthly_credits")),
       growth_monthly_credits: Number(formData.get("growth_monthly_credits")),
+      trial_days: Number(formData.get("trial_days")),
+      trial_brainstorm_credits: Number(formData.get("trial_brainstorm_credits")),
       updatedBy: actor.email ?? actor.id,
     });
     revalidatePath("/admin/brainstorm-config");
@@ -92,6 +94,39 @@ export default async function BrainstormConfigPage() {
               required
               style={{ width: "100%", padding: "0.625rem 0.875rem", borderRadius: "0.5rem", border: "1px solid var(--border)", background: "var(--surface)", fontSize: "1rem" }}
             />
+          </div>
+
+          <div>
+            <label style={{ display: "block", marginBottom: "0.375rem", fontSize: "0.875rem", fontWeight: 600 }}>
+              Trial хугацаа (хоног)
+            </label>
+            <input
+              type="number"
+              name="trial_days"
+              defaultValue={config.trial_days ?? 14}
+              min={1}
+              max={90}
+              style={{ width: "100%", padding: "0.625rem 0.875rem", borderRadius: "0.5rem", border: "1px solid var(--border)", background: "var(--surface)", fontSize: "1rem" }}
+            />
+            <p style={{ marginTop: "0.25rem", fontSize: "0.75rem", color: "var(--text-muted)" }}>
+              Шинэ trial subscription-д хэдэлэх хоногийн тоо.
+            </p>
+          </div>
+
+          <div>
+            <label style={{ display: "block", marginBottom: "0.375rem", fontSize: "0.875rem", fontWeight: 600 }}>
+              Trial Brainstorm credit
+            </label>
+            <input
+              type="number"
+              name="trial_brainstorm_credits"
+              defaultValue={config.trial_brainstorm_credits ?? 20}
+              min={0}
+              style={{ width: "100%", padding: "0.625rem 0.875rem", borderRadius: "0.5rem", border: "1px solid var(--border)", background: "var(--surface)", fontSize: "1rem" }}
+            />
+            <p style={{ marginTop: "0.25rem", fontSize: "0.75rem", color: "var(--text-muted)" }}>
+              Trial уе trial хэрэглэгчид өггөх урамд brainstorm session credit.
+            </p>
           </div>
 
           <button

@@ -44,6 +44,7 @@ export default async function AdminPlansPage() {
                 <th>Syncs / day</th>
                 <th>AI reports / mo</th>
                 <th>Retention (days)</th>
+                <th>🧠 Credits/сар</th>
                 <th>Subscriptions</th>
                 <th>Updated</th>
                 <th></th>

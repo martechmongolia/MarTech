@@ -75,12 +75,13 @@ export default async function AdminOverviewPage({ searchParams }: OverviewProps)
         <div className="ui-quick-links">
           <span className="ui-quick-links__label">Quick links</span>
           <QuickLink href={OPS.organizations}>Organizations</QuickLink>
-          <QuickLink href={OPS.billing}>Billing</QuickLink>
+          <QuickLink href={OPS.billing}>Billing 💰</QuickLink>
           <QuickLink href={OPS.jobs}>Jobs</QuickLink>
           <QuickLink href="/admin/audit">Audit log</QuickLink>
           <QuickLink href="/admin/plans">Plans</QuickLink>
           <QuickLink href="/admin/settings">Settings</QuickLink>
           <QuickLink href="/admin/feature-flags">Feature Flags 🚩</QuickLink>
+          <QuickLink href="/admin/brainstorm-config">Brainstorm 🧠</QuickLink>
         </div>
       </Card>
 
