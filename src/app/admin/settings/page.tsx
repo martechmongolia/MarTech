@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getSystemAdminsDirectory } from "@/modules/admin/data";
-import { PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -8,70 +7,66 @@ export default async function AdminSettingsPage() {
   const admins = await getSystemAdminsDirectory();
 
   return (
-    <div className="ui-admin-stack">
-      <div className="ui-admin-pagehead">
-        <Link href="/admin" className="ui-admin-back">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <Link href="/admin" className="admin-back-link">
           ← Overview
         </Link>
-        <PageHeader
-          className="ui-page-header--admin"
-          title="Settings"
-          description={
-            <>
-              <strong>System admins</strong> — read-only list from <code>system_admins</code>. Bootstrap and first-run
-              behavior are documented in <code style={{ fontSize: "var(--text-sm)" }}>docs/admin-bootstrap.md</code>. V1
-              does not include invite/revoke here.
-            </>
-          }
-        />
+        <h1 className="admin-page-title">System Settings</h1>
+        <p className="admin-page-desc">
+          <strong>System admins</strong> — read-only list. Access control and bootstrap details are in <code>docs/admin-bootstrap.md</code>. 
+          Manage higher-level platform authorization.
+        </p>
       </div>
 
       {admins.length === 0 ? (
-        <p className="ui-text-muted">
+        <div className="admin-glass-card" style={{ textAlign: "center", color: "#64748b", padding: "3rem" }}>
           No system admin rows (empty table — bootstrap may apply on first allowlisted access).
-        </p>
+        </div>
       ) : (
-        <div className="ui-table-wrap">
-          <table className="ui-table" style={{ fontSize: "var(--text-sm)" }}>
+        <div className="admin-table-wrapper">
+          <table className="admin-table">
             <thead>
               <tr>
-                <th>Email</th>
+                <th>Email Address</th>
                 <th>Role</th>
                 <th>Status</th>
-                <th>User ID</th>
-                <th>Granted by</th>
-                <th>Created</th>
+                <th>UUID (User)</th>
+                <th>Granted By</th>
+                <th>Created At</th>
               </tr>
             </thead>
             <tbody>
               {admins.map((a) => (
                 <tr key={a.id}>
-                  <td style={{ wordBreak: "break-word" }}>{a.email}</td>
+                  <td style={{ color: "#f1f5f9", fontWeight: 500, wordBreak: "break-all" }}>{a.email}</td>
                   <td>
-                    <code style={{ fontSize: "0.75rem" }}>{a.role}</code>
+                    <code style={{ fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", padding: "0.2rem 0.6rem", borderRadius: "0.4rem", color: "#a5b4fc" }}>
+                      {a.role}
+                    </code>
                   </td>
                   <td>
-                    {a.status === "active" ? (
-                      <span style={{ color: "var(--color-status-success)", fontWeight: 600 }}>active</span>
-                    ) : (
-                      <span className="ui-text-warning-emphasis">{a.status}</span>
-                    )}
+                    <span className={`admin-badge ${a.status === "active" ? "admin-badge-success" : "admin-badge-neutral"}`}>
+                      {a.status}
+                    </span>
                   </td>
-                  <td className="ui-text-muted">
-                    <code style={{ fontSize: "0.72rem" }} title={a.user_id}>
+                  <td className="admin-table__muted">
+                    <code style={{ fontSize: "0.72rem", color: "#64748b" }} title={a.user_id}>
                       {a.user_id.slice(0, 8)}…
                     </code>
                   </td>
-                  <td className="ui-text-muted" style={{ fontSize: "0.75rem" }}>
+                  <td className="admin-table__muted">
                     {a.granted_by ? (
-                      <code style={{ fontSize: "0.72rem" }} title={a.granted_by}>
+                      <code style={{ fontSize: "0.72rem", color: "#64748b" }} title={a.granted_by}>
                         {a.granted_by.slice(0, 8)}…
                       </code>
                     ) : (
                       "—"
                     )}
                   </td>
-                  <td className="ui-text-faint">{a.created_at?.replace("T", " ").slice(0, 19) ?? "—"}</td>
+                  <td className="admin-table__muted" style={{ fontSize: "0.75rem" }}>
+                    {a.created_at?.replace("T", " ").slice(0, 19) ?? "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { PageHeader } from "@/components/ui";
 import { getCurrentUser } from "@/modules/auth/session";
 import { hasActiveSystemAdminRecord } from "@/modules/admin/guard";
 import { isInternalOpsEmail } from "@/lib/internal-ops";
@@ -21,74 +20,78 @@ export default async function FeatureFlagsPage() {
   const flags = await getAllFlags();
 
   return (
-    <div className="ui-admin-stack">
-      <div className="ui-admin-pagehead">
-        <Link href="/admin" className="ui-admin-back">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <Link href="/admin" className="admin-back-link">
           ← Overview
         </Link>
-        <PageHeader
-          className="ui-page-header--admin"
-          title="Feature Flags"
-          description="Системийн үйлчилгээнүүдийг идэвхжүүлэх эсвэл хаах. Хаасан үйлчилгээ sidebar-аас нуугдана."
-        />
+        <h1 className="admin-page-title">Feature Flags</h1>
+        <p className="admin-page-desc">
+          Системийн дэд үйлчилгээнүүдийг төвлөрсөн байдлаар удирдах. Идэвхгүй болгосон үйлчилгээнүүд хэрэглэгчийн цэс болон UI дээрээс нуугдана.
+        </p>
       </div>
 
-      <div className="ui-table-wrap">
-        <table className="ui-table">
-          <thead>
-            <tr>
-              <th>Үйлчилгээ</th>
-              <th>Key</th>
-              <th>Тайлбар</th>
-              <th>Сүүлд өөрчилсөн</th>
-              <th style={{ textAlign: "right" }}>Төлөв</th>
-            </tr>
-          </thead>
-          <tbody>
-            {flags.map((flag) => (
-              <tr key={flag.key}>
-                <td>
-                  <strong>{flag.label}</strong>
-                </td>
-                <td>
-                  <code style={{ fontSize: "var(--text-sm)" }}>{flag.key}</code>
-                </td>
-                <td style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>
-                  {flag.description ?? "—"}
-                </td>
-                <td style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
-                  {flag.updated_by ? (
-                    <>
-                      {flag.updated_by}
-                      <br />
-                      {new Date(flag.updated_at).toLocaleDateString("mn-MN", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td style={{ textAlign: "right" }}>
-                  <FeatureFlagToggle
-                    flagKey={flag.key}
-                    label={flag.label}
-                    enabled={flag.enabled}
-                    adminEmail={user.email ?? ""}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {flags.length === 0 ? (
+          <div className="admin-glass-card" style={{ textAlign: "center", color: "#64748b", padding: "3rem" }}>
+            Flag байхгүй байна — систем бэлэн биш байна.
+          </div>
+        ) : (
+          <div className="admin-table-wrapper">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Үйлчилгээний нэр</th>
+                  <th>Key / ID</th>
+                  <th>Тайлбар</th>
+                  <th>Сүүлд шинэчилсэн</th>
+                  <th style={{ textAlign: "right" }}>Төлөв</th>
+                </tr>
+              </thead>
+              <tbody>
+                {flags.map((flag) => (
+                  <tr key={flag.key}>
+                    <td style={{ color: "#f1f5f9", fontWeight: 600 }}>{flag.label}</td>
+                    <td>
+                      <code style={{ fontSize: "0.75rem", color: "#818cf8", background: "rgba(129, 140, 248, 0.05)", padding: "0.2rem 0.4rem", borderRadius: "0.25rem" }}>
+                        {flag.key}
+                      </code>
+                    </td>
+                    <td className="admin-table__muted" style={{ fontSize: "0.875rem" }}>
+                      {flag.description ?? "—"}
+                    </td>
+                    <td className="admin-table__muted" style={{ fontSize: "0.8125rem" }}>
+                      {flag.updated_by ? (
+                        <div>
+                          <div style={{ color: "#94a3b8" }}>{flag.updated_by}</div>
+                          <div style={{ fontSize: "0.75rem", marginTop: "0.1rem" }}>
+                            {new Date(flag.updated_at).toLocaleDateString("mn-MN", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <FeatureFlagToggle
+                        flagKey={flag.key}
+                        label={flag.label}
+                        enabled={flag.enabled}
+                        adminEmail={user.email ?? ""}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-
-      {flags.length === 0 && (
-        <p className="ui-text-muted">Flag байхгүй байна — migration apply хийгдсэн эсэхийг шалгана уу.</p>
-      )}
     </div>
   );
 }

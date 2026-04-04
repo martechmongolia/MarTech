@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { OrganizationAdminListRow } from "@/modules/admin/data";
 import { getOrganizationsForAdminList } from "@/modules/admin/data";
-import { Button, Card, Input, PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -44,128 +43,141 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
   const filtered = applyOrgListFilters(allRows, sp);
 
   return (
-    <section className="ui-admin-stack">
-      <div className="ui-admin-pagehead">
-        <Link href="/admin" className="ui-admin-back">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <Link href="/admin" className="admin-back-link">
           ← Overview
         </Link>
-        <PageHeader
-          className="ui-page-header--admin"
-          title="Organizations"
-          description="Search and filter customer organizations. Open a row for subscription, Meta, usage, jobs, billing, and
-          audit context (read-only)."
-        />
+        <h1 className="admin-page-title">Organizations</h1>
+        <p className="admin-page-desc">
+          Search and filter customer organizations. Open a row for subscription, Meta, usage, jobs, billing, and
+          audit context (read-only).
+        </p>
       </div>
 
-      <Card padded className="ui-max-w-form">
-        <form method="get" className="ui-filter-bar">
-          <label className="ui-filter-field">
-            <span>Search (name, slug, owner email, id)</span>
-            <Input name="q" type="search" defaultValue={sp.q ?? ""} placeholder="Search…" style={{ minWidth: 220 }} />
+      <div className="admin-glass-card">
+        <form method="get" className="admin-filter-bar">
+          <label className="admin-filter-field" style={{ flex: "1 1 240px" }}>
+            <span>Search (name, slug, owner email)</span>
+            <input name="q" type="search" defaultValue={sp.q ?? ""} placeholder="Search…" className="admin-input" />
           </label>
-          <label className="ui-filter-field">
+          <label className="admin-filter-field">
             <span>Org status</span>
-            <select name="orgStatus" defaultValue={sp.orgStatus ?? "all"} className="ui-select">
-              <option value="all">All</option>
-              <option value="active">active</option>
-              <option value="suspended">suspended</option>
-              <option value="canceled">canceled</option>
+            <select name="orgStatus" defaultValue={sp.orgStatus ?? "all"} className="admin-select">
+              <option value="all">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
+              <option value="canceled">Canceled</option>
             </select>
           </label>
-          <label className="ui-filter-field">
+          <label className="admin-filter-field">
             <span>Subscription</span>
-            <select name="sub" defaultValue={sp.sub ?? "all"} className="ui-select">
-              <option value="all">All</option>
-              <option value="active">active / trialing</option>
-              <option value="bootstrap">bootstrap_pending_billing</option>
-              <option value="issues">Job issues (24h)</option>
+            <select name="sub" defaultValue={sp.sub ?? "all"} className="admin-select">
+              <option value="all">All Subs</option>
+              <option value="active">Active / Trialing</option>
+              <option value="bootstrap">Bootstrap</option>
+              <option value="issues">Job Issues (24h)</option>
             </select>
           </label>
-          <Button type="submit" variant="primary">
-            Apply
-          </Button>
-          {(sp.q || sp.orgStatus !== "all" || sp.sub !== "all") && (
-            <Link href="/admin/organizations" className="ui-text-muted" style={{ paddingBottom: "0.35rem" }}>
-              Reset
-            </Link>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <button type="submit" className="admin-btn-primary">
+              Apply Filters
+            </button>
+            {(sp.q || sp.orgStatus !== "all" || sp.sub !== "all") && (
+              <Link href="/admin/organizations" style={{ color: "#94a3b8", fontSize: "0.875rem", textDecoration: "none" }}>
+                Reset
+              </Link>
+            )}
+          </div>
         </form>
-      </Card>
+      </div>
 
-      <p className="ui-text-muted" style={{ margin: 0, fontSize: "var(--text-xs)" }}>
-        Showing <strong>{filtered.length}</strong> of <strong>{allRows.length}</strong> organizations (loaded up to 500).
-      </p>
-
-      {filtered.length === 0 ? (
-        <p className="ui-text-muted">No organizations match.</p>
-      ) : (
-        <div className="ui-table-wrap">
-          <table className="ui-table">
-            <thead>
-              <tr>
-                <th>Organization</th>
-                <th>Owner</th>
-                <th>Org</th>
-                <th>Subscription</th>
-                <th>Meta</th>
-                <th>Pages</th>
-                <th>24h health</th>
-                <th>Jobs</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((o) => (
-                <tr key={o.id}>
-                  <td>
-                    <Link href={`/admin/organizations/${o.id}`} className="ui-table__link">
-                      {o.name}
-                    </Link>
-                    <div className="ui-text-faint">
-                      <code>{o.slug}</code>
-                    </div>
-                  </td>
-                  <td style={{ maxWidth: 200 }}>
-                    {o.ownerEmail ? <span style={{ wordBreak: "break-all" }}>{o.ownerEmail}</span> : "—"}
-                  </td>
-                  <td className="ui-table__muted">{o.status}</td>
-                  <td>
-                    {o.subscriptionStatus ? (
-                      <>
-                        <div>{o.subscriptionStatus}</div>
-                        {o.planLabel ? (
-                          <div className="ui-text-muted" style={{ fontSize: "0.72rem", margin: 0 }}>
-                            {o.planLabel}
-                          </div>
-                        ) : null}
-                      </>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td style={{ fontSize: "0.75rem" }}>{o.metaConnectionSummary}</td>
-                  <td style={{ textAlign: "center" }}>{o.selectedPagesCount}</td>
-                  <td style={{ fontSize: "0.75rem" }}>
-                    {o.hasFailedSync24h || o.hasFailedAnalysis24h ? (
-                      <span className="ui-text-warning-emphasis">
-                        {o.hasFailedSync24h ? "sync " : ""}
-                        {o.hasFailedAnalysis24h ? "analysis " : ""}
-                        fail
-                      </span>
-                    ) : (
-                      <span style={{ color: "var(--color-status-success)", fontWeight: 600 }}>OK</span>
-                    )}
-                  </td>
-                  <td>
-                    <Link href={`/admin/jobs?org=${encodeURIComponent(o.id)}`} className="ui-link-subtle" style={{ fontSize: "0.75rem" }}>
-                      Open jobs
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <p style={{ margin: 0, fontSize: "0.875rem", color: "#64748b" }}>
+            Showing <strong>{filtered.length}</strong> of <strong>{allRows.length}</strong> organizations
+          </p>
         </div>
-      )}
-    </section>
+
+        {filtered.length === 0 ? (
+          <div className="admin-glass-card" style={{ textAlign: "center", color: "#64748b", padding: "3rem" }}>
+            No organizations match your filters.
+          </div>
+        ) : (
+          <div className="admin-table-wrapper">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Organization</th>
+                  <th>Owner</th>
+                  <th>Status</th>
+                  <th>Subscription</th>
+                  <th>Conn / Pages</th>
+                  <th>24h Health</th>
+                  <th style={{ textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((o) => (
+                  <tr key={o.id}>
+                    <td>
+                      <Link href={`/admin/organizations/${o.id}`} style={{ color: "#818cf8", fontWeight: 600, textDecoration: "none" }}>
+                        {o.name}
+                      </Link>
+                      <div style={{ fontSize: "0.75rem", opacity: 0.5, marginTop: "0.25rem" }}>
+                        <code>{o.slug}</code>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", wordBreak: "break-all", fontSize: "0.875rem" }}>
+                        {o.ownerEmail || "—"}
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`admin-badge ${o.status === "active" ? "admin-badge-success" : o.status === "suspended" ? "admin-badge-danger" : "admin-badge-neutral"}`}>
+                        {o.status}
+                      </span>
+                    </td>
+                    <td>
+                      {o.subscriptionStatus ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                          <span className={`admin-badge ${o.subscriptionStatus === "active" || o.subscriptionStatus === "trialing" ? "admin-badge-success" : "admin-badge-warning"}`} style={{ fontSize: "0.7rem", padding: "0.15rem 0.45rem" }}>
+                            {o.subscriptionStatus.replace(/_/g, " ")}
+                          </span>
+                          {o.planLabel && (
+                            <span style={{ fontSize: "0.7rem", color: "#94a3b8" }}>{o.planLabel}</span>
+                          )}
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td style={{ fontSize: "0.75rem" }}>
+                      <div style={{ color: "#cbd5e1" }}>{o.metaConnectionSummary}</div>
+                      <div style={{ marginTop: "0.25rem", color: "#64748b" }}>{o.selectedPagesCount} pages</div>
+                    </td>
+                    <td>
+                      {o.hasFailedSync24h || o.hasFailedAnalysis24h ? (
+                        <span className="admin-badge admin-badge-danger">
+                          ⚠️ {o.hasFailedSync24h ? "Sync " : ""}{o.hasFailedAnalysis24h ? "Auth " : ""}Issue
+                        </span>
+                      ) : (
+                        <span className="admin-badge admin-badge-success">● Healthy</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <Link href={`/admin/jobs?org=${encodeURIComponent(o.id)}`} className="admin-link-subtle" style={{ fontSize: "0.75rem" }}>
+                        Jobs ⚙️
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
+

@@ -4,7 +4,6 @@ import {
   listOperatorAuditEvents,
   type OperatorAuditEventRow
 } from "@/modules/admin/data";
-import { Button, Card, Input, PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -46,119 +45,108 @@ export default async function AdminAuditPage({ searchParams }: AuditPageProps) {
   ]);
 
   const qs = new URLSearchParams();
-  if (actionContains) {
-    qs.set("action", actionContains);
-  }
-  if (actorContains) {
-    qs.set("actor", actorContains);
-  }
-  if (organizationId) {
-    qs.set("org", organizationId);
-  }
-  if (limit !== 100) {
-    qs.set("limit", String(limit));
-  }
+  if (actionContains) qs.set("action", actionContains);
+  if (actorContains) qs.set("actor", actorContains);
+  if (organizationId) qs.set("org", organizationId);
+  if (limit !== 100) qs.set("limit", String(limit));
   const filterQuery = qs.toString();
 
   return (
-    <div className="ui-admin-stack">
-      <div className="ui-admin-pagehead">
-        <Link href="/admin" className="ui-admin-back">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <Link href="/admin" className="admin-back-link">
           ← Overview
         </Link>
-        <PageHeader
-          className="ui-page-header--admin"
-          title="Audit log"
-          description={
-            <>
-              <code>operator_audit_events</code> — newest first (up to 200 rows per request). Filters apply server-side;
-              read-only.
-            </>
-          }
-        />
+        <h1 className="admin-page-title">Audit Log</h1>
+        <p className="admin-page-desc">
+          <code>operator_audit_events</code> — newest first. Filters apply server-side; read-only access for platform transparency.
+        </p>
       </div>
 
-      <Card padded className="ui-max-w-form">
-        <form method="get" className="ui-admin-stack" style={{ gap: "var(--space-3)" }}>
-          <div className="ui-filter-bar">
-            <label className="ui-filter-field">
-              <span>Action contains</span>
-              <Input
-                name="action"
-                defaultValue={actionContains ?? ""}
-                placeholder="e.g. invoice_payment"
-                list="audit-action-hints"
-                style={{ minWidth: "12rem" }}
-              />
-            </label>
-            <label className="ui-filter-field">
-              <span>Actor email contains</span>
-              <Input name="actor" defaultValue={actorContains ?? ""} placeholder="substring" style={{ minWidth: "12rem" }} />
-            </label>
-            <label className="ui-filter-field">
-              <span>Organization ID (exact)</span>
-              <Input
-                name="org"
-                defaultValue={organizationId ?? orgRaw ?? ""}
-                placeholder="uuid"
-                style={{ minWidth: "16rem", fontFamily: "ui-monospace, monospace", fontSize: "var(--text-xs)" }}
-              />
-            </label>
-            <label className="ui-filter-field">
-              <span>Limit</span>
-              <select name="limit" defaultValue={String(Math.min(limit, 200))} className="ui-select">
-                {[50, 100, 150, 200].map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button type="submit" variant="primary">
-              Apply
-            </Button>
-            {filterQuery ? (
-              <Link href="/admin/audit" className="ui-text-muted" style={{ paddingBottom: "0.35rem" }}>
-                Clear filters
+      <div className="admin-glass-card">
+        <form method="get" className="admin-filter-bar">
+          <label className="admin-filter-field" style={{ flex: "1 1 200px" }}>
+            <span>Action contains</span>
+            <input
+              name="action"
+              defaultValue={actionContains ?? ""}
+              placeholder="e.g. invoice_payment"
+              list="audit-action-hints"
+              className="admin-input"
+            />
+          </label>
+          <label className="admin-filter-field" style={{ flex: "1 1 200px" }}>
+            <span>Actor email contains</span>
+            <input name="actor" defaultValue={actorContains ?? ""} placeholder="substring" className="admin-input" />
+          </label>
+          <label className="admin-filter-field" style={{ flex: "1 1 240px" }}>
+            <span>Organization ID (UUID)</span>
+            <input
+              name="org"
+              defaultValue={organizationId ?? orgRaw ?? ""}
+              placeholder="uuid"
+              className="admin-input"
+              style={{ fontFamily: "ui-monospace, monospace", fontSize: "0.75rem" }}
+            />
+          </label>
+          <label className="admin-filter-field">
+            <span>Limit</span>
+            <select name="limit" defaultValue={String(Math.min(limit, 200))} className="admin-select">
+              {[50, 100, 150, 200].map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          </label>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <button type="submit" className="admin-btn-primary">
+              Apply Filters
+            </button>
+            {filterQuery && (
+              <Link href="/admin/audit" style={{ color: "#94a3b8", fontSize: "0.875rem", textDecoration: "none" }}>
+                Reset
               </Link>
-            ) : null}
-            <datalist id="audit-action-hints">
-              {actionTypes.map((t) => (
-                <option key={t} value={t} />
-              ))}
-            </datalist>
+            )}
           </div>
-          {orgRaw && !organizationId ? (
-            <p className="ui-text-warning-emphasis" style={{ margin: 0, fontSize: "var(--text-xs)" }}>
-              Organization filter ignored — use a full UUID.
-            </p>
-          ) : null}
+          <datalist id="audit-action-hints">
+            {actionTypes.map((t) => (
+              <option key={t} value={t} />
+            ))}
+          </datalist>
         </form>
-      </Card>
+        {orgRaw && !organizationId && (
+          <p style={{ color: "#fbbf24", margin: "1rem 0 0 0", fontSize: "0.75rem" }}>
+             ⚠️ Organization filter ignored — use a full UUID.
+          </p>
+        )}
+      </div>
 
-      {audit.length === 0 ? (
-        <p className="ui-text-muted">No events match these filters.</p>
-      ) : (
-        <div className="ui-table-wrap">
-          <table className="ui-table" style={{ fontSize: "0.78rem" }}>
-            <thead>
-              <tr>
-                <th style={{ whiteSpace: "nowrap" }}>Time (UTC)</th>
-                <th>Action</th>
-                <th>Actor</th>
-                <th>Organization</th>
-                <th>Resource</th>
-                <th>Metadata</th>
-              </tr>
-            </thead>
-            <tbody>
-              {audit.map((row) => (
-                <AuditRow key={row.id} row={row} />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {audit.length === 0 ? (
+          <div className="admin-glass-card" style={{ textAlign: "center", color: "#64748b", padding: "3rem" }}>
+            No audit events found for your search.
+          </div>
+        ) : (
+          <div className="admin-table-wrapper">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th style={{ whiteSpace: "nowrap" }}>Time (UTC)</th>
+                  <th>Action</th>
+                  <th>Actor</th>
+                  <th>Organization</th>
+                  <th>Resource</th>
+                  <th>Metadata</th>
+                </tr>
+              </thead>
+              <tbody>
+                {audit.map((row) => (
+                  <AuditRow key={row.id} row={row} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -174,38 +162,46 @@ function AuditRow({ row }: { row: OperatorAuditEventRow }) {
 
   return (
     <tr style={{ verticalAlign: "top" }}>
-      <td className="ui-table__muted">{new Date(row.created_at).toISOString().replace("T", " ").slice(0, 19)}</td>
-      <td>
-        <code style={{ fontSize: "0.75rem", wordBreak: "break-word" }}>{row.action_type}</code>
+      <td className="admin-table__muted" style={{ whiteSpace: "nowrap" }}>
+        {new Date(row.created_at).toISOString().replace("T", " ").slice(0, 19)}
       </td>
-      <td style={{ wordBreak: "break-word" }}>{row.actor_email}</td>
-      <td className="ui-table__muted">
+      <td>
+        <code style={{ fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", padding: "0.2rem 0.4rem", borderRadius: "0.25rem", color: "#a5b4fc", wordBreak: "break-word" }}>
+          {row.action_type}
+        </code>
+      </td>
+      <td style={{ color: "#e2e8f0", wordBreak: "break-word", fontSize: "0.875rem" }}>{row.actor_email}</td>
+      <td className="admin-table__muted">
         {row.organization_id ? (
-          <>
-            <code style={{ fontSize: "0.72rem" }}>{row.organization_id.slice(0, 8)}…</code>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <code style={{ fontSize: "0.72rem", background: "rgba(0,0,0,0.3)", padding: "0.1rem 0.3rem", borderRadius: "0.2rem" }}>
+              {row.organization_id.slice(0, 8)}…
+            </code>
             <Link
               href={`/admin/audit?org=${encodeURIComponent(row.organization_id)}`}
-              className="ui-link-subtle"
-              style={{ marginLeft: "0.35rem", fontSize: "0.72rem" }}
+              style={{ color: "#818cf8", fontSize: "0.72rem", textDecoration: "none" }}
             >
               filter
             </Link>
-          </>
+          </div>
         ) : (
           "—"
         )}
       </td>
       <td>
-        <span className="ui-text-muted">{row.resource_type}</span>{" "}
-        <code style={{ fontSize: "0.72rem", wordBreak: "break-all" }} title={row.resource_id}>
-          {row.resource_id.length > 20 ? `${row.resource_id.slice(0, 14)}…` : row.resource_id}
-        </code>
+        <span style={{ color: "#94a3b8", fontSize: "0.75rem" }}>{row.resource_type}</span>{" "}
+        <div style={{ marginTop: "0.2rem" }}>
+          <code style={{ fontSize: "0.72rem", color: "#64748b", wordBreak: "break-all" }} title={row.resource_id}>
+            {row.resource_id.length > 20 ? `${row.resource_id.slice(0, 14)}…` : row.resource_id}
+          </code>
+        </div>
       </td>
-      <td className="ui-text-muted" style={{ maxWidth: "22rem" }}>
-        <code style={{ fontSize: "0.7rem", whiteSpace: "pre-wrap", wordBreak: "break-word" }} title={metaStr}>
+      <td style={{ maxWidth: "20rem" }}>
+        <code style={{ fontSize: "0.7rem", color: "#94a3b8", whiteSpace: "pre-wrap", wordBreak: "break-word" }} title={metaStr}>
           {metaShort}
         </code>
       </td>
     </tr>
   );
 }
+

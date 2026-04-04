@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PageHeader } from "@/components/ui";
+import { type ReactNode } from "react";
 import { getBillingMetrics } from "@/modules/admin/data";
 import { getCurrentUser } from "@/modules/auth/session";
 import { hasActiveSystemAdminRecord } from "@/modules/admin/guard";
@@ -19,120 +19,105 @@ export default async function AdminBillingPage() {
   const metrics = await getBillingMetrics();
 
   return (
-    <div className="ui-admin-stack">
-      <div className="ui-admin-pagehead">
-        <Link href="/admin" className="ui-admin-back">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <Link href="/admin" className="admin-back-link">
           ← Overview
         </Link>
-        <PageHeader
-          className="ui-page-header--admin"
-          title="Billing Dashboard"
-          description="Орлого, subscription, invoice тойм."
-        />
+        <h1 className="admin-page-title">Billing Dashboard</h1>
+        <p className="admin-page-desc">
+          Орлого, subscription, invoice тойм.
+        </p>
       </div>
 
       {/* MRR + Тоо */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
+      <section className="admin-stat-grid">
         {[
-          { label: "MRR", value: `${metrics.mrr.toLocaleString()}₮`, sub: "Сарын тогтмол орлого" },
-          { label: "Идэвхтэй", value: metrics.activeCount, sub: "Subscription" },
-          { label: "Trial", value: metrics.trialingCount, sub: "Туршилтын хугацаанд" },
-          { label: "Pending Invoice", value: metrics.pendingInvoices, sub: "Төлбөр хүлээгдэж байна" },
+          { label: "MRR", value: `${metrics.mrr.toLocaleString()}₮`, sub: "Сарын тогтмол орлого", icon: "💰" },
+          { label: "Идэвхтэй", value: metrics.activeCount, sub: "Subscription", icon: "💳" },
+          { label: "Trial", value: metrics.trialingCount, sub: "Туршилтын хугацаанд", icon: "🧪" },
+          { label: "Pending Invoice", value: metrics.pendingInvoices, sub: "Төлбөр хүлээгдэж байна", icon: "⏳" },
         ].map((m) => (
-          <div
-            key={m.label}
-            style={{
-              background: "var(--color-surface-raised, #1e293b)",
-              border: "1px solid var(--color-border, rgba(255,255,255,0.08))",
-              borderRadius: "0.75rem",
-              padding: "1.25rem",
-            }}
-          >
-            <p
-              style={{
-                color: "var(--color-text-muted)",
-                fontSize: "0.8rem",
-                margin: "0 0 0.25rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
-              {m.label}
-            </p>
-            <p style={{ fontSize: "1.75rem", fontWeight: 700, margin: "0 0 0.25rem" }}>{m.value}</p>
-            <p style={{ color: "var(--color-text-muted)", fontSize: "0.8rem", margin: 0 }}>{m.sub}</p>
+          <div key={m.label} className="admin-stat-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div className="admin-stat-label">{m.label}</div>
+              <span style={{ fontSize: "1.25rem", opacity: 0.8 }}>{m.icon}</span>
+            </div>
+            <div className="admin-stat-value">{m.value}</div>
+            <div className="admin-stat-hint">{m.sub}</div>
           </div>
         ))}
-      </div>
+      </section>
 
       {/* Plan тархалт */}
-      <div
-        style={{
-          background: "var(--color-surface-raised, #1e293b)",
-          border: "1px solid var(--color-border, rgba(255,255,255,0.08))",
-          borderRadius: "0.75rem",
-          padding: "1.25rem",
-        }}
-      >
+      <div className="admin-glass-card">
         <h3
           style={{
-            margin: "0 0 1rem",
-            fontSize: "0.9rem",
-            color: "var(--color-text-muted)",
+            margin: "0 0 1.25rem",
+            fontSize: "0.875rem",
+            fontWeight: 700,
+            color: "#94a3b8",
             textTransform: "uppercase",
             letterSpacing: "0.05em",
           }}
         >
           Plan тархалт
         </h3>
-        <div style={{ display: "flex", gap: "2rem" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "2.5rem" }}>
           {Object.entries(metrics.planDistribution).map(([code, count]) => (
-            <div key={code}>
-              <span style={{ fontWeight: 700, fontSize: "1.25rem" }}>{count}</span>
-              <span style={{ color: "var(--color-text-muted)", marginLeft: "0.5rem", fontSize: "0.9rem" }}>
+            <div key={code} style={{ display: "flex", alignItems: "baseline", gap: "0.5rem" }}>
+              <span className="admin-gradient-text" style={{ fontWeight: 800, fontSize: "1.5rem", color: "#f8fafc" }}>{count}</span>
+              <span style={{ color: "#94a3b8", fontSize: "0.875rem", fontWeight: 500 }}>
                 {code}
               </span>
             </div>
           ))}
           {Object.keys(metrics.planDistribution).length === 0 && (
-            <p style={{ color: "var(--color-text-muted)", margin: 0 }}>Subscription байхгүй</p>
+            <p style={{ color: "#64748b", margin: 0, fontSize: "0.875rem" }}>Subscription байхгүй</p>
           )}
         </div>
       </div>
 
       {/* Сүүлийн төлбөрүүд */}
-      <div>
-        <h3 style={{ margin: "0 0 0.75rem", fontSize: "var(--text-base)", fontWeight: 600 }}>
-          Сүүлийн төлбөрүүд
-        </h3>
+      <div className="admin-glass-card">
+        <div className="admin-section-head">
+          <h3 className="admin-section-title">
+            Сүүлийн төлбөрүүд
+          </h3>
+        </div>
+        
         {metrics.recentInvoices.length === 0 ? (
-          <p style={{ color: "var(--color-text-muted)" }}>Төлбөр байхгүй</p>
+          <p style={{ color: "#64748b", marginTop: "1rem" }}>Төлбөр байхгүй</p>
         ) : (
-          <div className="ui-table-wrap">
-            <table className="ui-table" style={{ fontSize: "var(--text-sm)" }}>
+          <div className="admin-table-wrapper">
+            <table className="admin-table">
               <thead>
                 <tr>
                   <th>Огноо</th>
                   <th>Invoice</th>
                   <th>Дүн</th>
-                  <th>Төлөв</th>
+                  <th style={{ textAlign: "right" }}>Төлөв</th>
                 </tr>
               </thead>
               <tbody>
                 {metrics.recentInvoices.map((inv: any) => (
                   <tr key={inv.id}>
-                    <td>
+                    <td className="admin-table__muted">
                       {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString("mn-MN") : "—"}
                     </td>
                     <td>
-                      <code style={{ fontSize: "0.75rem" }}>{String(inv.id).slice(0, 8)}…</code>
+                      <code style={{ fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", padding: "0.2rem 0.4rem", borderRadius: "0.25rem", color: "#a5b4fc" }}>
+                        {String(inv.id).slice(0, 8)}…
+                      </code>
                     </td>
-                    <td>
+                    <td style={{ fontWeight: 600, color: "#f1f5f9" }}>
                       {Number(inv.amount).toLocaleString()}
                       {inv.currency === "MNT" ? "₮" : ` ${inv.currency}`}
                     </td>
-                    <td>
-                      <span style={{ color: "#10b981" }}>✓ Төлсөн</span>
+                    <td style={{ textAlign: "right" }}>
+                      <span className="admin-badge admin-badge-success">
+                        ✓ Төлсөн
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -143,23 +128,21 @@ export default async function AdminBillingPage() {
       </div>
 
       {/* Quick links */}
-      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-        <Link href="/admin/plans" style={{ color: "var(--color-link)", fontSize: "var(--text-sm)" }}>
-          → Plan тохиргоо
-        </Link>
-        <Link
-          href="/admin/brainstorm-config"
-          style={{ color: "var(--color-link)", fontSize: "var(--text-sm)" }}
-        >
-          → Brainstorm тохиргоо
-        </Link>
-        <Link
-          href="/admin/organizations"
-          style={{ color: "var(--color-link)", fontSize: "var(--text-sm)" }}
-        >
-          → Байгууллагууд
-        </Link>
+      <div className="admin-quick-links-wrap">
+        <span className="admin-quick-links-title">Quick links</span>
+        <QuickLink href="/admin/plans">Plan тохиргоо 📦</QuickLink>
+        <QuickLink href="/admin/brainstorm-config">Brainstorm тохиргоо 🧠</QuickLink>
+        <QuickLink href="/admin/organizations">Байгууллагууд 🏢</QuickLink>
       </div>
     </div>
   );
 }
+
+function QuickLink(props: { href: string; children: ReactNode }) {
+  return (
+    <Link href={props.href} className="admin-quick-link">
+      {props.children}
+    </Link>
+  );
+}
+

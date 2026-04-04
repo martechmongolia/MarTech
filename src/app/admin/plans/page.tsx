@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getPlansForAdminDirectory, getSubscriptionCountsByPlanId } from "@/modules/admin/data";
-import { PageHeader } from "@/components/ui";
 import { PlanRow } from "./PlanEditForm";
 
 export const dynamic = "force-dynamic";
@@ -9,45 +8,39 @@ export default async function AdminPlansPage() {
   const [plans, subCounts] = await Promise.all([getPlansForAdminDirectory(), getSubscriptionCountsByPlanId()]);
 
   return (
-    <div className="ui-admin-stack">
-      <div className="ui-admin-pagehead">
-        <Link href="/admin" className="ui-admin-back">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <Link href="/admin" className="admin-back-link">
           ← Overview
         </Link>
-        <PageHeader
-          className="ui-page-header--admin"
-          title="Plans"
-          description={
-            <>
-              Directory from <code>plans</code> (including inactive). Customer-facing pricing:{" "}
-              <Link href="/pricing" className="ui-link-subtle">
-                /pricing
-              </Link>
-              . Click <strong>Edit</strong> to modify a plan (operator+ only).
-            </>
-          }
-        />
+        <h1 className="admin-page-title">Subscription Plans</h1>
+        <p className="admin-page-desc">
+          Manage product pricing and limits. Customer-facing: <Link href="/pricing" style={{ color: "#818cf8", textDecoration: "underline" }}>/pricing</Link>. 
+          Click <strong>Edit</strong> to modify (operator+ only).
+        </p>
       </div>
 
       {plans.length === 0 ? (
-        <p className="ui-text-muted">No plan rows.</p>
+        <div className="admin-glass-card" style={{ textAlign: "center", color: "#64748b", padding: "3rem" }}>
+          No subscription plans found.
+        </div>
       ) : (
-        <div className="ui-table-wrap">
-          <table className="ui-table" style={{ fontSize: "var(--text-sm)" }}>
+        <div className="admin-table-wrapper">
+          <table className="admin-table">
             <thead>
               <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>State</th>
+                <th>Plan Code</th>
+                <th>Display Name</th>
+                <th>Status</th>
                 <th>Price / mo</th>
-                <th>Max pages</th>
-                <th>Syncs / day</th>
-                <th>AI reports / mo</th>
-                <th>Retention (days)</th>
-                <th>🧠 Credits/сар</th>
-                <th>Subscriptions</th>
-                <th>Updated</th>
-                <th></th>
+                <th title="Max Meta Pages">Max Pages</th>
+                <th title="Max Syncs per Day">Syncs</th>
+                <th title="Monthly AI Reports">AI Reports</th>
+                <th>Retention</th>
+                <th title="Monthly Brainstorm Credits">🧠 Credits</th>
+                <th>Subs</th>
+                <th>Last Update</th>
+                <th style={{ textAlign: "right" }}>Actions</th>
               </tr>
             </thead>
             <tbody>

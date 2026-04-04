@@ -34,41 +34,66 @@ export function FeatureFlagToggle({ flagKey, label, enabled: initialEnabled, adm
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-      <button
-        onClick={handleToggle}
-        disabled={isPending}
-        title={enabled ? `${label} хаах` : `${label} нээх`}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "6px 14px",
-          borderRadius: 20,
-          border: "none",
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.25rem" }}>
+      <label 
+        style={{ 
+          display: "inline-flex", 
+          alignItems: "center", 
+          gap: "0.75rem", 
           cursor: isPending ? "not-allowed" : "pointer",
-          fontWeight: 600,
-          fontSize: "var(--text-sm)",
-          opacity: isPending ? 0.6 : 1,
-          background: enabled ? "var(--color-success, #22c55e)" : "var(--color-muted, #94a3b8)",
-          color: "#fff",
-          transition: "background 0.2s",
+          userSelect: "none",
+          padding: "0.25rem"
         }}
       >
-        <span
-          style={{
-            width: 10,
-            height: 10,
-            borderRadius: "50%",
-            background: "#fff",
-            opacity: enabled ? 1 : 0.5,
-            display: "inline-block",
+        <span style={{ 
+          fontSize: "0.75rem", 
+          fontWeight: 600, 
+          color: enabled ? "#10b981" : "#64748b",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+          transition: "color 0.2s"
+        }}>
+          {isPending ? "Updating..." : enabled ? "Active" : "Disabled"}
+        </span>
+        
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            handleToggle();
           }}
-        />
-        {isPending ? "..." : enabled ? "Нээлттэй" : "Хаалттай"}
-      </button>
+          disabled={isPending}
+          style={{
+            position: "relative",
+            width: "2.75rem",
+            height: "1.5rem",
+            borderRadius: "1rem",
+            border: "1px solid rgba(255,255,255,0.1)",
+            background: enabled ? "rgba(16, 185, 129, 0.2)" : "rgba(255, 255, 255, 0.05)",
+            cursor: isPending ? "not-allowed" : "pointer",
+            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            padding: 0,
+            outline: "none",
+            boxShadow: enabled ? "0 0 15px rgba(16, 185, 129, 0.1)" : "none"
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: "2px",
+              left: enabled ? "calc(100% - 1.25rem - 2px)" : "2px",
+              width: "1.25rem",
+              height: "1.25rem",
+              borderRadius: "50%",
+              background: enabled ? "#10b981" : "#94a3b8",
+              boxShadow: enabled ? "0 0 8px rgba(16, 185, 129, 0.5)" : "none",
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+            }}
+          />
+        </button>
+      </label>
+      
       {error && (
-        <span style={{ fontSize: "var(--text-xs, 11px)", color: "var(--color-danger, #ef4444)" }}>
+        <span style={{ fontSize: "0.6875rem", color: "#f87171", fontWeight: 500, marginRight: "0.25rem" }}>
           {error}
         </span>
       )}

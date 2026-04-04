@@ -15,37 +15,23 @@ const NAV_ITEMS = [
   { href: "/admin/feature-flags", label: "Feature Flags 🚩" },
 ] as const;
 
+import "./admin.css";
+
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const actor = await requireSystemAdmin("viewer");
 
   return (
-    <div className="ui-admin-shell">
-      <header
-        style={{
-          borderBottom: "2px solid #7c3aed",
-          padding: "0.75rem 2rem",
-          background: "#1e1b4b",
-          color: "#e0e7ff"
-        }}
-      >
-        <nav
-          style={{
-            display: "flex",
-            gap: "1.25rem",
-            flexWrap: "wrap",
-            alignItems: "center",
-            maxWidth: 1280,
-            margin: "0 auto"
-          }}
-        >
-          <strong style={{ color: "#a78bfa", marginRight: "0.5rem", fontSize: "0.95rem" }}>
-            System Admin
+    <div className="admin-layout">
+      <header className="admin-header-glass">
+        <nav className="admin-nav">
+          <strong style={{ color: "#818cf8", marginRight: "0.5rem", fontSize: "1rem", letterSpacing: "0.025em" }}>
+            Admin Control Room
           </strong>
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              style={{ color: "#c7d2fe", fontSize: "0.875rem", textDecoration: "none" }}
+              className="admin-nav-link"
             >
               {item.label}
             </Link>
@@ -55,20 +41,23 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               marginLeft: "auto",
               display: "flex",
               alignItems: "center",
-              gap: "1rem",
-              fontSize: "0.8rem"
+              gap: "1.25rem",
+              fontSize: "0.85rem"
             }}
           >
-            <span style={{ color: "#818cf8" }}>
-              {actor.email} ({actor.role.replace("_", " ")})
+            <span style={{ color: "#94a3b8", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 10px #4ade80" }}></span>
+              {actor.email} <span style={{ opacity: 0.5 }}>({actor.role.replace("_", " ")})</span>
             </span>
-            <Link href="/dashboard" style={{ color: "#94a3b8", textDecoration: "none" }}>
+            <Link href="/dashboard" className="admin-nav-link" style={{ border: "1px solid rgba(255,255,255,0.1)", padding: "0.4rem 0.8rem", borderRadius: "0.5rem" }}>
               ← Customer app
             </Link>
           </span>
         </nav>
       </header>
-      <div className="ui-admin-content">{children}</div>
+      <main className="admin-content-wrapper">
+        {children}
+      </main>
     </div>
   );
 }

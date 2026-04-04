@@ -54,172 +54,154 @@ function EditForm({
   }
 
   return (
-    <div
-      style={{
-        background: "var(--color-surface-raised, #1a1a2e)",
-        border: "1px solid var(--color-border, #2a2a3e)",
-        borderRadius: "8px",
-        padding: "16px",
-        marginTop: "8px",
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: "12px",
-      }}
-    >
-      <div style={{ gridColumn: "1 / -1", fontWeight: 600, fontSize: "0.85rem", marginBottom: "4px" }}>
-        Edit Plan: <code style={{ fontSize: "0.8rem" }}>{plan.code}</code>
+    <div className="admin-glass-card" style={{ marginTop: "1rem", maxWidth: "800px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+        <h3 className="admin-section-title" style={{ margin: 0 }}>
+          Edit Plan: <code style={{ color: "#a5b4fc" }}>{plan.code}</code>
+        </h3>
+        <span className={`admin-badge ${isActive ? "admin-badge-success" : "admin-badge-neutral"}`}>
+          {isActive ? "Active" : "Inactive"}
+        </span>
       </div>
 
       {error && (
-        <div
-          style={{
-            gridColumn: "1 / -1",
-            color: "var(--color-status-error, #ef4444)",
-            fontSize: "0.8rem",
-            padding: "6px 10px",
-            background: "rgba(239,68,68,0.08)",
-            borderRadius: "4px",
-          }}
-        >
+        <div style={{ color: "#fca5a5", fontSize: "0.875rem", padding: "0.75rem", background: "rgba(239,68,68,0.1)", borderRadius: "0.5rem", marginBottom: "1.5rem", border: "1px solid rgba(239,68,68,0.2)" }}>
           {error}
         </div>
       )}
 
-      <label style={labelStyle}>
-        <span style={labelTextStyle}>Name</span>
-        <input
-          style={inputStyle}
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          disabled={isPending}
-        />
-      </label>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
+        <label className="admin-filter-field">
+          <span>Display Name</span>
+          <input
+            className="admin-input"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={isPending}
+          />
+        </label>
 
-      <label style={labelStyle}>
-        <span style={labelTextStyle}>Currency</span>
-        <input
-          style={inputStyle}
-          type="text"
-          value={currency}
-          maxLength={3}
-          onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-          disabled={isPending}
-          placeholder="MNT"
-        />
-      </label>
+        <label className="admin-filter-field">
+          <span>Currency</span>
+          <input
+            className="admin-input"
+            type="text"
+            value={currency}
+            maxLength={3}
+            onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+            disabled={isPending}
+            placeholder="MNT"
+          />
+        </label>
 
-      <label style={labelStyle}>
-        <span style={labelTextStyle}>Price / month</span>
-        <input
-          style={inputStyle}
-          type="number"
-          min={0}
-          step={0.01}
-          value={priceMonthly}
-          onChange={(e) => setPriceMonthly(parseFloat(e.target.value) || 0)}
-          disabled={isPending}
-        />
-      </label>
+        <label className="admin-filter-field">
+          <span>Price / month</span>
+          <input
+            className="admin-input"
+            type="number"
+            min={0}
+            step={0.01}
+            value={priceMonthly}
+            onChange={(e) => setPriceMonthly(parseFloat(e.target.value) || 0)}
+            disabled={isPending}
+          />
+        </label>
 
-      <label style={labelStyle}>
-        <span style={labelTextStyle}>Max pages</span>
-        <input
-          style={inputStyle}
-          type="number"
-          min={1}
-          value={maxPages}
-          onChange={(e) => setMaxPages(parseInt(e.target.value) || 1)}
-          disabled={isPending}
-        />
-      </label>
+        <label className="admin-filter-field">
+          <span>Max pages</span>
+          <input
+            className="admin-input"
+            type="number"
+            min={1}
+            value={maxPages}
+            onChange={(e) => setMaxPages(parseInt(e.target.value) || 1)}
+            disabled={isPending}
+          />
+        </label>
 
-      <label style={labelStyle}>
-        <span style={labelTextStyle}>Syncs / day</span>
-        <input
-          style={inputStyle}
-          type="number"
-          min={1}
-          value={syncsPerDay}
-          onChange={(e) => setSyncsPerDay(parseInt(e.target.value) || 1)}
-          disabled={isPending}
-        />
-      </label>
+        <label className="admin-filter-field">
+          <span>Syncs / day</span>
+          <input
+            className="admin-input"
+            type="number"
+            min={1}
+            value={syncsPerDay}
+            onChange={(e) => setSyncsPerDay(parseInt(e.target.value) || 1)}
+            disabled={isPending}
+          />
+        </label>
 
-      <label style={labelStyle}>
-        <span style={labelTextStyle}>AI reports / month</span>
-        <input
-          style={inputStyle}
-          type="number"
-          min={0}
-          value={monthlyAiReports}
-          onChange={(e) => setMonthlyAiReports(parseInt(e.target.value) || 0)}
-          disabled={isPending}
-        />
-      </label>
+        <label className="admin-filter-field">
+          <span>AI reports / month</span>
+          <input
+            className="admin-input"
+            type="number"
+            min={0}
+            value={monthlyAiReports}
+            onChange={(e) => setMonthlyAiReports(parseInt(e.target.value) || 0)}
+            disabled={isPending}
+          />
+        </label>
 
-      <label style={labelStyle}>
-        <span style={labelTextStyle}>Retention (days)</span>
-        <input
-          style={inputStyle}
-          type="number"
-          min={1}
-          value={reportRetentionDays}
-          onChange={(e) => setReportRetentionDays(parseInt(e.target.value) || 1)}
-          disabled={isPending}
-        />
-      </label>
+        <label className="admin-filter-field">
+          <span>Retention (days)</span>
+          <input
+            className="admin-input"
+            type="number"
+            min={1}
+            value={reportRetentionDays}
+            onChange={(e) => setReportRetentionDays(parseInt(e.target.value) || 1)}
+            disabled={isPending}
+          />
+        </label>
 
-      <label style={labelStyle}>
-        <span style={labelTextStyle}>Сарын Brainstorm credit 🧠</span>
-        <input
-          style={inputStyle}
-          type="number"
-          min={0}
-          value={brainstormCreditsMonthly}
-          onChange={(e) => setBrainstormCreditsMonthly(parseInt(e.target.value) || 0)}
-          disabled={isPending}
-        />
-      </label>
+        <label className="admin-filter-field">
+          <span>Сарын Brainstorm credit 🧠</span>
+          <input
+            className="admin-input"
+            type="number"
+            min={0}
+            value={brainstormCreditsMonthly}
+            onChange={(e) => setBrainstormCreditsMonthly(parseInt(e.target.value) || 0)}
+            disabled={isPending}
+          />
+        </label>
 
-      <label
-        style={{
-          ...labelStyle,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: "8px",
-          cursor: "pointer",
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={isActive}
-          onChange={(e) => setIsActive(e.target.checked)}
-          disabled={isPending}
-          style={{ width: 16, height: 16, accentColor: "var(--color-status-success, #22c55e)" }}
-        />
-        <span style={labelTextStyle}>Active</span>
-      </label>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            cursor: "pointer",
+            marginTop: "auto",
+            padding: "0.5rem 0"
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={isActive}
+            onChange={(e) => setIsActive(e.target.checked)}
+            disabled={isPending}
+            style={{ width: "1.25rem", height: "1.25rem", accentColor: "#10b981" }}
+          />
+          <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#f1f5f9" }}>Active Plan</span>
+        </label>
+      </div>
 
-      <div
-        style={{
-          gridColumn: "1 / -1",
-          display: "flex",
-          gap: "8px",
-          marginTop: "4px",
-        }}
-      >
+      <div style={{ display: "flex", gap: "1rem" }}>
         <button
           onClick={handleSave}
           disabled={isPending}
-          style={saveButtonStyle}
+          className="admin-btn-primary"
+          style={{ minWidth: "100px" }}
         >
-          {isPending ? "Saving…" : "Save"}
+          {isPending ? "Saving…" : "Save Changes"}
         </button>
         <button
           onClick={onClose}
           disabled={isPending}
-          style={cancelButtonStyle}
+          className="admin-btn-secondary"
         >
           Cancel
         </button>
@@ -239,30 +221,38 @@ export function PlanRow({
 
   return (
     <>
-      <tr>
+      <tr style={{ cursor: "pointer" }} onClick={() => setEditing((v) => !v)}>
         <td>
-          <code style={{ fontSize: "0.75rem" }}>{plan.code}</code>
+          <code style={{ fontSize: "0.75rem", color: "#818cf8" }}>{plan.code}</code>
         </td>
-        <td>{plan.name}</td>
+        <td style={{ fontWeight: 600, color: "#f1f5f9" }}>{plan.name}</td>
         <td>
-          {plan.is_active ? (
-            <span style={{ color: "var(--color-status-success)", fontWeight: 600 }}>active</span>
-          ) : (
-            <span className="ui-text-muted">inactive</span>
-          )}
+          <span className={`admin-badge ${plan.is_active ? "admin-badge-success" : "admin-badge-neutral"}`}>
+            {plan.is_active ? "active" : "inactive"}
+          </span>
         </td>
-        <td style={{ whiteSpace: "nowrap" }}>{formatPrice(plan.price_monthly, plan.currency)}</td>
-        <td>{plan.max_pages}</td>
-        <td>{plan.syncs_per_day}</td>
-        <td>{plan.monthly_ai_reports}</td>
-        <td>{plan.report_retention_days}</td>
-        <td>{(plan as any).brainstorm_credits_monthly ?? 0}</td>
-        <td>{subCount}</td>
-        <td className="ui-text-faint">{plan.updated_at?.replace("T", " ").slice(0, 19) ?? "—"}</td>
-        <td>
+        <td style={{ whiteSpace: "nowrap", fontWeight: 700, color: "#f8fafc" }}>{formatPrice(plan.price_monthly, plan.currency)}</td>
+        <td style={{ textAlign: "center" }}>{plan.max_pages}</td>
+        <td style={{ textAlign: "center" }}>{plan.syncs_per_day}</td>
+        <td style={{ textAlign: "center" }}>{plan.monthly_ai_reports}</td>
+        <td style={{ textAlign: "center" }}>{plan.report_retention_days}d</td>
+        <td style={{ textAlign: "center", color: "#60a5fa", fontWeight: 700 }}>{(plan as any).brainstorm_credits_monthly ?? 0}</td>
+        <td style={{ textAlign: "center" }}>
+          <span style={{ background: "rgba(255,255,255,0.05)", padding: "0.2rem 0.6rem", borderRadius: "1rem", fontSize: "0.75rem" }}>
+            {subCount}
+          </span>
+        </td>
+        <td className="admin-table__muted" style={{ fontSize: "0.75rem" }}>
+          {plan.updated_at?.replace("T", " ").slice(0, 19) ?? "—"}
+        </td>
+        <td style={{ textAlign: "right" }}>
           <button
-            onClick={() => setEditing((v) => !v)}
-            style={editButtonStyle}
+            className={editing ? "admin-btn-secondary" : "admin-btn-primary"}
+            style={{ padding: "0.25rem 0.75rem", fontSize: "0.75rem" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditing((v) => !v);
+            }}
           >
             {editing ? "Close" : "Edit"}
           </button>
@@ -270,66 +260,13 @@ export function PlanRow({
       </tr>
       {editing && (
         <tr>
-          <td colSpan={12} style={{ padding: "0 8px 12px" }}>
+          <td colSpan={12} style={{ padding: "0 1rem 2rem", background: "rgba(255,255,255,0.01)" }}>
             <EditForm plan={plan} onClose={() => setEditing(false)} />
           </td>
         </tr>
       )}
     </>
   );
-}
-
-// Styles
-const labelStyle: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "4px",
 };
 
-const labelTextStyle: React.CSSProperties = {
-  fontSize: "0.75rem",
-  color: "var(--color-text-muted, #888)",
-  fontWeight: 500,
-};
 
-const inputStyle: React.CSSProperties = {
-  background: "var(--color-surface, #111)",
-  border: "1px solid var(--color-border, #2a2a3e)",
-  borderRadius: "4px",
-  color: "var(--color-text, #fff)",
-  padding: "5px 8px",
-  fontSize: "0.85rem",
-  width: "100%",
-};
-
-const saveButtonStyle: React.CSSProperties = {
-  background: "var(--color-accent, #4f46e5)",
-  color: "#fff",
-  border: "none",
-  borderRadius: "5px",
-  padding: "6px 18px",
-  fontSize: "0.82rem",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const cancelButtonStyle: React.CSSProperties = {
-  background: "transparent",
-  color: "var(--color-text-muted, #888)",
-  border: "1px solid var(--color-border, #2a2a3e)",
-  borderRadius: "5px",
-  padding: "6px 14px",
-  fontSize: "0.82rem",
-  cursor: "pointer",
-};
-
-const editButtonStyle: React.CSSProperties = {
-  background: "transparent",
-  color: "var(--color-accent, #4f46e5)",
-  border: "1px solid var(--color-accent, #4f46e5)",
-  borderRadius: "4px",
-  padding: "3px 10px",
-  fontSize: "0.78rem",
-  cursor: "pointer",
-  fontWeight: 500,
-};

@@ -7,6 +7,7 @@ import { getRecentInvoicesForCurrentUserOrg } from "@/modules/billing/data";
 import { getCurrentOrganizationSubscription } from "@/modules/subscriptions/data";
 import { getUserCredits, getBrainstormConfig } from "@/lib/brainstorm/credits";
 import InvoiceList from "./InvoiceList";
+import "./billing.css";
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -95,242 +96,167 @@ export default async function BillingPage() {
   });
 
   return (
-    <section className="ui-customer-stack">
-      <PageHeader
-        title="Billing"
-        description="Таны subscription болон Brainstorming credit-ийн мэдээлэл"
-      />
+    <div className="billing-layout">
+      <div className="billing-content-wrapper">
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          {/* ── Header ── */}
+          <div className="billing-page-header">
+            <h1 className="billing-page-title">Төлбөр & Багц</h1>
+            <p className="billing-page-desc">Таны subscription болон Brainstorming credit-ийн мэдээлэл</p>
+          </div>
 
-      {/* ── 1. Subscription Hero Card ── */}
-      {subscription ? (
-        <Card padded>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span style={{ fontSize: "1.25rem" }}>{planEmoji}</span>
-                <span style={{ fontWeight: 600, fontSize: "1.1rem" }}>{planName}</span>
-                <span style={{ color: statusInfo.color, fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                  <span>{statusInfo.dot}</span>
-                  <span>{statusInfo.label}</span>
-                </span>
+          {/* ── 1. Subscription Hero Card ── */}
+          {subscription ? (
+            <div className="billing-glass-card">
+              <div className="billing-card-glow"></div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1.5rem", flexWrap: "wrap", position: "relative", zIndex: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <span style={{ fontSize: "1.75rem", filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.5))" }}>{planEmoji}</span>
+                    <span className="billing-gradient-text" style={{ fontSize: "1.5rem", letterSpacing: "0.025em" }}>{planName}</span>
+                    <span className="billing-status-badge" style={{ color: statusInfo.color, borderColor: `${statusInfo.color}40`, backgroundColor: `${statusInfo.color}15` }}>
+                      <span>{statusInfo.dot}</span>
+                      {statusInfo.label}
+                    </span>
+                  </div>
+                  {subscription.current_period_end && (
+                    <div style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.6)", marginTop: "0.25rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                      <span>Дараагийн төлбөр:</span>
+                      <strong style={{ color: "white", fontSize: "1rem" }}>
+                        {formatAmount(subscription.plan.price_monthly, subscription.plan.currency)}
+                      </strong>
+                      <span style={{ color: "rgba(255,255,255,0.3)" }}>•</span>
+                      <span>{formatMongolDate(subscription.current_period_end)}</span>
+                    </div>
+                  )}
+                  {status === "bootstrap_pending_billing" && (
+                    <div className="billing-warning-box" style={{ marginTop: "0.75rem" }}>
+                      <span>⚠️</span> Subscription идэвхжүүлэхийн тулд QPay төлбөрөө дуусгана уу.
+                    </div>
+                  )}
+                  {(status === "canceled" || status === "expired") && (
+                    <div className="billing-error-box" style={{ marginTop: "0.75rem" }}>
+                      <span>❌</span> Subscription дахин идэвхжүүлэхийн тулд доорх линкийг дарна уу.
+                    </div>
+                  )}
+                </div>
+                {planCode !== "growth" && (
+                  <Link href="/pricing" className="billing-btn-outline">
+                    🚀 Цааш ахиулах (Upgrade)
+                  </Link>
+                )}
               </div>
-              {subscription.current_period_end && (
-                <div style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
-                  Дараагийн төлбөр:{" "}
-                  <strong style={{ color: "var(--text-base)" }}>
-                    {formatAmount(subscription.plan.price_monthly, subscription.plan.currency)}
-                  </strong>
-                  {" · "}
-                  {formatMongolDate(subscription.current_period_end)}
-                </div>
-              )}
-              {status === "bootstrap_pending_billing" && (
-                <div style={{ fontSize: "0.875rem", color: "#f59e0b", marginTop: "0.25rem" }}>
-                  ⚠️ Subscription идэвхжүүлэхийн тулд QPay төлбөрөө дуусгана уу.
-                </div>
-              )}
-              {(status === "canceled" || status === "expired") && (
-                <div style={{ fontSize: "0.875rem", color: "#ef4444", marginTop: "0.25rem" }}>
-                  Subscription дахин идэвхжүүлэхийн тулд доорх линкийг дарна уу.
-                </div>
-              )}
             </div>
-            {planCode !== "growth" && (
-              <Link
-                href="/pricing"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.375rem",
-                  padding: "0.5rem 1rem",
-                  background: "rgba(99,102,241,0.15)",
-                  border: "1px solid rgba(99,102,241,0.4)",
-                  borderRadius: "0.5rem",
-                  color: "#a5b4fc",
-                  textDecoration: "none",
-                  fontSize: "0.875rem",
-                  fontWeight: 500,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                🚀 Upgrade
+          ) : (
+            <div className="billing-glass-card">
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem", position: "relative", zIndex: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <span style={{ fontSize: "1.5rem" }}>📦</span>
+                  <span style={{ fontWeight: 700, fontSize: "1.25rem", color: "white" }}>Subscription байхгүй байна</span>
+                </div>
+                <p style={{ margin: 0, color: "rgba(255,255,255,0.6)", fontSize: "0.875rem", lineHeight: 1.5 }}>
+                  Тохирох төлөвлөгөөг сонгоод Brainstorming болон бусад онцлог боломжуудыг ашиглаарай.
+                </p>
+                <Link href="/pricing" className="billing-btn-primary" style={{ alignSelf: "flex-start", marginTop: "0.5rem" }}>
+                  ✨ Үнийн санал харах
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* ── 2. Brainstorm Credit Gauge ── */}
+          <div className="billing-grid-2">
+            <div className="billing-glass-card">
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", position: "relative", zIndex: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 700, fontSize: "1.1rem", color: "white" }}>
+                  <span>🧠</span> Brainstorming Credit
+                </div>
+
+                {/* Progress bar */}
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                    <span style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.6)", fontWeight: 500 }}>Сешн үлдэгдэл</span>
+                    <span style={{ fontWeight: 700, fontSize: "1.25rem", color: "white", letterSpacing: "0.05em" }}>
+                      {credits} <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "1rem" }}>/ {totalCredits}</span>
+                    </span>
+                  </div>
+                  <div className="billing-progress-bg">
+                    <div
+                      className="billing-progress-bar"
+                      style={{
+                        width: `${Math.min(100, Math.max(5, totalCredits > 0 ? (credits / totalCredits) * 100 : 0))}%`,
+                        background: credits <= 1 ? "linear-gradient(90deg, #ef4444, #f87171)" : credits <= 2 ? "linear-gradient(90deg, #f59e0b, #fbbf24)" : "linear-gradient(90deg, #10b981, #34d399)",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Warning */}
+                {credits <= 1 && (
+                  <div className="billing-error-box">
+                    <span>⚠️</span> Credit дуусахдаа ойрхон байна
+                  </div>
+                )}
+
+                <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span style={{ display: "inline-block", width: "4px", height: "4px", borderRadius: "50%", background: "rgba(255,255,255,0.3)" }}></span>
+                  Сар дуусахад үлдэгдэл {totalCredits} credit болон сэргэнэ
+                </div>
+              </div>
+            </div>
+
+            <div className="billing-glass-card">
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem", position: "relative", zIndex: 10, height: "100%", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 700, fontSize: "1.1rem", color: "white", marginBottom: "0.75rem" }}>
+                    <span>✨</span> Нэмэлт session авах
+                  </div>
+                  <div style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.6)", marginBottom: "0.75rem", display: "flex", alignItems: "baseline", gap: "0.25rem" }}>
+                    <strong className="billing-gradient-text" style={{ fontSize: "1.5rem" }}>
+                      {formatAmount(config.session_price_amount, config.session_price_currency)}
+                    </strong>
+                    <span>/ session</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: "0.875rem", color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>
+                    Ганцхан товшилтоор QPay-аар төлбөрөө хийж нэмэлт session эрх аван шууд ашиглаарай.
+                  </p>
+                </div>
+                <Link href="/brainstorm/new" className="billing-btn-outline" style={{ alignSelf: "flex-start", marginTop: "1rem", borderColor: "rgba(16, 185, 129, 0.4)", color: "#34d399", background: "rgba(16, 185, 129, 0.1)" }}>
+                  💳 QPay-ээр авах →
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* ── 3. Upgrade Banner (Starter only) ── */}
+          {subscription && planCode === "starter" && (
+            <div className="billing-upgrade-banner">
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", position: "relative", zIndex: 10 }}>
+                <div style={{ fontWeight: 800, fontSize: "1.25rem", color: "white", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span>🚀</span> Growth багц руу шилжих
+                </div>
+                <div style={{ fontSize: "0.95rem", color: "rgba(255,255,255,0.8)" }}>
+                  Та сард <strong>+{config.growth_monthly_credits - config.starter_monthly_credits}</strong> нэмэлт Brainstorming session эрхтэй болно.
+                </div>
+                <div style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.5)" }}>
+                  Үнийн зөрүү: Зөвхөн <strong style={{ color: "#a5b4fc" }}>+{formatAmount(1000, "MNT")}/сар</strong> нэмэгдэнэ.
+                </div>
+              </div>
+              <Link href="/pricing" className="billing-btn-primary" style={{ position: "relative", zIndex: 10 }}>
+                ⚡ Багц ахиулах
               </Link>
-            )}
-          </div>
-        </Card>
-      ) : (
-        <Card padded>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <div style={{ fontWeight: 600, fontSize: "1rem" }}>📦 Subscription байхгүй байна</div>
-            <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.875rem" }}>
-              Тохирох төлөвлөгөөг сонгоод Brainstorming болон бусад онцлог боломжуудыг ашиглаарай.
-            </p>
-            <Link
-              href="/pricing"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.375rem",
-                padding: "0.5rem 1rem",
-                background: "rgba(99,102,241,0.15)",
-                border: "1px solid rgba(99,102,241,0.4)",
-                borderRadius: "0.5rem",
-                color: "#a5b4fc",
-                textDecoration: "none",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                alignSelf: "flex-start",
-              }}
-            >
-              🚀 Pricing харах →
-            </Link>
-          </div>
-        </Card>
-      )}
-
-      {/* ── 2. Brainstorm Credit Gauge ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-        <Card padded>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
-            <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>🧠 Brainstorming Credit</div>
-
-            {/* Progress bar */}
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.375rem" }}>
-                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Үлдэгдэл</span>
-                <span style={{ fontWeight: 600, fontSize: "1rem" }}>
-                  {credits} / {totalCredits}
-                </span>
-              </div>
-              <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: "999px", height: "8px", overflow: "hidden" }}>
-                <div
-                  style={{
-                    width: `${Math.min(100, totalCredits > 0 ? (credits / totalCredits) * 100 : 0)}%`,
-                    background: credits <= 1 ? "#ef4444" : credits <= 2 ? "#f59e0b" : "#10b981",
-                    height: "100%",
-                    borderRadius: "999px",
-                    transition: "width 0.3s",
-                  }}
-                />
-              </div>
             </div>
+          )}
 
-            {/* Warning */}
-            {credits <= 1 && (
-              <div
-                style={{
-                  background: "rgba(239,68,68,0.1)",
-                  border: "1px solid rgba(239,68,68,0.3)",
-                  borderRadius: "0.5rem",
-                  padding: "0.5rem 0.75rem",
-                  fontSize: "0.8rem",
-                  color: "#fca5a5",
-                }}
-              >
-                ⚠️ Credit дуусахдаа ойрхон байна
-              </div>
-            )}
-
-            <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-              Сар дуусахад credit автоматаар сэргэнэ
-            </div>
+          {/* ── 4. Төлбөрийн Түүх ── */}
+          <div className="billing-glass-card">
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "white", margin: "0 0 1.5rem 0", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span>🧾</span> Төлбөрийн Түүх
+            </h2>
+            <InvoiceList invoices={invoiceRows} />
           </div>
-        </Card>
-
-        <Card padded>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
-            <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>➕ Нэмэлт session авах</div>
-            <div style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
-              <strong style={{ color: "var(--text-base)", fontSize: "1rem" }}>
-                {formatAmount(config.session_price_amount, config.session_price_currency)}
-              </strong>
-              {" / session"}
-            </div>
-            <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
-              QPay-аар нэмэлт session авч, тэр дороо ашиглаж болно.
-            </p>
-            <Link
-              href="/brainstorm/new"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.375rem",
-                padding: "0.5rem 1rem",
-                background: "rgba(16,185,129,0.12)",
-                border: "1px solid rgba(16,185,129,0.3)",
-                borderRadius: "0.5rem",
-                color: "#6ee7b7",
-                textDecoration: "none",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                alignSelf: "flex-start",
-              }}
-            >
-              QPay-ээр авах →
-            </Link>
-          </div>
-        </Card>
-      </div>
-
-      {/* ── 3. Upgrade Banner (Starter only) ── */}
-      {subscription && planCode === "starter" && (
-        <div
-          style={{
-            background: "linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(139,92,246,0.12) 100%)",
-            border: "1px solid rgba(99,102,241,0.3)",
-            borderRadius: "0.75rem",
-            padding: "1.25rem 1.5rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "1rem",
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-            <div style={{ fontWeight: 600, fontSize: "1rem" }}>🚀 Growth рүү шилжих</div>
-            <div style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
-              +{config.growth_monthly_credits - config.starter_monthly_credits} нэмэлт Brainstorming session/сар
-            </div>
-            <div style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
-              Зөвхөн +{formatAmount(1000, "MNT")}/сар нэмэгдэнэ
-            </div>
-          </div>
-          <Link
-            href="/pricing"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.375rem",
-              padding: "0.625rem 1.25rem",
-              background: "rgba(99,102,241,0.2)",
-              border: "1px solid rgba(99,102,241,0.5)",
-              borderRadius: "0.5rem",
-              color: "#a5b4fc",
-              textDecoration: "none",
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              whiteSpace: "nowrap",
-            }}
-          >
-            Upgrade хийх →
-          </Link>
         </div>
-      )}
-
-      {/* ── 4. Төлбөрийн Түүх ── */}
-      <Card padded stack>
-        <h2 className="ui-section-title" style={{ marginTop: 0 }}>
-          Төлбөрийн Түүх
-        </h2>
-        <InvoiceList invoices={invoiceRows} />
-      </Card>
-
-      <p className="ui-text-muted" style={{ margin: 0 }}>
-        <Link href="/pricing" className="ui-table__link">
-          ← Pricing руу буцах
-        </Link>
-      </p>
-    </section>
+      </div>
+    </div>
   );
 }
