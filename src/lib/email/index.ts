@@ -12,16 +12,17 @@ type EmailPayload = {
 };
 
 async function sendEmail(payload: EmailPayload): Promise<void> {
-  // Mock — production-д RESEND_API_KEY тохируулж, resend npm install хийгээд
-  // доорх коментыг арилгаарай
-  //
-  // if (process.env.RESEND_API_KEY) {
-  //   const { Resend } = await import("resend");
-  //   const resend = new Resend(process.env.RESEND_API_KEY);
-  //   await resend.emails.send({ from: "MarTech <noreply@martech.mn>", ...payload });
-  //   return;
-  // }
+  if (process.env.RESEND_API_KEY) {
+    const { Resend } = await import("resend");
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    await resend.emails.send({
+      from: "MarTech <noreply@martech.mn>",
+      ...payload,
+    });
+    return;
+  }
 
+  // Provider тохируулаагүй үед mock
   console.log(`[EMAIL] To: ${payload.to} | Subject: ${payload.subject}`);
   console.log(`[EMAIL] HTML length: ${payload.html.length} chars`);
 }
