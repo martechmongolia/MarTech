@@ -10,7 +10,8 @@
   color: var(--ods-text-primary);
   font-family: inherit;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  padding-bottom: 5rem; /* space for mobile bottom nav */
 }
 
 /* Add a subtle animated glowing orb in the background */
