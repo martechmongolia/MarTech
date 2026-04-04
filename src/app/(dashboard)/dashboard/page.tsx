@@ -219,7 +219,7 @@ export default async function DashboardPage() {
       </section>
 
       {/* Sync Activity Section */}
-      <section style={{ maxWidth: "800px" }}>
+      <section style={{ maxWidth: "800px", width: "100%" }}>
         <h2 className="dash-section-title">Recent Sync Activity</h2>
         {recentJobs.length === 0 ? (
           <p style={{ color: "var(--dash-text-dim)", padding: "1rem" }}>No sync activity recorded.</p>

@@ -72,7 +72,7 @@ export default async function SocialListeningPage() {
         ) : (
           <Card>
             <div className="ui-table-wrapper">
-              <table className="ui-table">
+              <table className="ui-table" style={{ minWidth: "500px" }}>
                 <thead>
                   <tr>
                     <th className="ui-table__th">Хайлтын утга</th>

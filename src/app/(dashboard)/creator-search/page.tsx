@@ -198,13 +198,7 @@ export default async function CreatorSearchPage() {
             </p>
           </Card>
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: "1rem",
-            }}
-          >
+          <div className="creator-results-grid">
             {creators.map((creator) => (
               <CreatorCard key={creator.id} creator={creator} />
             ))}

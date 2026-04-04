@@ -50,7 +50,7 @@ export default async function PagesPage({ searchParams }: PagesPageProps) {
       {!connection ? (
         <Card padded stack>
           <p style={{ margin: 0 }}>No Meta connection found for this organization.</p>
-          <a href="/api/meta/connect" className="ui-table__link">
+          <a href="/api/meta/connect" className="ui-table__link" style={{ display: "block", width: "100%", textAlign: "center" }}>
             Connect Meta Account
           </a>
         </Card>
@@ -60,7 +60,7 @@ export default async function PagesPage({ searchParams }: PagesPageProps) {
           <p style={{ margin: 0 }}>
             Selected pages: {selectedCount} / {maxPages}
           </p>
-          <a href="/api/meta/connect" className="ui-table__link">
+          <a href="/api/meta/connect" className="ui-table__link" style={{ display: "block", width: "100%", textAlign: "center" }}>
             Reconnect and refresh pages
           </a>
         </Card>
@@ -83,7 +83,7 @@ export default async function PagesPage({ searchParams }: PagesPageProps) {
         </Alert>
       ) : null}
 
-      <div style={{ display: "grid", gap: "var(--space-3)" }}>
+      <div style={{ display: "grid", gap: "var(--space-3)", width: "100%" }}>
         {pages.length === 0 ? <p>No pages discovered yet. Connect Meta to fetch available pages.</p> : null}
         {pages.map((page) => {
           const disableSelect = !page.is_selected && limitReached;

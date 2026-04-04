@@ -88,6 +88,17 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </div>
       </aside>
 
+      {/* ── Mobile: logo header (shown only on small screens) ── */}
+      <div className="login-mobile-header">
+        <Image
+          src="/brand/logo.svg"
+          alt="MarTech"
+          width={120}
+          height={32}
+          priority
+        />
+      </div>
+
       {/* ── Right: form panel ── */}
       <main className="login-form-panel">
         <div className="login-form-wrap">

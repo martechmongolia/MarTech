@@ -1409,12 +1409,14 @@ code {
 }
 
 /* Table shell (admin) */
-.ui-table-wrap {
+.ui-table-wrap,
+.ui-table-wrapper {
   overflow-x: auto;
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: var(--color-bg-elevated);
   box-shadow: var(--shadow-sm);
+  -webkit-overflow-scrolling: touch;
 }
 
 .ui-table {
@@ -1661,6 +1663,7 @@ code {
 
 /* Native selects aligned with .ui-input */
 .ui-select {
+  width: 100%;
   font-family: inherit;
   font-size: var(--text-sm);
   padding: 0.4rem 0.5rem;
@@ -2422,9 +2425,21 @@ code {
 /* ── List page ──────────────────────────────────────────── */
 .brand-managers-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: 1fr;
   gap: 1.25rem;
   margin-top: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .brand-managers-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .brand-managers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
 }
 
 .brand-managers-empty {
@@ -2465,7 +2480,7 @@ code {
 }
 .bm-card__body { flex: 1; min-width: 0; }
 .bm-card__header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.35rem; }
-.bm-card__name { font-weight: 700; font-size: 1rem; color: var(--text-primary); margin: 0; }
+.bm-card__name { font-weight: 700; font-size: 1rem; color: var(--text-primary); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bm-card__status { font-size: 0.75rem; white-space: nowrap; color: var(--text-secondary); }
 .bm-card__desc { font-size: 0.85rem; color: var(--text-secondary); margin: 0 0 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bm-card__score { display: flex; align-items: center; gap: 0.5rem; }
@@ -2499,7 +2514,7 @@ code {
 
 /* ── Detail page ────────────────────────────────────────── */
 .bm-detail { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1.5rem; }
-.bm-detail__overview { display: flex; align-items: center; gap: 2rem; padding: 1.5rem 2rem; }
+.bm-detail__overview { display: flex; align-items: center; gap: 2rem; padding: 1.5rem 2rem; flex-wrap: wrap; }
 .bm-score-ring { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
 .bm-score-ring__label { font-size: 0.75rem; color: var(--text-secondary); }
 .bm-detail__overview-info { flex: 1; }
@@ -2653,6 +2668,7 @@ code {
   align-items: flex-start;
   gap: 1rem;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
 .page-title {
   font-size: 1.75rem;
@@ -2674,6 +2690,18 @@ code {
   margin-bottom: 0.5rem;
 }
 .page-back-link:hover { text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .page-header-row {
+    flex-direction: column;
+  }
+  .page-header-row > div:last-child {
+    width: 100%;
+  }
+  .page-title {
+    font-size: 1.375rem;
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════
    VISUAL DNA
@@ -2957,4 +2985,237 @@ code {
   background: #FEF2F2; border: 1px solid #FECACA;
   border-radius: 6px; padding: 0.4rem 0.75rem;
   margin-bottom: 0.5rem; display: block;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE SPRINT 2B — Responsive additions
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Creator Search ─────────────────────────────────────── */
+.creator-search-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 480px) {
+  .creator-search-form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 768px) {
+  .creator-search-form-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+.creator-results-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 480px) {
+  .creator-results-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .creator-results-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ── Morning Digest Mobile ──────────────────────────────── */
+@media (max-width: 640px) {
+  .digest-container {
+    padding: 0.75rem 0 4rem;
+    gap: 1.5rem;
+  }
+  .digest-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .digest-title {
+    font-size: 1.75rem;
+  }
+  .digest-header > *:last-child {
+    width: 100%;
+  }
+  .digest-summary-card {
+    padding: 1.5rem;
+  }
+  .digest-summary-title {
+    font-size: 1.2rem;
+  }
+  .digest-summary-text {
+    font-size: 0.9375rem;
+  }
+  .digest-category-card {
+    padding: 1.25rem;
+  }
+  .digest-history-date {
+    width: auto;
+  }
+  .digest-history-item {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+  }
+  .digest-history-item > span:last-child {
+    display: none; /* hide VIEW ARCHIVE on mobile */
+  }
+  .digest-item-title {
+    font-size: 1rem;
+  }
+  .digest-empty-state {
+    padding: 3rem 1rem;
+  }
+}
+
+/* DigestTriggerButton — full width on mobile */
+@media (max-width: 640px) {
+  .digest-trigger-wrapper {
+    width: 100%;
+  }
+  .digest-trigger-wrapper button,
+  .digest-trigger-wrapper a {
+    width: 100% !important;
+    justify-content: center;
+  }
+}
+
+/* ── Facebook AI Dashboard Mobile ───────────────────────── */
+.fb-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+@media (min-width: 768px) {
+  .fb-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.fb-tab-bar {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.fb-tab-bar::-webkit-scrollbar { display: none; }
+
+.comment-action-btns {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+  flex-wrap: wrap;
+}
+@media (max-width: 480px) {
+  .comment-action-btns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.375rem;
+  }
+  .comment-action-btns button {
+    padding: 0.375rem 0.25rem !important;
+    font-size: 0.6875rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Comment text line clamp */
+.comment-text-clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* FacebookSettings — single column on mobile */
+@media (max-width: 640px) {
+  .facebook-settings-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .facebook-settings-control {
+    width: 100% !important;
+  }
+}
+
+/* ── Brainstorm Session Mobile ──────────────────────────── */
+@media (max-width: 640px) {
+  .bs-session-header {
+    padding: 8px 12px;
+  }
+  .bs-session-title {
+    font-size: 0.75rem;
+    max-width: 180px;
+  }
+  .bs-toggle-btn {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.65rem;
+  }
+  .bs-session-content {
+    padding-top: 3.5rem;
+  }
+  .bs-user-input-wrapper {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* ── Login Page Mobile ──────────────────────────────────── */
+@media (max-width: 767px) {
+  .login-form-panel {
+    padding: 1.5rem 1rem;
+    align-items: flex-start;
+    padding-top: 2rem;
+  }
+  .login-form-wrap {
+    max-width: 100%;
+  }
+  .login-input {
+    min-height: 44px !important;
+    font-size: 1rem !important;
+  }
+  .login-submit-btn button,
+  .login-submit-btn a {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
+/* ── Pricing Page Mobile ────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Hero text */
+  .ui-obsidian-dark h1 {
+    font-size: clamp(1.5rem, 6vw, 2rem) !important;
+  }
+  /* Trial banner */
+  .pricing-trial-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  /* Plan cards CTA */
+  .pricing-plan-cta a,
+  .pricing-plan-cta button {
+    width: 100% !important;
+    display: block !important;
+    text-align: center !important;
+    box-sizing: border-box;
+  }
+  /* FAQ cards */
+  .pricing-faq-item {
+    padding: 1rem 1.25rem !important;
+  }
+  /* Why Growth section */
+  .pricing-why-growth {
+    padding: 1.5rem !important;
+  }
 }

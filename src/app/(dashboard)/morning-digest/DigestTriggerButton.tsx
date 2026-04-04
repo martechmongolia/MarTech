@@ -46,7 +46,7 @@ export function DigestTriggerButton({ hasToday: _hasToday, sessionStatus }: Prop
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
+    <div className="digest-trigger-wrapper" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
       <Button
         onClick={handleClick}
         disabled={loading}

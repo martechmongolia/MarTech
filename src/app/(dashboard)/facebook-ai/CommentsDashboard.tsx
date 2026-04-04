@@ -221,15 +221,12 @@ function CommentCard({ comment }: { comment: Comment }) {
 
           {/* Comment text */}
           <p
+            className="comment-text-clamped"
             style={{
               margin: 0,
               fontSize: "0.875rem",
               color: "#cbd5e1",
               lineHeight: 1.5,
-              overflow: "hidden",
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
             }}
           >
             {comment.text}
@@ -295,7 +292,7 @@ function CommentCard({ comment }: { comment: Comment }) {
 
           {/* Action buttons (pending only) */}
           {comment.status === "pending" && (
-            <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.875rem" }}>
+            <div className="comment-action-btns">
               <button
                 style={{
                   padding: "0.375rem 0.75rem",
@@ -411,14 +408,7 @@ export function CommentsDashboard({ orgId }: { orgId: string }) {
       </div>
 
       {/* Stats */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: "1rem",
-          marginBottom: "1.5rem",
-        }}
-      >
+      <div className="fb-stats-grid">
         <StatCard label="Өнөөдөр" value={today} />
         <StatCard label="Хариулсан" value={replied} accent="#10b981" />
         <StatCard label="Хүлээгдэж байна" value={pending} accent="#f59e0b" />
@@ -426,14 +416,7 @@ export function CommentsDashboard({ orgId }: { orgId: string }) {
       </div>
 
       {/* Tab bar */}
-      <div
-        style={{
-          display: "flex",
-          gap: "0.25rem",
-          marginBottom: "1rem",
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
-        }}
-      >
+      <div className="fb-tab-bar">
         {tabs.map((tab) => (
           <button
             key={tab.key}

@@ -35,7 +35,7 @@ export default async function BrandManagerDetailPage({ params }: Props) {
           <h1 className="page-title">{bm.name}</h1>
           <p className="page-subtitle">{bm.description ?? "AI брэнд менежер"}</p>
         </div>
-        <div style={{display:"flex",gap:"0.5rem"}}>
+        <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
           <Link href={`/brand-managers/${id}/visual`}>
             <Button variant="secondary">🎨 Visual DNA</Button>
           </Link>

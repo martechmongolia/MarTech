@@ -68,7 +68,7 @@ export function SearchForm({ organizationId }: { organizationId: string }) {
 
           <div className="ui-form-group">
             <p className="ui-label">Хайлтын төрөл</p>
-            <div style={{ display: "flex", flexDirection: "row", gap: "1rem" }}>
+            <div style={{ display: "flex", flexDirection: "row", gap: "1rem", flexWrap: "wrap" }}>
               <label className="ui-radio-label">
                 <input
                   type="radio"

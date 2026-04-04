@@ -220,13 +220,7 @@ export function CreatorSearchForm({ organizationId }: { organizationId: string }
       <Card padded>
         <form onSubmit={handleSubmit}>
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-                gap: "1rem",
-              }}
-            >
+            <div className="creator-search-form-grid">
               {/* Platform */}
               <div className="ui-form-group">
                 <label className="ui-label" htmlFor="cs-platform">
@@ -329,13 +323,7 @@ export function CreatorSearchForm({ organizationId }: { organizationId: string }
               </p>
             </Card>
           ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                gap: "1rem",
-              }}
-            >
+            <div className="creator-results-grid">
               {results.map((creator) => (
                 <CreatorResultCard key={creator.external_id ?? creator.platform_username ?? String(Math.random())} creator={creator} />
               ))}
