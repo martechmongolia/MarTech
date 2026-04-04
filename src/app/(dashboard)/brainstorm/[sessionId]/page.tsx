@@ -28,6 +28,7 @@ export default function BrainstormSessionPage() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [waitingUserTurn, setWaitingUserTurn] = useState(false);
   const [currentRound, setCurrentRound] = useState(1);
+  const [showReport, setShowReport] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const streamingRef = useRef<Record<string, string>>({});
@@ -177,7 +178,10 @@ export default function BrainstormSessionPage() {
         body: JSON.stringify({ sessionId }),
       });
       const data = await res.json();
-      if (data.report) setReport(data.report);
+      if (data.report) {
+        setReport(data.report);
+        setShowReport(true); // Тайлан ирэхэд автоматаар харуулна
+      }
     } catch {
       // silent fail
     }
@@ -296,18 +300,94 @@ export default function BrainstormSessionPage() {
           )}
         </div>
 
-        {/* Right — Report panel */}
-        {report && (
+      </div>
+
+      {/* ——— Report Modal ——— */}
+      <AnimatePresence>
+        {showReport && report && (
           <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bs-report-sidebar"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed", inset: 0, zIndex: 200,
+              background: "rgba(0,0,0,0.75)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "1.5rem",
+            }}
+            onClick={(e) => { if (e.target === e.currentTarget) setShowReport(false); }}
           >
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(30, 58, 138, 0.1), transparent)", pointerEvents: "none" }}></div>
-            <ReportView report={report} topic={session?.topic ?? ""} />
+            <motion.div
+              initial={{ scale: 0.92, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 30 }}
+              style={{
+                background: "linear-gradient(135deg, #0f172a, #1e293b)",
+                border: "1px solid rgba(99,102,241,0.4)",
+                borderRadius: "1.25rem",
+                width: "100%", maxWidth: "760px",
+                maxHeight: "85vh", overflowY: "auto",
+                boxShadow: "0 25px 60px rgba(0,0,0,0.6)",
+                position: "relative",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.25rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                <div>
+                  <h2 style={{ color: "white", fontWeight: 700, fontSize: "1.1rem", margin: 0 }}>📋 Брайнсторминг Тайлан</h2>
+                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.8rem", margin: "0.2rem 0 0" }}>{session?.topic}</p>
+                </div>
+                <button
+                  onClick={() => setShowReport(false)}
+                  style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "0.5rem", color: "white", padding: "0.4rem 0.8rem", cursor: "pointer", fontSize: "0.9rem" }}
+                >
+                  ✕ Хаах
+                </button>
+              </div>
+              <div style={{ padding: "1.5rem" }}>
+                <ReportView report={report} topic={session?.topic ?? ""} />
+              </div>
+            </motion.div>
           </motion.div>
         )}
-      </div>
+      </AnimatePresence>
+
+      {/* ——— Report button (session дууссан үед) ——— */}
+      {report && !showReport && (
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={() => setShowReport(true)}
+          style={{
+            position: "fixed", bottom: "1.5rem", right: "1.5rem", zIndex: 150,
+            background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+            border: "none", borderRadius: "1rem",
+            padding: "0.9rem 1.5rem",
+            color: "white", fontWeight: 700, fontSize: "0.95rem",
+            cursor: "pointer",
+            boxShadow: "0 0 30px rgba(99,102,241,0.5)",
+            display: "flex", alignItems: "center", gap: "0.5rem",
+          }}
+        >
+          📋 Тайлан харах
+        </motion.button>
+      )}
+
+      {/* ——— Тайлан бэлтгэж байна banner ——— */}
+      {session?.status === "completed" && !report && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            position: "fixed", bottom: "1.5rem", right: "1.5rem", zIndex: 150,
+            background: "rgba(30,58,138,0.9)",
+            border: "1px solid #3b82f6", borderRadius: "1rem",
+            padding: "0.9rem 1.5rem", color: "white", fontSize: "0.9rem",
+          }}
+        >
+          ⏳ Тайлан бэлтгэж байна...
+        </motion.div>
+      )}
+
     </div>
   );
 }
