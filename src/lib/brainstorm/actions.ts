@@ -5,6 +5,13 @@
 
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/modules/auth/session";
+import {
+  getUserCredits,
+  deductCredit,
+  getBrainstormConfig,
+  refillCreditsForPlan,
+} from "./credits";
+import { getActivePlan } from "@/modules/subscriptions/data";
 import type {
   BrainstormMessage,
   BrainstormSession,
@@ -20,6 +27,20 @@ export async function createSession(
 ): Promise<BrainstormSession> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Нэвтрэх шаардлагатай");
+
+  // ── Credit шалгах — дуусвал plan-аас refill ────────────
+  let credits = await getUserCredits(user.id);
+  if (credits <= 0) {
+    const plan = await getActivePlan(user.id);
+    if (plan) {
+      const config = await getBrainstormConfig();
+      await refillCreditsForPlan(user.id, plan.code, config);
+      credits = await getUserCredits(user.id);
+    }
+    if (credits <= 0) {
+      throw new Error("INSUFFICIENT_CREDITS");
+    }
+  }
 
   const supabase = await getSupabaseServerClient();
 
@@ -41,7 +62,16 @@ export async function createSession(
     .single();
 
   if (error) throw new Error(`Session үүсгэхэд алдаа: ${error.message}`);
-  return data as unknown as BrainstormSession;
+  const session = data as unknown as BrainstormSession;
+
+  // ── Credit хасах — session амжилттай үүссэний дараа ────
+  const deducted = await deductCredit(user.id, session.id);
+  if (!deducted) {
+    // Edge case: race condition — log хийнэ, session-г цуцлахгүй
+    console.warn(`[brainstorm] Credit deduct failed for user ${user.id}, session ${session.id}`);
+  }
+
+  return session;
 }
 
 // ─── saveMessage ───────────────────────────────────────────

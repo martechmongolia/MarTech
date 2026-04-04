@@ -3,7 +3,7 @@
 // Brainstorm — Шинэ session үүсгэх (FE-07 modal)
 // ============================================================
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { createSession } from "@/lib/brainstorm/actions";
@@ -36,10 +36,72 @@ export default function NewBrainstormPage() {
   const [constraintText, setConstraintText] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  // ── Credit & payment state ──────────────────────────────
+  const [credits, setCredits] = useState<number | null>(null);
+  const [paymentModal, setPaymentModal] = useState(false);
+  const [paymentInvoice, setPaymentInvoice] = useState<{
+    invoiceId: string;
+    qrImage: string | null;
+    qpayShortUrl: string | null;
+    amount: number;
+    currency: string;
+    senderInvoiceNo: string;
+  } | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentPolling, setPaymentPolling] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Формын одоогийн утгуудыг polling-д хэрэглэхийн тулд ref
+  const formRef = useRef({ topic, rounds, selectedAgents, turnMode, sessionType, constraintText });
+  useEffect(() => {
+    formRef.current = { topic, rounds, selectedAgents, turnMode, sessionType, constraintText };
+  });
+
+  // Credit баланс fetch
+  useEffect(() => {
+    fetch("/api/brainstorm/credits")
+      .then((r) => r.json())
+      .then((d) => setCredits(d.balance ?? 0))
+      .catch(() => setCredits(null));
+  }, []);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
+
   const toggleAgent = (id: AgentId) => {
     setSelectedAgents((prev) =>
       prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
     );
+  };
+
+  /** Шинэ session үүсгэх — credit хангалттай бол шууд, дуусвал payment modal */
+  const doCreateSession = () => {
+    const f = formRef.current;
+    startTransition(async () => {
+      try {
+        const session = await createSession({
+          topic: f.topic.trim(),
+          total_rounds: f.rounds,
+          active_agents: f.selectedAgents,
+          user_turn_mode: f.turnMode,
+          session_type: f.sessionType,
+          constraint_text: f.constraintText || undefined,
+        });
+        router.push(`/brainstorm/${session.id}`);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg === "INSUFFICIENT_CREDITS") {
+          // Credit дуусчихсан — QPay invoice үүсгэнэ
+          await handleOpenPayment();
+        } else {
+          setError(msg);
+        }
+      }
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -50,34 +112,86 @@ export default function NewBrainstormPage() {
       return;
     }
     setError(null);
+    doCreateSession();
+  };
 
-    startTransition(async () => {
-      try {
-        const session = await createSession({
-          topic: topic.trim(),
-          total_rounds: rounds,
-          active_agents: selectedAgents,
-          user_turn_mode: turnMode,
-          session_type: sessionType,
-          constraint_text: constraintText || undefined,
-        });
-        router.push(`/brainstorm/${session.id}`);
-      } catch (err) {
-        setError((err as Error).message);
+  /** QPay invoice үүсгэж modal нээнэ */
+  const handleOpenPayment = async () => {
+    setPaymentLoading(true);
+    try {
+      const res = await fetch("/api/brainstorm/payment", { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Invoice үүсгэхэд алдаа");
       }
-    });
+      const invoice = await res.json();
+      setPaymentInvoice(invoice);
+      setPaymentModal(true);
+      startPaymentPolling();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Төлбөр үүсгэхэд алдаа гарлаа");
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  /** 5 секунд тутам credit шалгана — төлбөр хийгдвэл автоматаар session үүсгэнэ */
+  const startPaymentPolling = () => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    setPaymentPolling(true);
+    let attempts = 0;
+
+    pollingRef.current = setInterval(async () => {
+      attempts++;
+      try {
+        const res = await fetch("/api/brainstorm/credits");
+        const data = await res.json();
+        if (data.balance > 0) {
+          clearInterval(pollingRef.current!);
+          pollingRef.current = null;
+          setPaymentModal(false);
+          setPaymentPolling(false);
+          setCredits(data.balance);
+          // Credit нэмэгдсэн — автоматаар session үүсгэнэ
+          doCreateSession();
+        }
+      } catch {
+        // network error — continue polling
+      }
+      if (attempts >= 60) {
+        // 5 минут хүлээсний дараа зогсооно
+        clearInterval(pollingRef.current!);
+        pollingRef.current = null;
+        setPaymentPolling(false);
+      }
+    }, 5000);
   };
 
   return (
     <div className="bs-page-container bs-form-container">
       <div className="bs-bg-glow"></div>
-      
+
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         className="bs-glass-panel bs-form-panel"
       >
-        <h1 className="bs-heading text-3xl mb-8">✨ Шинэ Brainstorming үүсгэх</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2rem" }}>
+          <h1 className="bs-heading text-3xl" style={{ margin: 0 }}>✨ Шинэ Brainstorming үүсгэх</h1>
+          {credits !== null && (
+            <div style={{
+              background: credits > 0 ? "rgba(79,70,229,0.2)" : "rgba(239,68,68,0.15)",
+              border: `1px solid ${credits > 0 ? "rgba(79,70,229,0.4)" : "rgba(239,68,68,0.4)"}`,
+              borderRadius: "0.75rem",
+              padding: "0.5rem 1rem",
+              fontSize: "0.875rem",
+              color: credits > 0 ? "#a5b4fc" : "#fca5a5",
+              whiteSpace: "nowrap",
+            }}>
+              🎟 {credits} credit үлдсэн
+            </div>
+          )}
+        </div>
 
         <form onSubmit={handleSubmit}>
           {/* Session Mode */}
@@ -89,9 +203,7 @@ export default function NewBrainstormPage() {
                   key={mode.id}
                   type="button"
                   onClick={() => setSessionType(mode.id)}
-                  className={`bs-radio-card ${
-                    sessionType === mode.id ? 'selected' : ''
-                  }`}
+                  className={`bs-radio-card ${sessionType === mode.id ? 'selected' : ''}`}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                     <span style={{ fontSize: '1.25rem' }}>{mode.emoji}</span>
@@ -121,9 +233,7 @@ export default function NewBrainstormPage() {
 
           {/* Topic */}
           <div className="bs-form-group">
-            <label className="bs-label">
-              Хэлэлцүүлэх сэдэв *
-            </label>
+            <label className="bs-label">Хэлэлцүүлэх сэдэв *</label>
             <textarea
               rows={3}
               value={topic}
@@ -156,9 +266,7 @@ export default function NewBrainstormPage() {
 
           {/* Agents */}
           <div className="bs-form-group">
-            <label className="bs-label">
-              Бие бүрэлдэхүүн ({selectedAgents.length})
-            </label>
+            <label className="bs-label">Бие бүрэлдэхүүн ({selectedAgents.length})</label>
             <div className="bs-agent-grid">
               {AGENT_ORDER.map((id) => {
                 const agent = AGENTS[id];
@@ -183,9 +291,7 @@ export default function NewBrainstormPage() {
 
           {/* Turn mode */}
           <div className="bs-form-group">
-            <label className="bs-label">
-              Оролцооны горим
-            </label>
+            <label className="bs-label">Оролцооны горим</label>
             <div className="bs-radio-grid">
               {TURN_MODES.map((mode) => (
                 <label
@@ -211,11 +317,11 @@ export default function NewBrainstormPage() {
           </div>
 
           {error && (
-            <motion.p 
+            <motion.p
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", padding: "12px", borderRadius: "8px", fontSize: "0.875rem" }}
             >
-              Команд: {error}
+              {error}
             </motion.p>
           )}
 
@@ -229,15 +335,82 @@ export default function NewBrainstormPage() {
             </button>
             <button
               type="submit"
-              disabled={isPending || !topic.trim()}
+              disabled={isPending || paymentLoading || !topic.trim()}
               className="bs-btn-primary bs-flex-1"
               style={{ fontSize: "1.125rem" }}
             >
-              {isPending ? "Эхлүүлж байна..." : "🚀 Бодолт эхлүүлэх"}
+              {isPending || paymentLoading ? "Эхлүүлж байна..." : "🚀 Бодолт эхлүүлэх"}
             </button>
           </div>
         </form>
       </motion.div>
+
+      {/* ── QPay Payment Modal ──────────────────────────────── */}
+      {paymentModal && paymentInvoice && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 300,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem",
+        }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{
+              background: "#1e293b", borderRadius: "1.25rem", padding: "2rem",
+              maxWidth: "400px", width: "100%", textAlign: "center",
+              border: "1px solid rgba(79,70,229,0.3)",
+            }}
+          >
+            <h3 style={{ color: "white", marginBottom: "0.5rem", fontSize: "1.25rem" }}>
+              💳 Нэг удаагийн төлбөр
+            </h3>
+            <p style={{ color: "#94a3b8", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
+              {paymentInvoice.amount?.toLocaleString()}₮ — 1 Brainstorming session
+            </p>
+
+            {paymentInvoice.qrImage && (
+              <img
+                src={`data:image/png;base64,${paymentInvoice.qrImage}`}
+                alt="QPay QR"
+                style={{ width: "200px", height: "200px", borderRadius: "0.5rem", margin: "0 auto 1.25rem", display: "block" }}
+              />
+            )}
+
+            {paymentInvoice.qpayShortUrl && (
+              <a
+                href={paymentInvoice.qpayShortUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: "block", background: "#4f46e5", color: "white",
+                  borderRadius: "0.75rem", padding: "0.75rem", marginBottom: "0.75rem",
+                  textDecoration: "none", fontWeight: "bold",
+                }}
+              >
+                📱 QPay-ээр төлөх
+              </a>
+            )}
+
+            {paymentPolling ? (
+              <p style={{ color: "#60a5fa", fontSize: "0.85rem", marginTop: "0.5rem" }}>
+                ⏳ Төлбөр шалгаж байна...
+              </p>
+            ) : (
+              <button
+                onClick={() => {
+                  setPaymentModal(false);
+                  if (pollingRef.current) {
+                    clearInterval(pollingRef.current);
+                    pollingRef.current = null;
+                  }
+                }}
+                style={{ color: "#64748b", background: "none", border: "none", cursor: "pointer", marginTop: "0.5rem" }}
+              >
+                Хаах
+              </button>
+            )}
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
