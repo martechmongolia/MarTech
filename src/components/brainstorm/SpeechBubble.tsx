@@ -4,7 +4,7 @@
 // ============================================================
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+
 import type { AgentId } from "@/lib/brainstorm/types";
 import { AGENTS } from "@/lib/brainstorm/agents";
 

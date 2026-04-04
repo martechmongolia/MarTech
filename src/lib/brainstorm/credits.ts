@@ -179,7 +179,7 @@ export async function createOneTimePaymentInvoice(
   const env = getQPayEnv();
   if (!env) throw new Error("QPay env тохиргоо дутуу байна");
 
-  const token = await qpayFetchAccessToken(env);
+  const _token = await qpayFetchAccessToken(env);
   const senderInvoiceNo = `BS-${userId.slice(0, 8)}-${Date.now()}`;
   const appUrl = getAppBaseUrl();
 

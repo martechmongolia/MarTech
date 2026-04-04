@@ -1,4 +1,4 @@
-import { Alert, Badge } from "@/components/ui";
+
 import type {
   AnalysisJobStatusView,
   AnalysisReportHistoryView,
@@ -43,7 +43,7 @@ function formatTs(iso: string | null | undefined): string {
   }
 }
 
-function jobStatusBadgeVariant(status: string): "danger" | "warning" | "success" | "neutral" | "info" {
+function _jobStatusBadgeVariant(status: string): "danger" | "warning" | "success" | "neutral" | "info" {
   const s = status.toLowerCase();
   if (s === "failed") return "danger";
   if (s === "running") return "info";
@@ -52,7 +52,7 @@ function jobStatusBadgeVariant(status: string): "danger" | "warning" | "success"
   return "neutral";
 }
 
-function historyStatusBadgeVariant(status: string): "danger" | "warning" | "success" | "neutral" | "info" {
+function _historyStatusBadgeVariant(status: string): "danger" | "warning" | "success" | "neutral" | "info" {
   const s = status.toLowerCase();
   if (s === "failed") return "danger";
   if (s === "ready" || s === "succeeded") return "success";
@@ -66,7 +66,7 @@ export function AiInsightsBlock(props: {
   recentAnalysisJobs?: AnalysisJobStatusView[];
   reportHistory?: AnalysisReportHistoryView[];
 }) {
-  const { report, recommendations, analysisJob, recentAnalysisJobs = [], reportHistory = [] } = props;
+  const { report, recommendations, analysisJob, recentAnalysisJobs = [], reportHistory: _reportHistory = [] } = props;
 
   const findings = report?.findings_json;
   const findingsObj =
@@ -77,7 +77,7 @@ export function AiInsightsBlock(props: {
   const signals = Array.isArray(findingsObj.deterministic_signals)
     ? (findingsObj.deterministic_signals as SignalLike[])
     : [];
-  const extras = Array.isArray(findingsObj.llm_extra_findings)
+  const _extras = Array.isArray(findingsObj.llm_extra_findings)
     ? (findingsObj.llm_extra_findings as ExtraLike[])
     : [];
   const recommendationEvidence = parseRecommendationEvidence(findingsObj.recommendation_evidence);
@@ -140,7 +140,7 @@ export function AiInsightsBlock(props: {
                 Strategic Recommendations ({sortedRecs.length})
               </p>
               <div style={{ display: "grid", gap: "0.75rem" }}>
-                {sortedRecs.map((r, idx) => {
+                {sortedRecs.map((r, _idx) => {
                   const ev = evidenceForRecommendation(r.title, recommendationEvidence);
                   const ids = ev?.evidence_signal_ids ?? [];
                   return (

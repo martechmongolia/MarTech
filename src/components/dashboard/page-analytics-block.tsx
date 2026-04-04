@@ -56,14 +56,14 @@ function truncateByCodePoints(s: string, max: number): { text: string; truncated
   return { text: units.slice(0, max).join(""), truncated: true };
 }
 
-function deltaClass(v: number | null | undefined): string {
+function _deltaClass(v: number | null | undefined): string {
   if (v == null) return "ana-kpi__delta--neutral";
   if (v > 0) return "ana-kpi__delta--up";
   if (v < 0) return "ana-kpi__delta--down";
   return "ana-kpi__delta--neutral";
 }
 
-function deltaSign(v: number | null | undefined): string {
+function _deltaSign(v: number | null | undefined): string {
   if (v == null) return "~";
   if (v > 0) return "↑";
   if (v < 0) return "↓";
@@ -347,7 +347,7 @@ export function PageAnalyticsBlock(props: {
     posts,
     latestJob: _latestJob,
     lastSucceededJob,
-    latestMetricDate,
+    latestMetricDate: _latestMetricDate,
     pageLastSyncedAt,
   } = props;
 
