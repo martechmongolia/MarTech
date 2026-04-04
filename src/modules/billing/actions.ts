@@ -130,7 +130,24 @@ export async function verifyPaymentAction(
 
   switch (result.status) {
     case "activated":
-      return { result: "✅ Төлбөр баталгаажлаа! Subscription идэвхжлээ." };
+      // Credit refill хийх (verify-payment дотор хийгдсэн бол давхарлана — idempotent)
+      try {
+        const supabaseCheck = await getSupabaseServerClient();
+        const { data: inv } = await supabaseCheck
+          .from("invoices")
+          .select("target_plan_id")
+          .eq("id", invoiceId)
+          .maybeSingle();
+        if (inv?.target_plan_id) {
+          const { data: pl } = await supabaseCheck.from("plans").select("code").eq("id", inv.target_plan_id).maybeSingle();
+          if (pl?.code) {
+            const { refillCreditsForPlan, getBrainstormConfig } = await import("@/lib/brainstorm/credits");
+            const cfg = await getBrainstormConfig();
+            await refillCreditsForPlan(user.id, pl.code, cfg);
+          }
+        }
+      } catch { /* non-fatal */ }
+      return { result: "✅ Төлбөр баталгаажлаа! Subscription идэвхжлээ. Хуудасаас шинэчлэнэ үү." };
     case "not_paid_yet":
       return { error: "QPay-д төлбөр бүртгэгдсэнгүй. Хэдэн минут хүлээгээд дахин шалгаарай." };
     case "already_finalized":

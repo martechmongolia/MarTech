@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button, Card } from "@/components/ui";
 import {
   startPaidPlanCheckoutAction,
@@ -91,10 +92,19 @@ export function StartPaidCheckoutForm({ organizationId, planId, planLabel, disab
 // ─── Төлбөр шалгах товч ───────────────────────────────────────────────────────
 
 function VerifyButton({ invoiceId }: { invoiceId: string }) {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(
     verifyPaymentAction,
     {} as VerifyPaymentState
   );
+
+  useEffect(() => {
+    if (state.result?.startsWith("✅")) {
+      // 2 секундийн дараа billing руү шилжүүлэнэ
+      const t = setTimeout(() => router.push("/billing"), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [state.result, router]);
   return (
     <form action={formAction} style={{ marginTop: "var(--space-3)" }}>
       <input type="hidden" name="invoiceId" value={invoiceId} />

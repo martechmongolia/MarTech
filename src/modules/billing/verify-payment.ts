@@ -189,6 +189,31 @@ export async function verifyInvoiceAndActivateSubscription(invoiceId: string): P
     return { status: "verification_failed", reason: "subscription_update_failed" };
   }
 
+  // Subscription шинэчлэгдсэнийхээ дараа brainstorm credit refill хийнэ
+  try {
+    const { data: activatedPlan } = await admin
+      .from("plans")
+      .select("code")
+      .eq("id", invoice.target_plan_id)
+      .maybeSingle();
+    if (activatedPlan?.code) {
+      const { refillCreditsForPlan, getBrainstormConfig } = await import("@/lib/brainstorm/credits");
+      const config = await getBrainstormConfig();
+      // sub owner user_id олно
+      const { data: member } = await admin
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", invoice.organization_id)
+        .eq("role", "owner")
+        .maybeSingle();
+      if (member?.user_id) {
+        await refillCreditsForPlan(member.user_id, activatedPlan.code, config);
+      }
+    }
+  } catch (e) {
+    console.error("[verify-payment] Credit refill failed (non-fatal):", e instanceof Error ? e.message : e);
+  }
+
   // Төлбөр амжилттай болсон email
   try {
     const { sendPaymentSuccessEmail } = await import("@/lib/email");

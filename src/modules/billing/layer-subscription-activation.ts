@@ -61,8 +61,8 @@ export async function applySubscriptionTransitionAfterVerifiedPayment(params: {
     })
     .eq("id", params.invoice.subscription_id)
     .or(
-      `status.in.(bootstrap_pending_billing,trialing),` +
-      `and(status.eq.active,plan_id.eq.${params.invoice.target_plan_id})`
+      // bootstrap/trial төлбөрөод идэхжүүлэнэ, мөн ачаалт субскрипшнаас upgrade хийхэд ачаалт дээш давхарлах
+      "status.in.(bootstrap_pending_billing,trialing,active)"
     )
     .select("id")
     .maybeSingle();
