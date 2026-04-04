@@ -251,3 +251,16 @@
   margin-bottom: 1.5rem;
   opacity: 0.5;
 }
+
+/* ── Digest Grid & History List ─ */
+.digest-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.digest-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}

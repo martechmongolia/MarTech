@@ -30,7 +30,7 @@ export function RoundTable({ activeAgents, speakingAgentId, messages, topic, str
   };
 
   return (
-    <div style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", height: 700 }}>
+    <div className="bs-round-table-wrapper" style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", height: 700 }}>
       {/* Holographic Table surface */}
       <motion.div
         className="bs-holo-table"

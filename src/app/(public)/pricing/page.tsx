@@ -372,7 +372,7 @@ export default async function PricingPage() {
                   </ul>
 
                   {/* CTA */}
-                  <div style={{ marginTop: "auto" }}>
+                  <div className="pricing-plan-cta" style={{ marginTop: "auto" }}>
                     {isCurrentPlan ? (
                       <div style={{
                         textAlign: "center",

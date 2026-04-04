@@ -597,6 +597,18 @@
   padding-left: 1rem;
   padding-right: 1rem;
 }
+@media (max-width: 640px) {
+  .bs-user-input-wrapper {
+    position: sticky;
+    bottom: 0;
+    margin-bottom: 0;
+    padding: 0.75rem 0.5rem;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    max-width: 100%;
+  }
+}
 
 .bs-report-sidebar {
   width: 400px;
@@ -624,6 +636,25 @@
   z-index: 50;
 }
 
+/* Round table responsive scaling */
+.bs-round-table-wrapper {
+  transform-origin: top center;
+}
+@media (max-width: 600px) {
+  .bs-round-table-wrapper {
+    transform: scale(0.5);
+    height: 360px !important; /* 700 * 0.5 = 350, add some padding */
+    margin-bottom: -180px; /* compensate for scale */
+  }
+}
+@media (min-width: 601px) and (max-width: 900px) {
+  .bs-round-table-wrapper {
+    transform: scale(0.75);
+    height: 530px !important;
+    margin-bottom: -90px;
+  }
+}
+
 /* Mobile responsive additions */
 @media (max-width: 768px) {
   .bs-session-grid {
@@ -638,5 +669,30 @@
 
   .bs-heading {
     font-size: 1.75rem !important;
+  }
+
+  .bs-form-panel {
+    padding: 1rem;
+  }
+
+  .bs-agent-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .bs-agent-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bs-speech-bubble {
+    max-width: 180px;
+    font-size: 11px;
+    padding: 8px 10px;
+  }
+
+  .bs-toggle-group {
+    gap: 0.25rem;
+    padding: 0.2rem;
   }
 }
