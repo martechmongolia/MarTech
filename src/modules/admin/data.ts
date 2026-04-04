@@ -651,33 +651,39 @@ export type OpsOverviewCounts = {
 export async function getBillingMetrics() {
   const supabase = getSupabaseAdminClient();
 
+  type SubscriptionRow = { status: string; plan: { code: string; price_monthly: number } | null };
+
   // Идэвхтэй subscriptions + plan мэдээлэл
-  const { data: subs } = await (supabase as any)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawSubs } = await (supabase as any)
     .from("subscriptions")
     .select("status, plan:plans(code, price_monthly)")
     .in("status", ["active", "trialing"]);
+  const subs = (rawSubs ?? []) as SubscriptionRow[];
 
-  const active = (subs ?? []).filter((s: any) => s.status === "active");
-  const trialing = (subs ?? []).filter((s: any) => s.status === "trialing");
+  const active = subs.filter((s) => s.status === "active");
+  const trialing = subs.filter((s) => s.status === "trialing");
 
-  const mrr = active.reduce((sum: number, s: any) => {
+  const mrr = active.reduce((sum: number, s: SubscriptionRow) => {
     return sum + (Number(s.plan?.price_monthly) || 0);
   }, 0);
 
   // Plan тархалт
   const planDist: Record<string, number> = {};
-  for (const s of subs ?? []) {
+  for (const s of subs) {
     const code = s.plan?.code ?? "unknown";
     planDist[code] = (planDist[code] ?? 0) + 1;
   }
 
   // Pending (төлөгдөөгүй) invoice тоо
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { count: pendingInvoices } = await (supabase as any)
     .from("invoices")
     .select("id", { count: "exact", head: true })
     .eq("status", "pending");
 
   // Сүүлийн 10 амжилттай invoice
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: recentInvoices } = await (supabase as any)
     .from("invoices")
     .select("id, amount, currency, status, paid_at, organization_id")

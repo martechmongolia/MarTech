@@ -90,6 +90,7 @@ export async function generateReport(
   // Save to DB
   const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .from("brainstorm_reports" as any)
     .upsert(
       {

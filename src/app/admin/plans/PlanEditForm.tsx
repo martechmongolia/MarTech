@@ -4,6 +4,9 @@ import { useState, useTransition } from "react";
 import { updatePlanAction } from "@/modules/admin/actions";
 import type { PlanDirectoryRow } from "@/modules/admin/data";
 
+/** PlanDirectoryRow extended with migration-added columns not yet in the generated DB type. */
+type ExtendedPlanRow = PlanDirectoryRow & { brainstorm_credits_monthly?: number };
+
 function formatPrice(amount: number, currency: string): string {
   if (currency === "MNT") return `₮${amount.toLocaleString("mn-MN")}`;
   return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount);
@@ -28,7 +31,7 @@ function EditForm({
   const [reportRetentionDays, setReportRetentionDays] = useState(plan.report_retention_days);
   const [isActive, setIsActive] = useState(plan.is_active);
   const [brainstormCreditsMonthly, setBrainstormCreditsMonthly] = useState(
-    (plan as any).brainstorm_credits_monthly ?? 0
+    (plan as ExtendedPlanRow).brainstorm_credits_monthly ?? 0
   );
 
   function handleSave() {
@@ -236,7 +239,7 @@ export function PlanRow({
         <td style={{ textAlign: "center" }}>{plan.syncs_per_day}</td>
         <td style={{ textAlign: "center" }}>{plan.monthly_ai_reports}</td>
         <td style={{ textAlign: "center" }}>{plan.report_retention_days}d</td>
-        <td style={{ textAlign: "center", color: "#60a5fa", fontWeight: 700 }}>{(plan as any).brainstorm_credits_monthly ?? 0}</td>
+        <td style={{ textAlign: "center", color: "#60a5fa", fontWeight: 700 }}>{(plan as ExtendedPlanRow).brainstorm_credits_monthly ?? 0}</td>
         <td style={{ textAlign: "center" }}>
           <span style={{ background: "rgba(255,255,255,0.05)", padding: "0.2rem 0.6rem", borderRadius: "1rem", fontSize: "0.75rem" }}>
             {subCount}

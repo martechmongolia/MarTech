@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .from("brainstorm_reports" as any)
     .select("*")
     .eq("session_id", sessionId)

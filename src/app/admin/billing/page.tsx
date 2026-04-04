@@ -1,5 +1,14 @@
 import Link from "next/link";
 import { type ReactNode } from "react";
+
+interface RecentInvoice {
+  id: string | number;
+  paid_at: string | null;
+  amount: number;
+  currency: string;
+  status: string;
+  organization_id: string;
+}
 import { getBillingMetrics } from "@/modules/admin/data";
 import { getCurrentUser } from "@/modules/auth/session";
 import { hasActiveSystemAdminRecord } from "@/modules/admin/guard";
@@ -100,7 +109,7 @@ export default async function AdminBillingPage() {
                 </tr>
               </thead>
               <tbody>
-                {metrics.recentInvoices.map((inv: any) => (
+                {metrics.recentInvoices.map((inv: RecentInvoice) => (
                   <tr key={inv.id}>
                     <td className="admin-table__muted">
                       {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString("mn-MN") : "—"}

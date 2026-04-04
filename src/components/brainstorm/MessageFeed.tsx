@@ -5,7 +5,7 @@
 
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { BrainstormMessage } from "@/lib/brainstorm/types";
+import type { AgentId, BrainstormMessage } from "@/lib/brainstorm/types";
 import { AGENTS } from "@/lib/brainstorm/agents";
 import { PixelArtAvatarSVG } from "./PixelArtAvatarSVG";
 
@@ -36,7 +36,7 @@ export function MessageFeed({ messages, streamingContent, streamingAgentId }: Me
               id: "streaming",
               session_id: "",
               role: "agent",
-              agent_id: streamingAgentId as any,
+              agent_id: streamingAgentId as AgentId,
               content: streamingContent,
               round_number: 0,
               turn_index: 0,

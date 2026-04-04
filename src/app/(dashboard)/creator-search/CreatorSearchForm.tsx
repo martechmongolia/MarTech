@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Button, Card } from "@/components/ui";
 import { searchCreatorsAction } from "@/modules/phyllo/creator-search-actions";
 import type { PhylloCreatorProfile } from "@/modules/phyllo/creator-search";
@@ -47,12 +48,13 @@ function CreatorResultCard({ creator }: { creator: PhylloCreatorProfile }) {
       {/* Header: avatar + name */}
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
         {creator.profile_pic_url ? (
-          <img
+          <Image
             src={creator.profile_pic_url ?? ""}
             alt={creator.full_name ?? creator.platform_username ?? "Creator"}
             width={48}
             height={48}
             style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+            unoptimized
           />
         ) : (
           <div

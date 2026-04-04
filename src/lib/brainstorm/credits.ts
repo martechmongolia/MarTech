@@ -11,6 +11,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 export async function getBrainstormConfig() {
   // as any: brainstorm_config table is not in the generated Database type yet
   const supabase = await getSupabaseServerClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from("brainstorm_config")
     .select("*")
@@ -31,6 +32,7 @@ export async function getBrainstormConfig() {
 export async function getUserCredits(userId: string): Promise<number> {
   // as any: brainstorm_credits table is not in the generated Database type yet
   const admin = getSupabaseAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (admin as any)
     .from("brainstorm_credits")
     .select("balance")
@@ -52,6 +54,7 @@ export async function deductCredit(
   // as any: brainstorm_credits / brainstorm_credit_transactions not in DB type
   const admin = getSupabaseAdminClient();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: credit } = await (admin as any)
     .from("brainstorm_credits")
     .select("balance, lifetime_used")
@@ -60,6 +63,7 @@ export async function deductCredit(
 
   if (!credit || credit.balance <= 0) return false;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (admin as any)
     .from("brainstorm_credits")
     .update({
@@ -72,6 +76,7 @@ export async function deductCredit(
 
   if (error) return false;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (admin as any).from("brainstorm_credit_transactions").insert({
     user_id: userId,
     amount: -1,
@@ -113,6 +118,7 @@ export async function refillCreditsForPlan(
       ? config.growth_monthly_credits
       : config.starter_monthly_credits;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing } = await (admin as any)
     .from("brainstorm_credits")
     .select("balance, last_refill_at, last_refill_plan_code")
@@ -132,6 +138,7 @@ export async function refillCreditsForPlan(
 
     if (isSameMonth && existing.last_refill_plan_code === planCode) return; // аль хэдийн refill хийгдсэн
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (admin as any)
       .from("brainstorm_credits")
       .update({
@@ -142,6 +149,7 @@ export async function refillCreditsForPlan(
       })
       .eq("user_id", userId);
   } else {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (admin as any).from("brainstorm_credits").insert({
       user_id: userId,
       balance: amount,
@@ -150,6 +158,7 @@ export async function refillCreditsForPlan(
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (admin as any).from("brainstorm_credit_transactions").insert({
     user_id: userId,
     amount,
@@ -195,6 +204,7 @@ export async function createOneTimePaymentInvoice(
 
   // as any: brainstorm_credit_transactions not in DB type
   const admin = getSupabaseAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (admin as any).from("brainstorm_credit_transactions").insert({
     user_id: userId,
     amount: 0, // Төлөгдөөгүй — webhook-д 1 болно
@@ -224,6 +234,7 @@ export async function grantCreditAfterPayment(
   // as any: brainstorm_credits / brainstorm_credit_transactions not in DB type
   const admin = getSupabaseAdminClient();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing } = await (admin as any)
     .from("brainstorm_credits")
     .select("balance")
@@ -231,6 +242,7 @@ export async function grantCreditAfterPayment(
     .single();
 
   if (existing) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (admin as any)
       .from("brainstorm_credits")
       .update({
@@ -239,12 +251,14 @@ export async function grantCreditAfterPayment(
       })
       .eq("user_id", userId);
   } else {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (admin as any)
       .from("brainstorm_credits")
       .insert({ user_id: userId, balance: 1 });
   }
 
   // Pending transaction-г баталгаажуулна
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (admin as any)
     .from("brainstorm_credit_transactions")
     .update({
@@ -269,6 +283,7 @@ export async function updateBrainstormConfig(params: {
 }) {
   // as any: brainstorm_config not in DB type
   const admin = getSupabaseAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (admin as any)
     .from("brainstorm_config")
     .update({

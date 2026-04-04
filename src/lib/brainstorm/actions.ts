@@ -45,6 +45,7 @@ export async function createSession(
   const supabase = await getSupabaseServerClient();
 
   const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .from("brainstorm_sessions" as any)
     .insert({
       user_id: user.id,
@@ -81,6 +82,7 @@ export async function saveMessage(
   const supabase = await getSupabaseServerClient();
 
   const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .from("brainstorm_messages" as any)
     .insert({
       session_id: payload.session_id,
@@ -112,6 +114,7 @@ export async function updateSessionRound(
   if (status === "completed") update.completed_at = new Date().toISOString();
 
   const { error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .from("brainstorm_sessions" as any)
     .update(update)
     .eq("id", sessionId);
@@ -124,6 +127,7 @@ export async function completeSession(sessionId: string): Promise<void> {
   const supabase = await getSupabaseServerClient();
 
   const { error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .from("brainstorm_sessions" as any)
     .update({
       status: "completed",
@@ -142,6 +146,7 @@ export async function getUserSessions(limit = 20): Promise<BrainstormSession[]> 
   const supabase = await getSupabaseServerClient();
 
   const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .from("brainstorm_sessions" as any)
     .select("*")
     .eq("user_id", user.id)
@@ -157,6 +162,7 @@ export async function getSession(sessionId: string): Promise<BrainstormSession |
   const supabase = await getSupabaseServerClient();
 
   const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .from("brainstorm_sessions" as any)
     .select("*")
     .eq("id", sessionId)
@@ -173,6 +179,7 @@ export async function getSessionMessages(
   const supabase = await getSupabaseServerClient();
 
   const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .from("brainstorm_messages" as any)
     .select("*")
     .eq("session_id", sessionId)
@@ -187,6 +194,7 @@ export async function getSessionMessages(
 export async function deleteSession(sessionId: string): Promise<void> {
   const supabase = await getSupabaseServerClient();
   const { error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .from("brainstorm_sessions" as any)
     .delete()
     .eq("id", sessionId);

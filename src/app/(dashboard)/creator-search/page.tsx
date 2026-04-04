@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Image from "next/image";
 import { Card, PageHeader } from "@/components/ui";
 import { getCurrentUser } from "@/modules/auth/session";
 import { getCurrentUserOrganization } from "@/modules/organizations/data";
@@ -33,12 +34,13 @@ function CreatorCard({ creator }: { creator: PhylloCreatorRow }) {
         {/* Header: avatar + name */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           {creator.profile_pic_url ? (
-            <img
+            <Image
               src={creator.profile_pic_url}
               alt={creator.full_name ?? creator.platform_username ?? "Creator"}
               width={48}
               height={48}
               style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+              unoptimized
             />
           ) : (
             <div

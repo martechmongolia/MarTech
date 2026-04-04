@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
   const threeDaysLater = new Date(now);
   threeDaysLater.setDate(now.getDate() + 3);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: expiringSoon } = await (admin as any)
     .from("subscriptions")
     .select("id, trial_ends_at, organization_id")
@@ -27,6 +28,7 @@ export async function GET(req: NextRequest) {
     .lte("trial_ends_at", threeDaysLater.toISOString());
 
   // Дуусчихсан trial-ууд (trialing хэвээр байгаа)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: expired } = await (admin as any)
     .from("subscriptions")
     .select("id, trial_ends_at, organization_id")
@@ -38,6 +40,7 @@ export async function GET(req: NextRequest) {
 
   // Owner user_id авах helper
   async function getOwnerEmail(organizationId: string): Promise<string | null> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: memberData } = await (admin as any)
       .from("organization_members")
       .select("user_id")

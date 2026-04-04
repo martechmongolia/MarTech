@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     // invoice_id-ээс user_id олох
     // as any: brainstorm_credit_transactions not in DB type
     const admin = getSupabaseAdminClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: tx } = await (admin as any)
       .from("brainstorm_credit_transactions")
       .select("user_id")

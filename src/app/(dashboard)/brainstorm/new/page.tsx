@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { createSession } from "@/lib/brainstorm/actions";
 import type { AgentId, UserTurnMode, SessionType } from "@/lib/brainstorm/types";
 import { AGENTS, AGENT_ORDER } from "@/lib/brainstorm/agents";
@@ -368,10 +369,13 @@ export default function NewBrainstormPage() {
             </p>
 
             {paymentInvoice.qrImage && (
-              <img
+              <Image
                 src={`data:image/png;base64,${paymentInvoice.qrImage}`}
                 alt="QPay QR"
-                style={{ width: "200px", height: "200px", borderRadius: "0.5rem", margin: "0 auto 1.25rem", display: "block" }}
+                width={200}
+                height={200}
+                style={{ borderRadius: "0.5rem", margin: "0 auto 1.25rem", display: "block" }}
+                unoptimized
               />
             )}
 

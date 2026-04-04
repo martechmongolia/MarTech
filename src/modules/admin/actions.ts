@@ -42,6 +42,7 @@ export async function updatePlanAction(
   if (!data.currency || data.currency.length !== 3) return { error: "Currency must be a 3-letter code." };
 
   const admin = getSupabaseAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (admin as any)
     .from("plans")
     .update({

@@ -121,6 +121,7 @@ export async function POST(req: NextRequest) {
         if (userMessage) {
           conversationHistory.push({ role: "user", content: userMessage });
           // Save user message
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await supabase.from("brainstorm_messages" as any).insert({
             session_id: sessionId,
             role: "user",
@@ -168,6 +169,7 @@ export async function POST(req: NextRequest) {
             let msgId: string | undefined;
             try {
               const msgRow = await supabase
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 .from("brainstorm_messages" as any)
                 .insert({
                   session_id: sessionId,
@@ -210,6 +212,7 @@ export async function POST(req: NextRequest) {
               // Save final content
               if (msgId) {
                 await supabase
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   .from("brainstorm_messages" as any)
                   .update({ content: fullContent, is_streaming: false })
                   .eq("id", msgId);
@@ -221,6 +224,7 @@ export async function POST(req: NextRequest) {
               // Cleanup orphaned streaming message
               if (msgId) {
                 await supabase
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   .from("brainstorm_messages" as any)
                   .update({ content: "[Алдаа гарлаа]", is_streaming: false })
                   .eq("id", msgId);
@@ -232,6 +236,7 @@ export async function POST(req: NextRequest) {
 
             // Persist turn state to DB after each agent speaks
             await supabase
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               .from("brainstorm_sessions" as any)
               .update({
                 current_agent_index: currentTurnState.currentAgentIndex,
