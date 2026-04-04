@@ -3,6 +3,7 @@
 import {
   getCommentById,
   getPageConnectionByPageId,
+  getDecryptedPageToken,
   getReplySettings,
   getKnowledgeBase,
   getDailyReplyCount,
@@ -11,7 +12,7 @@ import {
   markReplyPosted,
 } from './data';
 import { generateReply } from './ai-reply';
-import type { FbPageConnection, FbReplySettings } from './types';
+import type { FbReplySettings } from './types';
 
 const FB_GRAPH_BASE = 'https://graph.facebook.com/v21.0';
 
@@ -87,14 +88,7 @@ async function hideCommentOnFacebook(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Decrypt page access token (stub — implement with your encryption scheme)
-// ---------------------------------------------------------------------------
-function decryptPageAccessToken(connection: FbPageConnection): string {
-  // TODO: integrate with META_TOKEN_ENCRYPTION_KEY if using the same scheme
-  // For now return raw (token should be stored encrypted in production)
-  return connection.page_access_token_encrypted;
-}
+
 
 // ---------------------------------------------------------------------------
 // Main processing pipeline
@@ -162,7 +156,7 @@ export async function processComment(commentId: string): Promise<void> {
       language: result?.language ?? 'mn',
     });
 
-    const pageAccessToken = decryptPageAccessToken(connection);
+    const pageAccessToken = await getDecryptedPageToken(connection.id);
 
     // 8. Handle spam — hide on Facebook
     if (!result) {

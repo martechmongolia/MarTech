@@ -12,7 +12,7 @@ interface Props {
   sessionStatus: DigestStatus;
 }
 
-export function DigestTriggerButton({ hasToday, sessionStatus }: Props) {
+export function DigestTriggerButton({ hasToday: _hasToday, sessionStatus }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);

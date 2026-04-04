@@ -39,7 +39,6 @@ export type CreatePhylloSearchData = {
   error_message: string | null;
 };
 
-type SupabaseAny = ReturnType<typeof getSupabaseServerClient> extends Promise<infer C> ? C : never;
 
 // ---------------------------------------------------------------------------
 // Reads

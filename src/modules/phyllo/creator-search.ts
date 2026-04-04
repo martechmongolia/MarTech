@@ -110,8 +110,8 @@ export async function searchCreators(
     follower_min,
     follower_max,
     keywords,
-    limit = 25,
-    offset = 0,
+    limit: _limit = 25,
+    offset: _offset = 0,
   } = params;
 
   const body: PhylloSearchBody = {

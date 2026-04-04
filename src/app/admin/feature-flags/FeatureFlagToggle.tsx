@@ -11,7 +11,7 @@ interface Props {
   adminEmail: string;
 }
 
-export function FeatureFlagToggle({ flagKey, label, enabled: initialEnabled, adminEmail }: Props) {
+export function FeatureFlagToggle({ flagKey, label: _label, enabled: initialEnabled, adminEmail }: Props) {
   const router = useRouter();
   const [enabled, setEnabled] = useState(initialEnabled);
   const [isPending, startTransition] = useTransition();

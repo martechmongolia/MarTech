@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Card, PageHeader } from "@/components/ui";
+
 import { getCurrentUser } from "@/modules/auth/session";
 import { getCurrentUserOrganization } from "@/modules/organizations/data";
 import { getRecentInvoicesForCurrentUserOrg } from "@/modules/billing/data";
@@ -49,7 +49,7 @@ function formatAmount(amount: number, currency: string): string {
   return `${amount.toLocaleString()} ${currency}`;
 }
 
-function getInvoiceType(inv: { subscription_id?: string | null; target_plan_id?: string | null }): string {
+function getInvoiceType(_inv?: { subscription_id?: string | null; target_plan_id?: string | null }): string {
   // All sub invoices come from subscription; we'll label them by plan context
   return "Сарын төлбөр";
 }

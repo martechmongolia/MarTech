@@ -8,16 +8,6 @@ import type { PhylloCreatorProfile } from "@/modules/phyllo/creator-search";
 type Platform = "tiktok" | "instagram";
 type SortBy = "AVERAGE_VIEWS" | "FOLLOWER_COUNT" | "AVERAGE_LIKES";
 
-type Creator = {
-  id: string;
-  name: string;
-  username: string;
-  platform: string;
-  profile_pic_url?: string | null;
-  follower_count: number;
-  avg_views: number;
-  avg_likes: number;
-};
 
 const PLATFORM_LABELS: Record<string, string> = {
   tiktok: "TikTok",

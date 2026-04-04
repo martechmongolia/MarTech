@@ -8,6 +8,8 @@
  */
 
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { decryptSecret } from '@/lib/meta/crypto';
+import { getMetaEnv } from '@/lib/env/server';
 import type { FbComment, FbPageConnection, FbReply, FbKnowledgeBaseItem, FbReplySettings } from './types';
 
 async function getClient() {
@@ -19,29 +21,68 @@ function fromTable(supabase: any, table: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Page connections
+// Page connections — backed by meta_pages table (already stores encrypted tokens)
 // ---------------------------------------------------------------------------
+
+/** Map a meta_pages row to the FbPageConnection shape used throughout facebook-ai. */
+function mapMetaPageToConnection(row: Record<string, any>): FbPageConnection {
+  return {
+    id: row.id as string,
+    org_id: row.organization_id as string,
+    page_id: row.meta_page_id as string,
+    page_name: row.name as string,
+    page_access_token_encrypted: (row.page_access_token_encrypted ?? '') as string,
+    is_active: row.status === 'active',
+    webhook_subscribed: false, // managed separately
+    settings: {},
+  };
+}
+
 export async function getPageConnections(orgId: string): Promise<FbPageConnection[]> {
   const supabase = await getClient();
-  const { data, error } = await fromTable(supabase, 'fb_page_connections')
-    .select('*')
-    .eq('org_id', orgId)
-    .eq('is_active', true);
+  const { data, error } = await supabase
+    .from('meta_pages')
+    .select('id,organization_id,meta_page_id,name,page_access_token_encrypted,status')
+    .eq('organization_id', orgId)
+    .eq('status', 'active');
 
   if (error) throw error;
-  return (data ?? []) as FbPageConnection[];
+  return (data ?? []).map(mapMetaPageToConnection);
 }
 
 export async function getPageConnectionByPageId(pageId: string): Promise<FbPageConnection | null> {
   const supabase = await getClient();
-  const { data, error } = await fromTable(supabase, 'fb_page_connections')
-    .select('*')
-    .eq('page_id', pageId)
-    .eq('is_active', true)
+  const { data, error } = await supabase
+    .from('meta_pages')
+    .select('id,organization_id,meta_page_id,name,page_access_token_encrypted,status')
+    .eq('meta_page_id', pageId)
+    .eq('status', 'active')
     .maybeSingle();
 
   if (error) throw error;
-  return (data ?? null) as FbPageConnection | null;
+  if (!data) return null;
+  return mapMetaPageToConnection(data);
+}
+
+/**
+ * Fetch and decrypt the page access token for a given meta_pages row id.
+ * Uses META_TOKEN_ENCRYPTION_KEY via the same scheme as meta_connections.
+ */
+export async function getDecryptedPageToken(connectionId: string): Promise<string> {
+  const supabase = await getClient();
+  const { data, error } = await supabase
+    .from('meta_pages')
+    .select('page_access_token_encrypted')
+    .eq('id', connectionId)
+    .single();
+
+  if (error) throw error;
+  if (!data?.page_access_token_encrypted) {
+    throw new Error(`No page access token found for connection ${connectionId}`);
+  }
+
+  const { tokenEncryptionKey } = getMetaEnv();
+  return decryptSecret(data.page_access_token_encrypted, tokenEncryptionKey);
 }
 
 // ---------------------------------------------------------------------------

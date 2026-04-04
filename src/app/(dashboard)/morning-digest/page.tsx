@@ -98,7 +98,7 @@ function DigestContent({
     try {
       const parsed = JSON.parse(displaySummary);
       if (parsed.content) displaySummary = parsed.content;
-    } catch (e) {
+    } catch {
       // stay with original
     }
   }
