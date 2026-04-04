@@ -3,7 +3,7 @@ import { StartTrialForm } from "@/components/billing/start-trial-form";
 import { StartPaidCheckoutForm } from "@/components/billing/start-paid-checkout-form";
 import { getCurrentUser } from "@/modules/auth/session";
 import { getCurrentUserOrganization } from "@/modules/organizations/data";
-import { getCurrentOrganizationSubscription } from "@/modules/subscriptions/data";
+import { getCurrentOrganizationSubscription, getPublicActivePlans } from "@/modules/subscriptions/data";
 import { isTrialExpired } from "@/modules/subscriptions/billing-lifecycle";
 
 // ─── Plan features ────────────────────────────────────────────────────────────
@@ -25,10 +25,7 @@ const PLAN_FEATURES: Record<string, { icon: string; text: string }[]> = {
   ],
 };
 
-const PLAN_PRICES: Record<string, { monthly: string; currency: string }> = {
-  starter: { monthly: "9,000", currency: "₮" },
-  growth:  { monthly: "10,000", currency: "₮" },
-};
+// Үнэ нь DB-аас ирдэг plan.price_monthly ашиглана - hardcode биш
 
 const FAQS = [
   {
@@ -63,7 +60,7 @@ type UserPricingState =
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function PricingPage() {
-  const user = await getCurrentUser();
+  const [user, plans] = await Promise.all([getCurrentUser(), getPublicActivePlans()]);
   const organization = user ? await getCurrentUserOrganization(user.id) : null;
   const subscription = organization ? await getCurrentOrganizationSubscription(user!.id) : null;
 
@@ -138,7 +135,7 @@ export default async function PricingPage() {
               color: "#a5b4fc",
               marginBottom: "1.25rem",
             }}>
-              ✨ 14 хоног үнэгүй — карт шаардлагагүй
+              ✨ 14 хоног үнэгүй - карт шаардлагагүй
             </div>
             <h1 style={{ fontSize: "clamp(1.75rem, 5vw, 2.75rem)", fontWeight: 800, margin: "0 0 1rem", lineHeight: 1.2 }}>
               MarTech-г туршиж үзнэ үү
@@ -190,7 +187,7 @@ export default async function PricingPage() {
           }}>
             <div>
               <p style={{ color: "#a5b4fc", fontWeight: 700, margin: "0 0 0.25rem", fontSize: "1rem" }}>
-                🎯 Growth trial идэвхтэй — {daysLeft} хоног үлдсэн
+                🎯 Growth trial идэвхтэй - {daysLeft} хоног үлдсэн
               </p>
               <p style={{ color: "#64748b", fontSize: "0.9rem", margin: 0 }}>
                 Subscription идэвхжүүлбэл бүх өгөгдөл хадгалагдана
@@ -279,7 +276,9 @@ export default async function PricingPage() {
           }}>
             {(["starter", "growth"] as const).map((planCode) => {
               const features = PLAN_FEATURES[planCode] ?? [];
-              const price = PLAN_PRICES[planCode];
+              const planRow = plans.find((p) => p.code === planCode);
+              const priceMonthly = planRow ? Number(planRow.price_monthly).toLocaleString("mn-MN") : "-";
+              const priceCurrency = planRow?.currency === "MNT" ? "₮" : (planRow?.currency ?? "₮");
               const isCurrentPlan =
                 (pricingState === "active_starter" && planCode === "starter") ||
                 (pricingState === "active_growth" && planCode === "growth") ||
@@ -353,9 +352,9 @@ export default async function PricingPage() {
                       {planCode === "starter" ? "Starter" : "Growth"}
                     </h3>
                     <p style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: isGrowth ? "#a5b4fc" : "#e2e8f0" }}>
-                      {price.monthly}
+                      {priceMonthly}
                       <span style={{ fontSize: "1rem", fontWeight: 400, color: "#64748b" }}>
-                        {price.currency}/сар
+                        {priceCurrency}/сар
                       </span>
                     </p>
                   </div>
@@ -383,7 +382,7 @@ export default async function PricingPage() {
                         fontSize: "0.875rem",
                         fontWeight: 600,
                       }}>
-                        {isTrialingNow ? `🎯 Trial — ${daysLeft} хоног үлдсэн` : "✅ Идэвхтэй"}
+                        {isTrialingNow ? `🎯 Trial - ${daysLeft} хоног үлдсэн` : "✅ Идэвхтэй"}
                       </div>
                     ) : showCheckout && subscription ? (
                       <StartPaidCheckoutForm
@@ -482,7 +481,15 @@ export default async function PricingPage() {
               ))}
             </div>
             <p style={{ color: "#64748b", margin: 0, fontSize: "0.9rem" }}>
-              Зөвхөн <strong style={{ color: "#a5b4fc" }}>+1,000₮/сар</strong> нэмэлтээр
+              {plans.find((p) => p.code === "growth") && plans.find((p) => p.code === "starter") ? (
+                <>
+                  Зөвхөн{" "}
+                  <strong style={{ color: "#a5b4fc" }}>
+                    +{(Number(plans.find((p) => p.code === "growth")!.price_monthly) - Number(plans.find((p) => p.code === "starter")!.price_monthly)).toLocaleString()}₮/сар
+                  </strong>{" "}
+                  нэмэлтээр
+                </>
+              ) : null}
             </p>
           </div>
         )}
