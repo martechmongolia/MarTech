@@ -34,6 +34,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     ...(flags["social_listening"] !== false ? [{ href: "/social-listening", label: "Social Listening" }] : []),
     ...(flags["creator_search"] !== false ? [{ href: "/creator-search", label: "Creator Search" }] : []),
     ...(flags["morning_digest"] !== false ? [{ href: "/morning-digest", label: "Өглөөний Мэдээлэл" }] : []),
+    ...(flags["brainstorm"] === true ? [{ href: "/brainstorm", label: "🧠 AI Brainstorming" }] : []),
     { href: "/billing", label: "Billing" },
     ...(showSystemAdminNav
       ? [{ href: "/admin", label: "System Admin", accent: true }]
