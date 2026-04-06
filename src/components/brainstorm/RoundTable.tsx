@@ -47,7 +47,7 @@ export function RoundTable({ activeAgents, speakingAgentId, messages, topic, str
         
         {/* Topic label inside hologam */}
         <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", padding: "0 3rem", textAlign: "center", position: "absolute", inset: 0, zIndex: 10 }}>
-          <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "rgba(191, 219, 254, 0.8)", textTransform: "uppercase", letterSpacing: "0.05em", textShadow: "0 4px 6px rgba(0,0,0,0.1)", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+          <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
             {topic}
           </p>
         </div>

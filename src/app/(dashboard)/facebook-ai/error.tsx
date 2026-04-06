@@ -20,7 +20,7 @@ export default function FacebookAIError({
         style={{
           fontSize: "1.25rem",
           fontWeight: 700,
-          color: "#fff",
+          color: "#111827",
           marginBottom: "0.5rem",
         }}
       >
@@ -28,7 +28,7 @@ export default function FacebookAIError({
       </h2>
       <p
         style={{
-          color: "#94a3b8",
+          color: "#6B7280",
           marginBottom: "1.5rem",
           maxWidth: "480px",
           margin: "0 auto 1.5rem",
@@ -46,7 +46,7 @@ export default function FacebookAIError({
         style={{
           padding: "0.625rem 1.25rem",
           background: "#4f46e5",
-          color: "#fff",
+          color: "#FFFFFF",
           border: "none",
           borderRadius: "0.5rem",
           cursor: "pointer",

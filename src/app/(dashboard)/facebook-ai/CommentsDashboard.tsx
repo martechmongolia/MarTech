@@ -99,10 +99,10 @@ const TYPE_LABELS: Record<CommentType, string> = {
 };
 
 const TYPE_COLORS: Record<CommentType, { bg: string; color: string }> = {
-  question: { bg: "rgba(79, 70, 229, 0.15)", color: "#a5b4fc" },
-  complaint: { bg: "rgba(244, 63, 94, 0.15)", color: "#fda4af" },
-  spam: { bg: "rgba(107, 114, 128, 0.15)", color: "#9ca3af" },
-  general: { bg: "rgba(16, 185, 129, 0.15)", color: "#6ee7b7" },
+  question: { bg: "#EEF2FF", color: "#4F46E5" },
+  complaint: { bg: "#FEF2F2", color: "#B91C1C" },
+  spam: { bg: "#F3F4F6", color: "#6B7280" },
+  general: { bg: "#ECFDF5", color: "#065F46" },
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -119,8 +119,8 @@ function StatCard({
   return (
     <div
       style={{
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "#FFFFFF",
+        border: "1px solid #E5E7EB",
         borderRadius: "0.75rem",
         padding: "1.25rem 1.5rem",
       }}
@@ -129,7 +129,7 @@ function StatCard({
         style={{
           margin: 0,
           fontSize: "0.75rem",
-          color: "#64748b",
+          color: "#9CA3AF",
           textTransform: "uppercase",
           letterSpacing: "0.05em",
           fontWeight: 600,
@@ -142,7 +142,7 @@ function StatCard({
           margin: "0.375rem 0 0",
           fontSize: "1.875rem",
           fontWeight: 700,
-          color: accent ?? "#fff",
+          color: accent ?? "#111827",
           lineHeight: 1,
         }}
       >
@@ -182,7 +182,7 @@ function CommentCard({ comment }: { comment: Comment }) {
     <div
       style={{
         padding: "1.25rem 1.5rem",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        borderBottom: "1px solid #E5E7EB",
       }}
     >
       <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
@@ -199,7 +199,7 @@ function CommentCard({ comment }: { comment: Comment }) {
               marginBottom: "0.375rem",
             }}
           >
-            <span style={{ fontWeight: 600, color: "#fff", fontSize: "0.875rem" }}>
+            <span style={{ fontWeight: 600, color: "#111827", fontSize: "0.875rem" }}>
               {comment.commenterName}
             </span>
             <span
@@ -214,7 +214,7 @@ function CommentCard({ comment }: { comment: Comment }) {
             >
               {TYPE_LABELS[comment.type]}
             </span>
-            <span style={{ fontSize: "0.75rem", color: "#475569", marginLeft: "auto" }}>
+            <span style={{ fontSize: "0.75rem", color: "#9CA3AF", marginLeft: "auto" }}>
               {timeAgo(comment.createdAt)}
             </span>
           </div>
@@ -225,7 +225,7 @@ function CommentCard({ comment }: { comment: Comment }) {
             style={{
               margin: 0,
               fontSize: "0.875rem",
-              color: "#cbd5e1",
+              color: "#374151",
               lineHeight: 1.5,
             }}
           >
@@ -392,9 +392,9 @@ export function CommentsDashboard({ orgId }: { orgId: string }) {
         <button
           style={{
             padding: "0.5rem 1rem",
-            background: "rgba(255,255,255,0.08)",
-            color: "#94a3b8",
-            border: "1px solid rgba(255,255,255,0.12)",
+            background: "#F9FAFB",
+            color: "#6B7280",
+            border: "1px solid #E5E7EB",
             borderRadius: "0.5rem",
             fontSize: "0.875rem",
             cursor: "pointer",
@@ -426,7 +426,7 @@ export function CommentsDashboard({ orgId }: { orgId: string }) {
               background: "none",
               border: "none",
               borderBottom: activeTab === tab.key ? "2px solid #4f46e5" : "2px solid transparent",
-              color: activeTab === tab.key ? "#818cf8" : "#475569",
+              color: activeTab === tab.key ? "#4F46E5" : "#6B7280",
               fontSize: "0.875rem",
               fontWeight: activeTab === tab.key ? 600 : 400,
               cursor: "pointer",
@@ -440,7 +440,7 @@ export function CommentsDashboard({ orgId }: { orgId: string }) {
                 style={{
                   marginLeft: "0.375rem",
                   padding: "0.0625rem 0.375rem",
-                  background: activeTab === tab.key ? "rgba(79,70,229,0.2)" : "rgba(255,255,255,0.06)",
+                  background: activeTab === tab.key ? "#EEF2FF" : "#F3F4F6",
                   borderRadius: "999px",
                   fontSize: "0.6875rem",
                   fontWeight: 700,
@@ -460,8 +460,8 @@ export function CommentsDashboard({ orgId }: { orgId: string }) {
       {/* Comments list */}
       <div
         style={{
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: "#FFFFFF",
+          border: "1px solid #E5E7EB",
           borderRadius: "0.75rem",
           overflow: "hidden",
         }}
@@ -471,7 +471,7 @@ export function CommentsDashboard({ orgId }: { orgId: string }) {
             style={{
               padding: "4rem 2rem",
               textAlign: "center",
-              color: "#475569",
+              color: "#6B7280",
             }}
           >
             <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>💬</div>

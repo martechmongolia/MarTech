@@ -53,7 +53,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   );
 
   return (
-    <div className="app-shell ui-obsidian-dark">
+    <div className="app-shell">
       {/* Desktop sidebar — hidden on mobile */}
       <aside className="app-shell__sidebar">
         <Link href="/dashboard" className="app-shell__logo-link">

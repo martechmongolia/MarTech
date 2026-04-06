@@ -103,9 +103,9 @@ export function AiInsightsBlock(props: {
       </div>
 
       {showFailure ? (
-        <div style={{ padding: "1rem", background: "rgba(239, 68, 68, 0.05)", borderRadius: "0.75rem", border: "1px solid rgba(239, 68, 68, 0.1)", marginBottom: "1rem" }}>
+        <div style={{ padding: "1rem", background: "#FEF2F2", borderRadius: "0.75rem", border: "1px solid #FECACA", marginBottom: "1rem" }}>
           <strong style={{ color: "#f87171", fontSize: "0.875rem" }}>Analysis Failed</strong>
-          <p style={{ margin: "0.35rem 0 0", fontSize: "0.8125rem", color: "var(--dash-text-dim)" }}>{analysisJob?.error_message}</p>
+          <p style={{ margin: "0.35rem 0 0", fontSize: "0.8125rem", color: "#6B7280" }}>{analysisJob?.error_message}</p>
         </div>
       ) : null}
 
@@ -118,16 +118,16 @@ export function AiInsightsBlock(props: {
           <div style={{ marginTop: "1.5rem", display: "grid", gap: "1.5rem" }}>
             {/* Key Signals */}
             <div>
-              <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--dash-text-muted)", textTransform: "uppercase", marginBottom: "0.75rem", letterSpacing: "0.05em" }}>
+              <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#6B7280", textTransform: "uppercase", marginBottom: "0.75rem", letterSpacing: "0.05em" }}>
                 Key Performance Signals
               </p>
               <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "0.5rem" }}>
                 {signals.map((s, i) => (
-                  <li key={i} style={{ display: "flex", gap: "0.75rem", fontSize: "0.875rem", color: "var(--dash-text-bright)" }}>
+                  <li key={i} style={{ display: "flex", gap: "0.75rem", fontSize: "0.875rem", color: "#111827" }}>
                     <span style={{ color: s.severity === "danger" ? "#f43f5e" : s.severity === "warning" ? "#f59e0b" : "#6366f1" }}>●</span>
                     <div>
                       <strong style={{ fontWeight: 600 }}>{s.title}</strong>
-                      <span style={{ color: "var(--dash-text-dim)", marginLeft: "0.5rem" }}>{s.detail}</span>
+                      <span style={{ color: "#9CA3AF", marginLeft: "0.5rem" }}>{s.detail}</span>
                     </div>
                   </li>
                 ))}
@@ -136,7 +136,7 @@ export function AiInsightsBlock(props: {
 
             {/* Recommendations */}
             <div>
-              <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--dash-text-muted)", textTransform: "uppercase", marginBottom: "0.75rem", letterSpacing: "0.05em" }}>
+              <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#6B7280", textTransform: "uppercase", marginBottom: "0.75rem", letterSpacing: "0.05em" }}>
                 Strategic Recommendations ({sortedRecs.length})
               </p>
               <div style={{ display: "grid", gap: "0.75rem" }}>
@@ -146,20 +146,20 @@ export function AiInsightsBlock(props: {
                   return (
                     <div key={r.id} style={{ 
                       padding: "1rem", 
-                      background: "rgba(255,255,255,0.02)", 
+                      background: "#F8F9FB", 
                       borderRadius: "1rem", 
-                      border: "1px solid rgba(255,255,255,0.04)" 
+                      border: "1px solid #E5E7EB" 
                     }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
                         <span style={{ fontSize: "0.6875rem", fontWeight: 700, textTransform: "uppercase", color: r.priority === "high" ? "#f43f5e" : "#94a3b8" }}>
                           {r.priority} Priority
                         </span>
-                        <span style={{ fontSize: "0.6875rem", color: "var(--dash-text-dim)" }}>{r.category}</span>
+                        <span style={{ fontSize: "0.6875rem", color: "#9CA3AF" }}>{r.category}</span>
                       </div>
-                      <h5 style={{ margin: 0, fontSize: "0.9375rem", color: "#fff", fontWeight: 600 }}>{r.title}</h5>
-                      <p style={{ margin: "0.5rem 0 0", fontSize: "0.875rem", color: "var(--dash-text-dim)", lineHeight: 1.5 }}>{r.description}</p>
+                      <h5 style={{ margin: 0, fontSize: "0.9375rem", color: "#111827", fontWeight: 600 }}>{r.title}</h5>
+                      <p style={{ margin: "0.5rem 0 0", fontSize: "0.875rem", color: "#6B7280", lineHeight: 1.5 }}>{r.description}</p>
                       {ids.length > 0 && (
-                        <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.03)", fontSize: "0.75rem", color: "var(--dash-text-muted)" }}>
+                        <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid #E5E7EB", fontSize: "0.75rem", color: "#6B7280" }}>
                           Based on: {ids.map(id => signalTitleById.get(id) || id).join(", ")}
                         </div>
                       )}
@@ -171,7 +171,7 @@ export function AiInsightsBlock(props: {
           </div>
 
           {/* Metadata Footer */}
-          <div style={{ marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.03)", display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--dash-text-muted)" }}>
+          <div style={{ marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid #E5E7EB", display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "#9CA3AF" }}>
             <span>Engine: {report.model_name || "MarTech Vision v3"}</span>
             <div style={{ display: "flex", gap: "1rem" }}>
               {recentAnalysisJobs.length > 0 && (
@@ -188,7 +188,7 @@ export function AiInsightsBlock(props: {
           </div>
         </>
       ) : !showFailure ? (
-        <div style={{ padding: "2rem", textAlign: "center", color: "var(--dash-text-dim)", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: "1rem" }}>
+        <div style={{ padding: "2rem", textAlign: "center", color: "#6B7280", border: "1px dashed #D1D5DB", borderRadius: "1rem" }}>
           No AI report generated yet. Sync your data to trigger analysis.
         </div>
       ) : null}

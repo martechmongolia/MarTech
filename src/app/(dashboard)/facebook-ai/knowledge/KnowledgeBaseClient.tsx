@@ -46,10 +46,10 @@ const MOCK_ITEMS: KnowledgeItem[] = [
 const CATEGORIES: Category[] = ["FAQ", "Бүтээгдэхүүн", "Бодлого", "Холбоо барих"];
 
 const CATEGORY_COLORS: Record<Category, { bg: string; color: string }> = {
-  FAQ: { bg: "rgba(79,70,229,0.15)", color: "#a5b4fc" },
-  Бүтээгдэхүүн: { bg: "rgba(16,185,129,0.15)", color: "#6ee7b7" },
-  Бодлого: { bg: "rgba(245,158,11,0.15)", color: "#fcd34d" },
-  "Холбоо барих": { bg: "rgba(244,63,94,0.15)", color: "#fda4af" },
+  FAQ: { bg: "#EEF2FF", color: "#4F46E5" },
+  Бүтээгдэхүүн: { bg: "#ECFDF5", color: "#065F46" },
+  Бодлого: { bg: "#FFFBEB", color: "#92400E" },
+  "Холбоо барих": { bg: "#FEF2F2", color: "#B91C1C" },
 };
 
 function timeAgo(dateStr: string): string {
@@ -97,7 +97,7 @@ function ItemModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.6)",
+        background: "rgba(0,0,0,0.4)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -108,13 +108,13 @@ function ItemModal({
     >
       <div
         style={{
-          background: "#0f172a",
-          border: "1px solid rgba(255,255,255,0.12)",
+          background: "#FFFFFF",
+          border: "1px solid #E5E7EB",
           borderRadius: "1rem",
           padding: "1.75rem",
           width: "100%",
           maxWidth: "36rem",
-          boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)",
         }}
       >
         <h3
@@ -122,7 +122,7 @@ function ItemModal({
             margin: "0 0 1.25rem",
             fontSize: "1.0625rem",
             fontWeight: 700,
-            color: "#fff",
+            color: "#111827",
           }}
         >
           {mode === "add" ? "Шинэ мэдлэг нэмэх" : "Засах"}
@@ -136,7 +136,7 @@ function ItemModal({
                 display: "block",
                 fontSize: "0.75rem",
                 fontWeight: 600,
-                color: "#94a3b8",
+                color: "#6B7280",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
                 marginBottom: "0.375rem",
@@ -152,10 +152,10 @@ function ItemModal({
               style={{
                 width: "100%",
                 padding: "0.5rem 0.75rem",
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.12)",
+                background: "#F9FAFB",
+                border: "1px solid #E5E7EB",
                 borderRadius: "0.5rem",
-                color: "#fff",
+                color: "#111827",
                 fontSize: "0.875rem",
                 boxSizing: "border-box",
               }}
@@ -169,7 +169,7 @@ function ItemModal({
                 display: "block",
                 fontSize: "0.75rem",
                 fontWeight: 600,
-                color: "#94a3b8",
+                color: "#6B7280",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
                 marginBottom: "0.375rem",
@@ -183,16 +183,16 @@ function ItemModal({
               style={{
                 width: "100%",
                 padding: "0.5rem 0.75rem",
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.12)",
+                background: "#F9FAFB",
+                border: "1px solid #E5E7EB",
                 borderRadius: "0.5rem",
-                color: "#fff",
+                color: "#111827",
                 fontSize: "0.875rem",
                 boxSizing: "border-box",
               }}
             >
               {CATEGORIES.map((c) => (
-                <option key={c} value={c} style={{ background: "#0f172a" }}>
+                <option key={c} value={c}>
                   {c}
                 </option>
               ))}
@@ -206,7 +206,7 @@ function ItemModal({
                 display: "block",
                 fontSize: "0.75rem",
                 fontWeight: 600,
-                color: "#94a3b8",
+                color: "#6B7280",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
                 marginBottom: "0.375rem",
@@ -222,10 +222,10 @@ function ItemModal({
               style={{
                 width: "100%",
                 padding: "0.5rem 0.75rem",
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.12)",
+                background: "#F9FAFB",
+                border: "1px solid #E5E7EB",
                 borderRadius: "0.5rem",
-                color: "#e2e8f0",
+                color: "#111827",
                 fontSize: "0.875rem",
                 lineHeight: 1.6,
                 resize: "vertical",
@@ -235,7 +235,7 @@ function ItemModal({
           </div>
 
           {error && (
-            <p style={{ color: "#f43f5e", fontSize: "0.8125rem", margin: 0 }}>{error}</p>
+            <p style={{ color: "#B91C1C", fontSize: "0.8125rem", margin: 0 }}>{error}</p>
           )}
 
           <div style={{ display: "flex", gap: "0.625rem", justifyContent: "flex-end", marginTop: "0.25rem" }}>
@@ -243,9 +243,9 @@ function ItemModal({
               onClick={onClose}
               style={{
                 padding: "0.5rem 1rem",
-                background: "rgba(255,255,255,0.06)",
-                color: "#94a3b8",
-                border: "1px solid rgba(255,255,255,0.1)",
+                background: "#F9FAFB",
+                color: "#6B7280",
+                border: "1px solid #E5E7EB",
                 borderRadius: "0.5rem",
                 fontSize: "0.875rem",
                 cursor: "pointer",
@@ -257,8 +257,8 @@ function ItemModal({
               onClick={handleSubmit}
               style={{
                 padding: "0.5rem 1.25rem",
-                background: "#4f46e5",
-                color: "#fff",
+                background: "#4F46E5",
+                color: "#FFFFFF",
                 border: "none",
                 borderRadius: "0.5rem",
                 fontSize: "0.875rem",
@@ -291,8 +291,8 @@ function KnowledgeCard({
   return (
     <div
       style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "#FFFFFF",
+        border: "1px solid #E5E7EB",
         borderRadius: "0.75rem",
         padding: "1.125rem 1.375rem",
         marginBottom: "0.625rem",
@@ -328,7 +328,7 @@ function KnowledgeCard({
             >
               {item.category}
             </span>
-            <span style={{ fontSize: "0.75rem", color: "#475569" }}>
+            <span style={{ fontSize: "0.75rem", color: "#9CA3AF" }}>
               {timeAgo(item.createdAt)}
             </span>
           </div>
@@ -337,7 +337,7 @@ function KnowledgeCard({
               margin: "0 0 0.375rem",
               fontSize: "0.9375rem",
               fontWeight: 600,
-              color: "#fff",
+              color: "#111827",
             }}
           >
             {item.title}
@@ -346,7 +346,7 @@ function KnowledgeCard({
             style={{
               margin: 0,
               fontSize: "0.8125rem",
-              color: "#64748b",
+              color: "#6B7280",
               lineHeight: 1.5,
               overflow: "hidden",
               display: "-webkit-box",
@@ -364,9 +364,9 @@ function KnowledgeCard({
             title="Засах"
             style={{
               padding: "0.375rem 0.625rem",
-              background: "rgba(255,255,255,0.06)",
-              color: "#94a3b8",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "#F9FAFB",
+              color: "#6B7280",
+              border: "1px solid #E5E7EB",
               borderRadius: "0.375rem",
               fontSize: "0.8125rem",
               cursor: "pointer",
@@ -379,9 +379,9 @@ function KnowledgeCard({
             title="Устгах"
             style={{
               padding: "0.375rem 0.625rem",
-              background: "rgba(244,63,94,0.08)",
-              color: "#f43f5e",
-              border: "1px solid rgba(244,63,94,0.15)",
+              background: "#FEF2F2",
+              color: "#B91C1C",
+              border: "1px solid #FECACA",
               borderRadius: "0.375rem",
               fontSize: "0.8125rem",
               cursor: "pointer",
@@ -444,9 +444,9 @@ export function KnowledgeBaseClient({ orgId }: { orgId: string }) {
             title="Ирээдүйд CSV, Notion-оос импортлох боломжтой"
             style={{
               padding: "0.5rem 0.875rem",
-              background: "rgba(255,255,255,0.06)",
-              color: "#64748b",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "#F9FAFB",
+              color: "#9CA3AF",
+              border: "1px solid #E5E7EB",
               borderRadius: "0.5rem",
               fontSize: "0.8125rem",
               cursor: "not-allowed",
@@ -462,8 +462,8 @@ export function KnowledgeBaseClient({ orgId }: { orgId: string }) {
             onClick={() => setShowModal(true)}
             style={{
               padding: "0.5rem 1rem",
-              background: "#4f46e5",
-              color: "#fff",
+              background: "#4F46E5",
+              color: "#FFFFFF",
               border: "none",
               borderRadius: "0.5rem",
               fontSize: "0.875rem",
@@ -485,17 +485,17 @@ export function KnowledgeBaseClient({ orgId }: { orgId: string }) {
           style={{
             padding: "5rem 2rem",
             textAlign: "center",
-            background: "rgba(255,255,255,0.02)",
-            border: "1px dashed rgba(255,255,255,0.1)",
+            background: "#F9FAFB",
+            border: "1px dashed #D1D5DB",
             borderRadius: "0.75rem",
-            color: "#475569",
+            color: "#6B7280",
           }}
         >
           <div style={{ fontSize: "3rem", marginBottom: "0.75rem" }}>📭</div>
-          <p style={{ fontSize: "0.9375rem", marginBottom: "0.375rem", color: "#64748b" }}>
+          <p style={{ fontSize: "0.9375rem", marginBottom: "0.375rem", color: "#6B7280" }}>
             Мэдлэгийн сан хоосон байна.
           </p>
-          <p style={{ fontSize: "0.875rem", color: "#475569" }}>
+          <p style={{ fontSize: "0.875rem", color: "#9CA3AF" }}>
             FAQ эсвэл бүтээгдэхүүний мэдээллийг нэмнэ үү.
           </p>
           <button
@@ -503,8 +503,8 @@ export function KnowledgeBaseClient({ orgId }: { orgId: string }) {
             style={{
               marginTop: "1.25rem",
               padding: "0.5rem 1.25rem",
-              background: "#4f46e5",
-              color: "#fff",
+              background: "#4F46E5",
+              color: "#FFFFFF",
               border: "none",
               borderRadius: "0.5rem",
               fontSize: "0.875rem",
@@ -520,7 +520,7 @@ export function KnowledgeBaseClient({ orgId }: { orgId: string }) {
           <p
             style={{
               fontSize: "0.8125rem",
-              color: "#475569",
+              color: "#9CA3AF",
               marginBottom: "0.875rem",
             }}
           >

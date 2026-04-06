@@ -190,6 +190,20 @@ export async function getSessionMessages(
   return (data ?? []) as unknown as BrainstormMessage[];
 }
 
+// ─── cancelSession ────────────────────────────────────────
+export async function cancelSession(sessionId: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Нэвтрэх шаардлагатай");
+  const supabase = await getSupabaseServerClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from("brainstorm_sessions")
+    .update({ status: "cancelled" })
+    .eq("id", sessionId)
+    .eq("user_id", user.id);
+  if (error) throw new Error(`Цуцлахад алдаа: ${error.message}`);
+}
+
 // ─── deleteSession ─────────────────────────────────────────
 export async function deleteSession(sessionId: string): Promise<void> {
   const supabase = await getSupabaseServerClient();

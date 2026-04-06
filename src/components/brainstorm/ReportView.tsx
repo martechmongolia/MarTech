@@ -19,10 +19,10 @@ export function ReportView({ report, topic }: ReportViewProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      style={{ borderRadius: "1rem", border: "1px solid rgba(255,255,255,0.1)", backgroundColor: "rgba(255,255,255,0.05)", padding: "1.5rem", backdropFilter: "blur(4px)" }}
+      style={{ borderRadius: "1rem", border: "1px solid #E5E7EB", backgroundColor: "#FFFFFF", padding: "1.5rem" }}
     >
-      <h2 style={{ marginBottom: "0.25rem", fontSize: "1.25rem", fontWeight: "bold", color: "white", marginTop: 0 }}>📋 Хэлэлцүүлгийн Тайлан</h2>
-      <p style={{ marginBottom: "1rem", fontSize: "0.875rem", color: "rgba(255,255,255,0.5)", marginTop: 0 }}>{topic}</p>
+      <h2 style={{ marginBottom: "0.25rem", fontSize: "1.25rem", fontWeight: "bold", color: "#111827", marginTop: 0 }}>📋 Хэлэлцүүлгийн Тайлан</h2>
+      <p style={{ marginBottom: "1rem", fontSize: "0.875rem", color: "#6B7280", marginTop: 0 }}>{topic}</p>
 
       {/* Tabs */}
       <div style={{ marginBottom: "1rem", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
@@ -38,8 +38,8 @@ export function ReportView({ report, topic }: ReportViewProps) {
               transition: "all 0.2s",
               border: "none",
               cursor: "pointer",
-              backgroundColor: tab === t ? "white" : "rgba(255,255,255,0.1)",
-              color: tab === t ? "black" : "rgba(255,255,255,0.6)",
+              backgroundColor: tab === t ? "#0043FF" : "transparent",
+              color: tab === t ? "#fff" : "#6B7280",
             }}
           >
             {t === "summary" && "Дүгнэлт"}
@@ -56,7 +56,7 @@ export function ReportView({ report, topic }: ReportViewProps) {
         initial={{ opacity: 0, x: 10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.2 }}
-        style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.8)" }}
+        style={{ fontSize: "0.875rem", color: "#374151" }}
       >
         {tab === "summary" && (
           <p style={{ lineHeight: 1.6 }}>{report.summary}</p>
@@ -66,12 +66,12 @@ export function ReportView({ report, topic }: ReportViewProps) {
           <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: 0, margin: 0, listStyle: "none" }}>
             {report.top_ideas.map((idea, i) => (
               <li key={i} style={{ display: "flex", gap: "0.5rem" }}>
-                <span style={{ flexShrink: 0, color: "rgba(255,255,255,0.4)" }}>{i + 1}.</span>
+                <span style={{ flexShrink: 0, color: "#9CA3AF" }}>{i + 1}.</span>
                 <span>{idea}</span>
               </li>
             ))}
             {report.top_ideas.length === 0 && (
-              <p style={{ color: "rgba(255,255,255,0.4)" }}>Санаанууд байхгүй байна.</p>
+              <p style={{ color: "#9CA3AF" }}>Санаанууд байхгүй байна.</p>
             )}
           </ul>
         )}
@@ -85,7 +85,7 @@ export function ReportView({ report, topic }: ReportViewProps) {
               </li>
             ))}
             {report.next_actions.length === 0 && (
-              <p style={{ color: "rgba(255,255,255,0.4)" }}>Алхамууд байхгүй байна.</p>
+              <p style={{ color: "#9CA3AF" }}>Алхамууд байхгүй байна.</p>
             )}
           </ul>
         )}
@@ -97,7 +97,7 @@ export function ReportView({ report, topic }: ReportViewProps) {
         )}
       </motion.div>
 
-      <p style={{ marginTop: "1rem", textAlign: "right", fontSize: "0.75rem", color: "rgba(255,255,255,0.3)" }}>
+      <p style={{ marginTop: "1rem", textAlign: "right", fontSize: "0.75rem", color: "#9CA3AF" }}>
         {new Date(report.generated_at).toLocaleString("mn-MN")}
       </p>
     </motion.div>

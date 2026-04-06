@@ -109,7 +109,7 @@ export default async function DashboardPage() {
       {/* Header */}
       <header className="dash-top-header">
         <div>
-          <h1 className="ui-page-header__title" style={{ color: "#fff" }}>{organization.name}</h1>
+          <h1 className="ui-page-header__title" style={{ color: "#111827" }}>{organization.name}</h1>
           <p className="dash-plan-label">
             Active Plan: <strong style={{ color: "var(--brand-blue)" }}>{isGrowth ? "Growth" : "Starter"}</strong>
           </p>
@@ -124,9 +124,9 @@ export default async function DashboardPage() {
 
       {/* AI quota warning */}
       {!aiEntitlement.allowed ? (
-        <div className="dash-alert" style={{ borderLeftColor: "#f59e0b", background: "rgba(245, 158, 11, 0.05)" }}>
+        <div className="dash-alert" style={{ borderLeftColor: "#f59e0b", background: "#FFFBEB" }}>
           <span style={{ fontSize: "1.25rem" }}>⚠️</span>
-          <p style={{ color: "#fbbf24", fontSize: "0.875rem", margin: 0 }}>
+          <p style={{ color: "#92400E", fontSize: "0.875rem", margin: 0 }}>
             AI report quota reached ({aiEntitlement.used}/{aiEntitlement.limit} this month). 
             Upgrade to continue generating insights.
           </p>
@@ -139,7 +139,7 @@ export default async function DashboardPage() {
 
         {pageCards.length === 0 ? (
           <div className="dash-glass-card" style={{ padding: "4rem", textAlign: "center", display: "grid", gap: "1rem" }}>
-            <p style={{ color: "var(--dash-text-dim)" }}>No pages connected yet.</p>
+            <p style={{ color: "#6B7280" }}>No pages connected yet.</p>
             <div style={{ display: "flex", justifyContent: "center" }}>
               <Link href="/pages" className="ui-button ui-button--primary">
                 Connect a page
@@ -169,9 +169,9 @@ export default async function DashboardPage() {
                       <div>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", minWidth: 0 }}>
                           <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#4f46e5", boxShadow: "0 0 10px rgba(79, 70, 225, 0.5)", flexShrink: 0, marginTop: "4px" }} />
-                          <h3 style={{ margin: 0, fontSize: "1.125rem", color: "#fff", fontWeight: 700, wordBreak: "break-word", overflowWrap: "break-word", minWidth: 0 }}>{page.name}</h3>
+                          <h3 style={{ margin: 0, fontSize: "1.125rem", color: "#111827", fontWeight: 700, wordBreak: "break-word", overflowWrap: "break-word", minWidth: 0 }}>{page.name}</h3>
                         </div>
-                        <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", color: "var(--dash-text-dim)" }}>
+                        <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", color: "#9CA3AF" }}>
                           Last Update: {formatRelativeTime(lastSyncedAt)}
                         </p>
                       </div>
@@ -222,7 +222,7 @@ export default async function DashboardPage() {
       <section style={{ maxWidth: "800px", width: "100%" }}>
         <h2 className="dash-section-title">Recent Sync Activity</h2>
         {recentJobs.length === 0 ? (
-          <p style={{ color: "var(--dash-text-dim)", padding: "1rem" }}>No sync activity recorded.</p>
+          <p style={{ color: "#6B7280", padding: "1rem" }}>No sync activity recorded.</p>
         ) : (
           <div className="dash-list">
             {recentJobs.map((j) => (
@@ -239,7 +239,7 @@ export default async function DashboardPage() {
                   {j.status}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, fontSize: "0.875rem", color: "#fff", fontWeight: 500 }}>
+                  <p style={{ margin: 0, fontSize: "0.875rem", color: "#111827", fontWeight: 500 }}>
                     {j.job_type.replace(/_/g, " ")}
                   </p>
                   {j.error_message && (
@@ -247,7 +247,7 @@ export default async function DashboardPage() {
                   )}
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--dash-text-dim)" }}>
+                  <p style={{ margin: 0, fontSize: "0.75rem", color: "#9CA3AF" }}>
                     {formatRelativeTime(j.finished_at || j.created_at)}
                   </p>
                   {(j.status === "failed" || j.status === "queued") && <RetrySyncJobForm jobId={j.id} />}

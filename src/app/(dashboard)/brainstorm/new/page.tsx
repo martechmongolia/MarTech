@@ -210,7 +210,7 @@ export default function NewBrainstormPage() {
                     <span style={{ fontSize: '1.25rem' }}>{mode.emoji}</span>
                     <span style={{ fontSize: '0.875rem', fontWeight: 'bold' }}>{mode.label}</span>
                   </div>
-                  <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>{mode.desc}</p>
+                  <p style={{ fontSize: '0.75rem', color: '#6B7280' }}>{mode.desc}</p>
                 </button>
               ))}
             </div>
@@ -227,7 +227,7 @@ export default function NewBrainstormPage() {
               className="bs-input"
               style={{ padding: '0.75rem 1rem' }}
             />
-            <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.375rem' }}>
+            <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '0.375rem' }}>
               Хязгаарлалт тавих нь бүтээлч байдлыг нэмнэ
             </p>
           </div>
@@ -249,7 +249,7 @@ export default function NewBrainstormPage() {
           <div className="bs-form-group">
             <label className="bs-label">
               <span>Раундын тоо</span>
-              <span style={{ color: "rgba(255,255,255,0.6)" }}>{rounds}</span>
+              <span style={{ color: '#6B7280' }}>{rounds}</span>
             </label>
             <input
               type="range"
@@ -283,7 +283,7 @@ export default function NewBrainstormPage() {
                       <span style={{ fontSize: "1.25rem" }}>{agent.emoji}</span>
                       <span style={{ fontSize: "0.875rem", fontWeight: "bold" }}>{agent.name}</span>
                     </div>
-                    <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.6)", marginTop: "0.5rem" }}>{agent.description}</div>
+                    <div style={{ fontSize: "0.75rem", color: '#6B7280', marginTop: "0.5rem" }}>{agent.description}</div>
                   </button>
                 );
               })}
@@ -310,7 +310,7 @@ export default function NewBrainstormPage() {
                   />
                   <div>
                     <p style={{ fontSize: "0.875rem", fontWeight: "bold" }}>{mode.label}</p>
-                    <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.6)", marginTop: "0.25rem" }}>{mode.desc}</p>
+                    <p style={{ fontSize: "0.75rem", color: '#6B7280', marginTop: "0.25rem" }}>{mode.desc}</p>
                   </div>
                 </label>
               ))}
@@ -349,22 +349,22 @@ export default function NewBrainstormPage() {
       {/* ── QPay Payment Modal ──────────────────────────────── */}
       {paymentModal && paymentInvoice && (
         <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 300,
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 300,
           display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem",
         }}>
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             style={{
-              background: "#1e293b", borderRadius: "1.25rem", padding: "2rem",
+              background: "#FFFFFF", borderRadius: "1.25rem", padding: "2rem",
               maxWidth: "400px", width: "100%", textAlign: "center",
-              border: "1px solid rgba(79,70,229,0.3)",
+              border: "1px solid #E5E7EB", boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
             }}
           >
-            <h3 style={{ color: "white", marginBottom: "0.5rem", fontSize: "1.25rem" }}>
+            <h3 style={{ color: '#111827', marginBottom: "0.5rem", fontSize: "1.25rem" }}>
               💳 Нэг удаагийн төлбөр
             </h3>
-            <p style={{ color: "#94a3b8", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
+            <p style={{ color: '#6B7280', fontSize: "0.9rem", marginBottom: "1.5rem" }}>
               {paymentInvoice.amount?.toLocaleString()}₮ — 1 Brainstorming session
             </p>
 
@@ -385,7 +385,7 @@ export default function NewBrainstormPage() {
                 target="_blank"
                 rel="noreferrer"
                 style={{
-                  display: "block", background: "#4f46e5", color: "white",
+                  display: "block", background: "#4f46e5", color: '#111827',
                   borderRadius: "0.75rem", padding: "0.75rem", marginBottom: "0.75rem",
                   textDecoration: "none", fontWeight: "bold",
                 }}

@@ -8,7 +8,7 @@ export default function FacebookAILoading() {
             style={{
               height: "2rem",
               width: "18rem",
-              background: "rgba(255,255,255,0.08)",
+              background: "#E5E7EB",
               borderRadius: "0.5rem",
               marginBottom: "0.5rem",
             }}
@@ -17,7 +17,7 @@ export default function FacebookAILoading() {
             style={{
               height: "1rem",
               width: "10rem",
-              background: "rgba(255,255,255,0.04)",
+              background: "#F3F4F6",
               borderRadius: "0.5rem",
             }}
           />
@@ -37,9 +37,9 @@ export default function FacebookAILoading() {
           <div
             key={i}
             style={{
-              background: "rgba(255,255,255,0.04)",
+              background: "#F9FAFB",
               borderRadius: "0.75rem",
-              border: "1px solid rgba(255,255,255,0.08)",
+              border: "1px solid #E5E7EB",
               padding: "1.25rem",
               height: "5rem",
               animation: "fb-pulse 1.5s ease-in-out infinite",
@@ -52,9 +52,9 @@ export default function FacebookAILoading() {
       {/* List skeleton */}
       <div
         style={{
-          background: "rgba(255,255,255,0.04)",
+          background: "#FFFFFF",
           borderRadius: "0.75rem",
-          border: "1px solid rgba(255,255,255,0.08)",
+          border: "1px solid #E5E7EB",
           overflow: "hidden",
         }}
       >
@@ -63,7 +63,7 @@ export default function FacebookAILoading() {
             key={i}
             style={{
               padding: "1.25rem 1.5rem",
-              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              borderBottom: "1px solid #E5E7EB",
               display: "flex",
               gap: "1rem",
               alignItems: "center",
@@ -76,7 +76,7 @@ export default function FacebookAILoading() {
                 width: "2.5rem",
                 height: "2.5rem",
                 borderRadius: "50%",
-                background: "rgba(255,255,255,0.08)",
+                background: "#E5E7EB",
                 flexShrink: 0,
               }}
             />
@@ -85,7 +85,7 @@ export default function FacebookAILoading() {
                 style={{
                   height: "0.875rem",
                   width: "30%",
-                  background: "rgba(255,255,255,0.08)",
+                  background: "#E5E7EB",
                   borderRadius: "0.25rem",
                 }}
               />
@@ -93,7 +93,7 @@ export default function FacebookAILoading() {
                 style={{
                   height: "0.75rem",
                   width: "70%",
-                  background: "rgba(255,255,255,0.05)",
+                  background: "#F3F4F6",
                   borderRadius: "0.25rem",
                 }}
               />

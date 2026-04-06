@@ -12,12 +12,12 @@ import "./billing.css";
 // ─── Helpers ────────────────────────────────────────────────
 
 const STATUS_MAP: Record<string, { label: string; color: string; dot: string }> = {
-  active:                    { label: "Идэвхтэй",              color: "var(--ods-success)", dot: "●" },
-  trialing:                  { label: "Туршилтын хугацаа",     color: "var(--ods-accent)",  dot: "◉" },
-  bootstrap_pending_billing: { label: "Төлбөр хүлээгдэж байна", color: "var(--ods-warning)", dot: "◌" },
-  canceled:                  { label: "Цуцлагдсан",            color: "var(--ods-danger)",  dot: "○" },
-  expired:                   { label: "Хугацаа дууссан",       color: "var(--ods-danger)",  dot: "○" },
-  suspended:                 { label: "Түр зогссон",           color: "var(--ods-warning)", dot: "◌" },
+  active:                    { label: "Идэвхтэй",              color: "#059669", dot: "●" },
+  trialing:                  { label: "Туршилтын хугацаа",     color: "#0043FF", dot: "◉" },
+  bootstrap_pending_billing: { label: "Төлбөр хүлээгдэж байна", color: "#D97706", dot: "◌" },
+  canceled:                  { label: "Цуцлагдсан",            color: "#DC2626", dot: "○" },
+  expired:                   { label: "Хугацаа дууссан",       color: "#DC2626", dot: "○" },
+  suspended:                 { label: "Түр зогссон",           color: "#D97706", dot: "◌" },
 };
 
 const PLAN_EMOJI: Record<string, string> = {
@@ -26,10 +26,10 @@ const PLAN_EMOJI: Record<string, string> = {
 };
 
 const INV_STATUS: Record<string, { label: string; color: string; icon: string }> = {
-  paid:     { label: "Төлсөн",           color: "var(--ods-success)", icon: "✓" },
-  pending:  { label: "Хүлээгдэж байна", color: "var(--ods-warning)", icon: "⏳" },
-  failed:   { label: "Амжилтгүй",       color: "var(--ods-danger)",  icon: "✕" },
-  canceled: { label: "Цуцлагдсан",      color: "var(--ods-text-dim)", icon: "—" },
+  paid:     { label: "Төлсөн",           color: "#059669", icon: "✓" },
+  pending:  { label: "Хүлээгдэж байна", color: "#D97706", icon: "⏳" },
+  failed:   { label: "Амжилтгүй",       color: "#DC2626", icon: "✕" },
+  canceled: { label: "Цуцлагдсан",      color: "#9CA3AF", icon: "—" },
 };
 
 function formatMongolDate(isoDate: string | null | undefined): string {
@@ -120,12 +120,12 @@ export default async function BillingPage() {
                     </span>
                   </div>
                   {subscription.current_period_end && (
-                    <div style={{ fontSize: "0.875rem", color: "var(--ods-text-secondary)", marginTop: "0.25rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                    <div style={{ fontSize: "0.875rem", color: "#6B7280", marginTop: "0.25rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
                       <span>Дараагийн төлбөр:</span>
-                      <strong style={{ color: "var(--ods-text-primary)", fontSize: "1rem" }}>
+                      <strong style={{ color: "#111827", fontSize: "1rem" }}>
                         {formatAmount(subscription.plan.price_monthly, subscription.plan.currency)}
                       </strong>
-                      <span style={{ color: "var(--ods-text-dim)" }}>•</span>
+                      <span style={{ color: "#9CA3AF" }}>•</span>
                       <span>{formatMongolDate(subscription.current_period_end)}</span>
                     </div>
                   )}
@@ -152,9 +152,9 @@ export default async function BillingPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem", position: "relative", zIndex: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                   <span style={{ fontSize: "1.5rem" }}>📦</span>
-                  <span style={{ fontWeight: 700, fontSize: "1.25rem", color: "var(--ods-text-primary)" }}>Subscription байхгүй байна</span>
+                  <span style={{ fontWeight: 700, fontSize: "1.25rem", color: "#111827" }}>Subscription байхгүй байна</span>
                 </div>
-                <p style={{ margin: 0, color: "var(--ods-text-secondary)", fontSize: "0.875rem", lineHeight: 1.5 }}>
+                <p style={{ margin: 0, color: "#6B7280", fontSize: "0.875rem", lineHeight: 1.5 }}>
                   Тохирох төлөвлөгөөг сонгоод Brainstorming болон бусад онцлог боломжуудыг ашиглаарай.
                 </p>
                 <Link href="/pricing" className="billing-btn-primary" style={{ alignSelf: "flex-start", marginTop: "0.5rem" }}>
@@ -168,16 +168,16 @@ export default async function BillingPage() {
           <div className="billing-grid-2">
             <div className="billing-glass-card">
               <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", position: "relative", zIndex: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 700, fontSize: "1.1rem", color: "var(--ods-text-primary)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 700, fontSize: "1.1rem", color: "#111827" }}>
                   <span>🧠</span> Brainstorming Credit
                 </div>
 
                 {/* Progress bar */}
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-                    <span style={{ fontSize: "0.875rem", color: "var(--ods-text-secondary)", fontWeight: 500 }}>Сешн үлдэгдэл</span>
-                    <span style={{ fontWeight: 700, fontSize: "1.25rem", color: "var(--ods-text-primary)", letterSpacing: "0.05em" }}>
-                      {credits} <span style={{ color: "var(--ods-text-dim)", fontSize: "1rem" }}>/ {totalCredits}</span>
+                    <span style={{ fontSize: "0.875rem", color: "#6B7280", fontWeight: 500 }}>Сешн үлдэгдэл</span>
+                    <span style={{ fontWeight: 700, fontSize: "1.25rem", color: "#111827", letterSpacing: "0.05em" }}>
+                      {credits} <span style={{ color: "#9CA3AF", fontSize: "1rem" }}>/ {totalCredits}</span>
                     </span>
                   </div>
                   <div className="billing-progress-bg">
@@ -185,7 +185,7 @@ export default async function BillingPage() {
                       className="billing-progress-bar"
                       style={{
                         width: `${Math.min(100, Math.max(5, totalCredits > 0 ? (credits / totalCredits) * 100 : 0))}%`,
-                        background: credits <= 1 ? "var(--ods-danger)" : credits <= 2 ? "var(--ods-warning)" : "var(--ods-accent)",
+                        background: credits <= 1 ? "#DC2626" : credits <= 2 ? "#D97706" : "#0043FF",
                       }}
                     />
                   </div>
@@ -198,8 +198,8 @@ export default async function BillingPage() {
                   </div>
                 )}
 
-                <div style={{ fontSize: "0.8rem", color: "var(--ods-text-dim)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <span style={{ display: "inline-block", width: "4px", height: "4px", borderRadius: "50%", background: "var(--ods-text-dim)" }}></span>
+                <div style={{ fontSize: "0.8rem", color: "#9CA3AF", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span style={{ display: "inline-block", width: "4px", height: "4px", borderRadius: "50%", background: "#9CA3AF" }}></span>
                   Сар дуусахад үлдэгдэл {totalCredits} credit болон сэргэнэ
                 </div>
               </div>
@@ -208,16 +208,16 @@ export default async function BillingPage() {
             <div className="billing-glass-card">
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem", position: "relative", zIndex: 10, height: "100%", justifyContent: "space-between" }}>
                 <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 700, fontSize: "1.1rem", color: "var(--ods-text-primary)", marginBottom: "0.75rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 700, fontSize: "1.1rem", color: "#111827", marginBottom: "0.75rem" }}>
                     <span>✨</span> Нэмэлт session авах
                   </div>
-                  <div style={{ fontSize: "0.875rem", color: "var(--ods-text-secondary)", marginBottom: "0.75rem", display: "flex", alignItems: "baseline", gap: "0.25rem" }}>
-                    <strong className="billing-gradient-text" style={{ fontSize: "1.5rem", color: "var(--ods-accent)" }}>
+                  <div style={{ fontSize: "0.875rem", color: "#6B7280", marginBottom: "0.75rem", display: "flex", alignItems: "baseline", gap: "0.25rem" }}>
+                    <strong className="billing-gradient-text" style={{ fontSize: "1.5rem", color: "#0043FF" }}>
                       {formatAmount(config.session_price_amount, config.session_price_currency)}
                     </strong>
                     <span>/ session</span>
                   </div>
-                  <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--ods-text-dim)", lineHeight: 1.5 }}>
+                  <p style={{ margin: 0, fontSize: "0.875rem", color: "#9CA3AF", lineHeight: 1.5 }}>
                     Ганцхар товшилтоор QPay-аар төлбөрөө хийж нэмэлт session эрх аван шууд ашиглаарай.
                   </p>
                 </div>
@@ -232,14 +232,14 @@ export default async function BillingPage() {
           {subscription && planCode === "starter" && (
             <div className="billing-upgrade-banner">
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", position: "relative", zIndex: 10 }}>
-                <div style={{ fontWeight: 800, fontSize: "1.25rem", color: "white", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <div style={{ fontWeight: 800, fontSize: "1.25rem", color: "#111827", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <span>🚀</span> Growth багц руу шилжих
                 </div>
-                <div style={{ fontSize: "0.95rem", color: "rgba(255,255,255,0.8)" }}>
+                <div style={{ fontSize: "0.95rem", color: "#374151" }}>
                   Та сард <strong>+{config.growth_monthly_credits - config.starter_monthly_credits}</strong> нэмэлт Brainstorming session эрхтэй болно.
                 </div>
-                <div style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.5)" }}>
-                  Үнийн зөрүү: Зөвхөн <strong style={{ color: "var(--ods-accent)" }}>+{formatAmount(1000, "MNT")}/сар</strong> нэмэгдэнэ.
+                <div style={{ fontSize: "0.875rem", color: "#6B7280" }}>
+                  Үнийн зөрүү: Зөвхөн <strong style={{ color: "#0043FF" }}>+{formatAmount(1000, "MNT")}/сар</strong> нэмэгдэнэ.
                 </div>
               </div>
               <Link href="/pricing" className="billing-btn-primary" style={{ position: "relative", zIndex: 10 }}>
@@ -250,7 +250,7 @@ export default async function BillingPage() {
 
           {/* ── 4. Төлбөрийн Түүх ── */}
           <div className="billing-glass-card">
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "white", margin: "0 0 1.5rem 0", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#111827", margin: "0 0 1.5rem 0", display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>🧾</span> Төлбөрийн Түүх
             </h2>
             <InvoiceList invoices={invoiceRows} />

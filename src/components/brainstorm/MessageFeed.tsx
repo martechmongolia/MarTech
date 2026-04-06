@@ -65,8 +65,8 @@ function MessageRow({ message }: { message: BrainstormMessage }) {
       style={{ display: "flex", gap: "1rem", justifyContent: isUser ? "flex-end" : "flex-start", width: "100%" }}
     >
       {!isUser && agent && (
-        <div style={{ marginTop: "0.25rem", flexShrink: 0, position: "relative", filter: "drop-shadow(0 10px 8px rgba(0,0,0,0.5))" }}>
-          <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(59, 130, 246, 0.2)", filter: "blur(12px)", borderRadius: "9999px" }}></div>
+        <div style={{ marginTop: "0.25rem", flexShrink: 0, position: "relative", filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.1))" }}>
+          <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(99, 102, 241, 0.1)", filter: "blur(8px)", borderRadius: "9999px" }}></div>
           <PixelArtAvatarSVG agentId={message.agent_id!} size={42} isSpeaking={message.is_streaming} />
         </div>
       )}
@@ -78,15 +78,15 @@ function MessageRow({ message }: { message: BrainstormMessage }) {
           padding: "1rem 1.25rem",
           fontSize: "15px",
           lineHeight: 1.6,
-          backdropFilter: "blur(4px)",
+
           transition: "all 0.3s",
           maxWidth: isUser ? "75%" : "85%",
         }}
       >
         {!isUser && agent && (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "0.5rem", marginBottom: "0.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderBottom: "1px solid #C7D2FE", paddingBottom: "0.5rem", marginBottom: "0.5rem" }}>
             <span style={{ fontSize: "0.875rem" }}>{agent.emoji}</span>
-            <span style={{ fontSize: "0.875rem", fontWeight: "bold", color: "#93c5fd", letterSpacing: "0.025em" }}>{agent.name}</span>
+            <span style={{ fontSize: "0.875rem", fontWeight: "bold", color: "#4F46E5", letterSpacing: "0.025em" }}>{agent.name}</span>
           </div>
         )}
         <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>

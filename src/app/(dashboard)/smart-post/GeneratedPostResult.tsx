@@ -97,7 +97,7 @@ export function GeneratedPostResult({
           <p className="sp-section-label">
             📊 Урьдчилсан тооцоо
             {data.prediction.similar_posts_count != null && (
-              <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, color: "var(--ods-text-dim)" }}>
+              <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, color: "#9CA3AF" }}>
                 &nbsp;({data.prediction.similar_posts_count} төстэй постод тулгуурлаж)
               </span>
             )}
@@ -148,7 +148,7 @@ export function GeneratedPostResult({
             <p className="sp-section-label" style={{ margin: 0 }}>
               📚 Ашигласан пост жишээнүүд ({data.sources.length} пост)
             </p>
-            <span style={{ color: "var(--ods-text-dim)", fontSize: "0.8125rem", marginLeft: "0.5rem" }}>
+            <span style={{ color: "#9CA3AF", fontSize: "0.8125rem", marginLeft: "0.5rem" }}>
               {showSources ? "▲" : "▼"}
             </span>
           </button>

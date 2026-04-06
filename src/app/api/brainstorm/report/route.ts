@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
   const session = await getSession(sessionId);
   if (!session) return NextResponse.json({ error: "Session олдсонгүй" }, { status: 404 });
 
-  // Only completed sessions can have reports
-  if (session.status !== "completed") {
+  // Allow report generation for completed or cancelled sessions
+  if (session.status !== "completed" && session.status !== "cancelled") {
     return NextResponse.json(
       { error: "Session дуусаагүй байна. Эхлээд хэлэлцүүлгийг дуусгана уу." },
       { status: 400 }

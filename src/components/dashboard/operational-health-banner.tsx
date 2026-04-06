@@ -24,8 +24,8 @@ export function OperationalHealthBanner(props: {
         <span style={{ fontSize: "1.25rem" }}>🔔</span>
       </div>
       <div style={{ flex: 1 }}>
-        <p style={{ margin: 0, fontWeight: 700, color: "#fff", fontSize: "1rem" }}>System Attention Required</p>
-        <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--dash-text-dim)", display: "grid", gap: "0.75rem" }}>
+        <p style={{ margin: 0, fontWeight: 700, color: "#111827", fontSize: "1rem" }}>System Attention Required</p>
+        <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6B7280", display: "grid", gap: "0.75rem" }}>
           {props.failedSync ? (
             <div style={{ borderLeft: "2px solid rgba(239, 68, 68, 0.3)", paddingLeft: "1rem" }}>
               <strong style={{ color: "#f87171" }}>Sync failed</strong> — {props.failedSync.job_type.replace(/_/g, " ")}

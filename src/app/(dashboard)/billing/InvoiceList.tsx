@@ -63,10 +63,10 @@ export default function InvoiceList({ invoices }: InvoiceListProps) {
           onClick={() => setExpanded(!expanded)}
           style={{
             marginTop: "1rem",
-            background: "rgba(255, 255, 255, 0.05)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "#F9FAFB",
+            border: "1px solid #E5E7EB",
             borderRadius: "999px",
-            color: "rgba(255,255,255,0.6)",
+            color: "#6B7280",
             cursor: "pointer",
             fontSize: "0.875rem",
             padding: "0.5rem 1.25rem",
@@ -76,12 +76,12 @@ export default function InvoiceList({ invoices }: InvoiceListProps) {
             transition: "all 0.2s"
           }}
           onMouseOver={(e) => {
-            e.currentTarget.style.color = "white";
-            e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+            e.currentTarget.style.color = "#111827";
+            e.currentTarget.style.background = "#F3F4F6";
           }}
           onMouseOut={(e) => {
-            e.currentTarget.style.color = "rgba(255,255,255,0.6)";
-            e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+            e.currentTarget.style.color = "#6B7280";
+            e.currentTarget.style.background = "#F9FAFB";
           }}
         >
           {expanded ? "Хаах ↑" : `Дэлгэрэнгүй харах ↓ (${invoices.length - 3} нэмэлт)`}

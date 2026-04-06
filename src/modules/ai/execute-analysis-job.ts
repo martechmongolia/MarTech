@@ -70,7 +70,7 @@ export async function executeAnalysisJob(jobId: string): Promise<{ ok: boolean; 
       error_message: null
     })
     .eq("id", jobId)
-    .in("status", ["pending", "failed"])
+    .in("status", ["queued", "failed"])
     .select("id");
 
   if (!claimed || claimed.length === 0) {

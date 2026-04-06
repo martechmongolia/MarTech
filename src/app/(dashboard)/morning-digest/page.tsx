@@ -70,8 +70,8 @@ function DigestContent({
     return (
       <div className="digest-loading">
         <div className="digest-loading-emoji">🔄</div>
-        <h3 style={{ color: "#fff", marginBottom: "0.5rem" }}>Synthesizing Intelligence...</h3>
-        <p style={{ color: "#94a3b8" }}>Gathering latest trends and insights from your sources. Please wait.</p>
+        <h3 style={{ color: "#111827", marginBottom: "0.5rem" }}>Synthesizing Intelligence...</h3>
+        <p style={{ color: "#6B7280" }}>Gathering latest trends and insights from your sources. Please wait.</p>
       </div>
     );
   }
@@ -174,7 +174,7 @@ export default async function MorningDigestPage() {
         ) : (
           <div className="digest-empty-state">
             <div className="digest-empty-emoji">📰</div>
-            <h3 style={{ color: "#fff", marginBottom: "0.75rem" }}>Morning synthesis is ready for you</h3>
+            <h3 style={{ color: "#111827", marginBottom: "0.75rem" }}>Morning synthesis is ready for you</h3>
             <p style={{ maxWidth: "400px", margin: "0 auto", lineHeight: 1.6 }}>
               Insights are usually generated at 7:15 AM automatically. 
               Click the button above to generate your fresh digest now.

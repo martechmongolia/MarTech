@@ -34,7 +34,7 @@ export function AgentSeat({ agentId, x, y, isSpeaking, lastMessage, index }: Age
       <div className="bs-avatar-halo"></div>
 
       {/* Avatar */}
-      <div style={{ position: "relative", zIndex: 10, filter: "drop-shadow(0 25px 25px rgba(0,0,0,0.5))" }}>
+      <div style={{ position: "relative", zIndex: 10, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.12))" }}>
         <PixelArtAvatarSVG agentId={agentId} size={72} isSpeaking={isSpeaking} />
       </div>
 
@@ -49,9 +49,9 @@ export function AgentSeat({ agentId, x, y, isSpeaking, lastMessage, index }: Age
           transition: "all 0.3s",
           boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
           zIndex: 10,
-          backgroundColor: isSpeaking ? "#2563eb" : "rgba(255, 255, 255, 0.05)",
-          color: isSpeaking ? "white" : "rgba(255, 255, 255, 0.7)",
-          border: isSpeaking ? "1px solid rgba(96, 165, 250, 0.5)" : "1px solid rgba(255, 255, 255, 0.1)",
+          backgroundColor: isSpeaking ? "#0043FF" : "#F3F4F6",
+          color: isSpeaking ? "#fff" : "#374151",
+          border: isSpeaking ? "1px solid #0043FF" : "1px solid #E5E7EB",
           backdropFilter: isSpeaking ? "none" : "blur(12px)",
         }}
       >

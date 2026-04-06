@@ -11,6 +11,7 @@ import { RoundTable } from "@/components/brainstorm/RoundTable";
 import { MessageFeed } from "@/components/brainstorm/MessageFeed";
 import { UserInput } from "@/components/brainstorm/UserInput";
 import { ReportView } from "@/components/brainstorm/ReportView";
+import { cancelSession } from "@/lib/brainstorm/actions";
 import "../brainstorm.css";
 
 type ViewMode = "table" | "feed";
@@ -24,12 +25,15 @@ export default function BrainstormSessionPage() {
   const [report, setReport] = useState<BrainstormReport | null>(null);
   const [streamingAgentId, setStreamingAgentId] = useState<AgentId | null>(null);
   const [streamingContent, setStreamingContent] = useState("");
-  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    typeof window !== "undefined" && window.innerWidth < 768 ? "feed" : "table"
+  );
   const [isStreaming, setIsStreaming] = useState(false);
   const [waitingUserTurn, setWaitingUserTurn] = useState(false);
   const [currentRound, setCurrentRound] = useState(1);
   const [showReport, setShowReport] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const streamingRef = useRef<Record<string, string>>({});
 
@@ -230,12 +234,33 @@ export default function BrainstormSessionPage() {
               ) : waitingUserTurn ? (
                 <span style={{ color: "#facc15" }}>⏳ Таны ээлж</span>
               ) : (
-                <span style={{ color: "rgba(255,255,255,0.5)" }}>⏸ Хүлээж байна</span>
+                <span style={{ color: "#9CA3AF" }}>⏸ Хүлээж байна</span>
               )}
             </p>
           </div>
         </div>
 
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          {session && (session.status === "active" || session.status === "pending") && (
+            <button
+              onClick={async () => {
+                if (!confirm("Хэлэлцүүлгийг зогсоох уу?")) return;
+                setIsCancelling(true);
+                try {
+                  await cancelSession(sessionId);
+                  setSession((prev) => prev ? { ...prev, status: "cancelled" } : prev);
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : "Алдаа гарлаа");
+                } finally {
+                  setIsCancelling(false);
+                }
+              }}
+              disabled={isCancelling}
+              style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: "8px", color: "#B91C1C", padding: "6px 12px", fontSize: "0.8rem", cursor: "pointer", fontWeight: 600 }}
+            >
+              {isCancelling ? "..." : "⏹ Зогсоох"}
+            </button>
+          )}
         <div className="bs-toggle-group">
           <button
             onClick={() => setViewMode("table")}
@@ -249,6 +274,7 @@ export default function BrainstormSessionPage() {
           >
             💬 Чат
           </button>
+        </div>
         </div>
       </div>
 
@@ -284,7 +310,7 @@ export default function BrainstormSessionPage() {
                 className="bs-user-input-wrapper"
               >
                 <div className="bs-glass-panel" style={{ padding: "1rem", paddingBottom: "0.5rem" }}>
-                  <p style={{ marginBottom: "0.75rem", fontSize: "0.75rem", color: "#93c5fd", fontWeight: 600, letterSpacing: "0.025em", textTransform: "uppercase" }}>
+                  <p style={{ marginBottom: "0.75rem", fontSize: "0.75rem", color: "#4F46E5", fontWeight: 600, letterSpacing: "0.025em", textTransform: "uppercase" }}>
                     💬 Агентуудын санааг үнэлж, чиглэл өг
                   </p>
                   <UserInput onSubmit={handleUserSubmit} disabled={isStreaming} />
@@ -311,7 +337,7 @@ export default function BrainstormSessionPage() {
             exit={{ opacity: 0 }}
             style={{
               position: "fixed", inset: 0, zIndex: 200,
-              background: "rgba(0,0,0,0.75)",
+              background: "rgba(0,0,0,0.5)",
               display: "flex", alignItems: "center", justifyContent: "center",
               padding: "1.5rem",
             }}
@@ -322,23 +348,23 @@ export default function BrainstormSessionPage() {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.92, y: 30 }}
               style={{
-                background: "linear-gradient(135deg, #0f172a, #1e293b)",
-                border: "1px solid rgba(99,102,241,0.4)",
+                background: "#FFFFFF",
+                border: "1px solid #E5E7EB",
                 borderRadius: "1.25rem",
                 width: "100%", maxWidth: "760px",
                 maxHeight: "85vh", overflowY: "auto",
-                boxShadow: "0 25px 60px rgba(0,0,0,0.6)",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
                 position: "relative",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.25rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.25rem 1.5rem", borderBottom: "1px solid #E5E7EB" }}>
                 <div>
-                  <h2 style={{ color: "white", fontWeight: 700, fontSize: "1.1rem", margin: 0 }}>📋 Брайнсторминг Тайлан</h2>
-                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.8rem", margin: "0.2rem 0 0" }}>{session?.topic}</p>
+                  <h2 style={{ color: "#111827", fontWeight: 700, fontSize: "1.1rem", margin: 0 }}>📋 Брайнсторминг Тайлан</h2>
+                  <p style={{ color: "#6B7280", fontSize: "0.8rem", margin: "0.2rem 0 0" }}>{session?.topic}</p>
                 </div>
                 <button
                   onClick={() => setShowReport(false)}
-                  style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "0.5rem", color: "white", padding: "0.4rem 0.8rem", cursor: "pointer", fontSize: "0.9rem" }}
+                  style={{ background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#374151", padding: "0.4rem 0.8rem", cursor: "pointer", fontSize: "0.9rem" }}
                 >
                   ✕ Хаах
                 </button>
@@ -372,20 +398,24 @@ export default function BrainstormSessionPage() {
         </motion.button>
       )}
 
-      {/* ——— Тайлан бэлтгэж байна banner ——— */}
-      {session?.status === "completed" && !report && (
-        <motion.div
+      {/* ——— Тайлан үүсгэх / бэлтгэж байна banner ——— */}
+      {(session?.status === "completed" || session?.status === "cancelled") && !report && (
+        <motion.button
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
+          onClick={generateReport}
           style={{
             position: "fixed", bottom: "1.5rem", right: "1.5rem", zIndex: 150,
-            background: "rgba(30,58,138,0.9)",
-            border: "1px solid #3b82f6", borderRadius: "1rem",
+            background: "#4F46E5",
+            border: "none", borderRadius: "1rem",
             padding: "0.9rem 1.5rem", color: "white", fontSize: "0.9rem",
+            fontWeight: 700, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: "0.5rem",
+            boxShadow: "0 4px 16px rgba(79,70,229,0.4)",
           }}
         >
-          ⏳ Тайлан бэлтгэж байна...
-        </motion.div>
+          📋 Тайлан үүсгэх
+        </motion.button>
       )}
 
     </div>

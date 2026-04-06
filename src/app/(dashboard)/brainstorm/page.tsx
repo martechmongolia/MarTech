@@ -18,14 +18,14 @@ function SessionCard({ session }: { session: BrainstormSession }) {
   };
 
   return (
-    <Link href={`/brainstorm/${session.id}`} className="bs-glass-card p-5">
+    <Link href={`/brainstorm/${session.id}`} className="bs-glass-card">
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "8px" }}>
-        <h3 style={{ fontSize: "1.125rem", fontWeight: "600", color: "#fff", margin: 0 }}>{session.topic}</h3>
-        <span style={{ flexShrink: 0, fontSize: "0.75rem", padding: "4px 8px", borderRadius: "999px", background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }}>
+        <h3 style={{ fontSize: "1.125rem", fontWeight: "600", color: "#111827", margin: 0 }}>{session.topic}</h3>
+        <span style={{ flexShrink: 0, fontSize: "0.75rem", padding: "4px 8px", borderRadius: "999px", background: "#F3F4F6", color: "#374151", border: "1px solid #E5E7EB" }}>
           {statusLabel[session.status] ?? session.status}
         </span>
       </div>
-      <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)", display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
+      <p style={{ fontSize: "0.75rem", color: "#6B7280", display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
         <span>🔄 {session.total_rounds} раунд</span>
         <span>·</span>
         <span>🤖 {session.active_agents.length} агент</span>

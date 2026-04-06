@@ -3,7 +3,7 @@
 // ============================================================
 
 import OpenAI from "openai";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { BrainstormMessage, BrainstormReport } from "./types";
 
 function getOpenAI(): OpenAI {
@@ -87,8 +87,8 @@ export async function generateReport(
     };
   }
 
-  // Save to DB
-  const supabase = await getSupabaseServerClient();
+  // Save to DB (admin client bypasses RLS — reports table has no INSERT policy for users)
+  const supabase = getSupabaseAdminClient();
   const { data, error } = await supabase
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .from("brainstorm_reports" as any)

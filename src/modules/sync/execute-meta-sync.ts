@@ -43,7 +43,7 @@ export async function executeMetaSyncJob(jobId: string): Promise<void> {
       error_message: null
     })
     .eq("id", jobId)
-    .in("status", ["pending", "failed"])
+    .in("status", ["queued", "failed"])
     .select("id");
 
   if (!claimed || claimed.length === 0) {

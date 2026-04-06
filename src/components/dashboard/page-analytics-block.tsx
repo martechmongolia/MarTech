@@ -189,7 +189,7 @@ function MetricBarChart({
               y={H + 13}
               textAnchor="middle"
               fontSize="8"
-              fill="var(--text-secondary, #64748b)"
+              fill="#9CA3AF"
             >
               {label}
             </text>
@@ -236,14 +236,14 @@ function DonutChart({ posts }: { posts: PostMetricSummary[] }) {
 
   return (
     <div>
-      <p className="ana-section-title">Контент хольц</p>
+      <p className="ana-section-title" style={{ color: "#111827" }}>Контент хольц</p>
       {entries.length === 0 ? (
         <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>Пост байхгүй.</p>
       ) : (
         <div className="ana-donut-wrap">
           <svg viewBox="0 0 110 110" width={110} height={110} style={{ flexShrink: 0 }}>
             {/* background ring */}
-            <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--border-subtle, #e2e8f0)" strokeWidth={16} />
+            <circle cx={cx} cy={cy} r={r} fill="none" stroke="#E5E7EB" strokeWidth={16} />
             {segments.map((seg) => (
               <circle
                 key={seg.type}
@@ -266,8 +266,8 @@ function DonutChart({ posts }: { posts: PostMetricSummary[] }) {
                   className="ana-donut-dot"
                   style={{ background: DONUT_COLORS[seg.type] ?? DONUT_OTHER }}
                 />
-                <span style={{ flex: 1 }}>{seg.type}</span>
-                <span style={{ color: "var(--text-secondary)", fontSize: "0.72rem" }}>
+                <span style={{ flex: 1, color: "#111827" }}>{seg.type}</span>
+                <span style={{ color: "#6B7280", fontSize: "0.72rem" }}>
                   {seg.count} · {Math.round(seg.frac * 100)}%
                 </span>
               </div>
@@ -290,7 +290,7 @@ function LeaderboardBlock({ posts }: { posts: PostMetricSummary[] }) {
 
   return (
     <div>
-      <p className="ana-section-title">Топ постууд</p>
+      <p className="ana-section-title" style={{ color: "#111827" }}>Топ постууд</p>
       {top5.length === 0 ? (
         <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>Постын метрик байхгүй.</p>
       ) : (
@@ -313,15 +313,15 @@ function LeaderboardBlock({ posts }: { posts: PostMetricSummary[] }) {
                 >
                   {i + 1}
                 </span>
-                <span className="ana-leaderboard__excerpt" title={p.message_excerpt ?? ""}>
+                <span className="ana-leaderboard__excerpt" style={{ color: "#111827" }} title={p.message_excerpt ?? ""}>
                   {excerpt}
                   {excerptTruncated ? "…" : ""}
                 </span>
                 {p.post_type ? (
                   <span className="ana-leaderboard__badge">{p.post_type}</span>
                 ) : null}
-                <span className="ana-leaderboard__num">{formatNum(imp)}</span>
-                <span className="ana-leaderboard__num">{engPct}</span>
+                <span className="ana-leaderboard__num" style={{ color: "#6B7280" }}>{formatNum(imp)}</span>
+                <span className="ana-leaderboard__num" style={{ color: "#6B7280" }}>{engPct}</span>
               </div>
             );
           })}
@@ -488,7 +488,7 @@ export function PageAnalyticsBlock(props: {
       </div>
 
       {/* LAYER 2 — Bar Chart */}
-      <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "1rem", padding: "1.25rem", border: "1px solid rgba(255,255,255,0.04)" }}>
+      <div style={{ background: "#FFFFFF", borderRadius: "1rem", padding: "1.25rem", border: "1px solid #E5E7EB" }}>
         <MetricBarChart
           reachSeries={reachSeries}
           engSeries={engChartSeries}
@@ -510,29 +510,29 @@ export function PageAnalyticsBlock(props: {
         gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", 
         gap: "1.5rem", 
         paddingTop: "1.5rem",
-        borderTop: "1px solid rgba(255,255,255,0.06)"
+        borderTop: "1px solid #E5E7EB"
       }}>
         <div>
-          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--dash-text-muted)", textTransform: "uppercase", marginBottom: "0.25rem" }}>Daily Cadence</div>
+          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#6B7280", textTransform: "uppercase", marginBottom: "0.25rem" }}>Daily Cadence</div>
           <div style={{ fontSize: "1.125rem", fontWeight: 700, color: posts7dCount >= 3 ? "#10b981" : "#f59e0b" }}>
-            {posts7dCount} <span style={{ fontSize: "0.75rem", fontWeight: 400, color: "var(--dash-text-dim)" }}>posts/week</span>
+            {posts7dCount} <span style={{ fontSize: "0.75rem", fontWeight: 400, color: "#9CA3AF" }}>posts/week</span>
           </div>
         </div>
         <div>
-          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--dash-text-muted)", textTransform: "uppercase", marginBottom: "0.25rem" }}>Avg Interval</div>
-          <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff" }}>
+          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#6B7280", textTransform: "uppercase", marginBottom: "0.25rem" }}>Avg Interval</div>
+          <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#111827" }}>
             {avgGapDays != null ? `${avgGapDays.toFixed(1)}d` : "—"}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--dash-text-muted)", textTransform: "uppercase", marginBottom: "0.25rem" }}>Max Gap</div>
-          <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff" }}>
+          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#6B7280", textTransform: "uppercase", marginBottom: "0.25rem" }}>Max Gap</div>
+          <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#111827" }}>
             {maxGapDays > 0 ? `${Math.round(maxGapDays)}d` : "—"}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--dash-text-muted)", textTransform: "uppercase", marginBottom: "0.25rem" }}>Last Sync</div>
-          <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff" }}>
+          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#6B7280", textTransform: "uppercase", marginBottom: "0.25rem" }}>Last Sync</div>
+          <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#111827" }}>
             {formatRelativeTime(lastSyncTime)}
           </div>
         </div>

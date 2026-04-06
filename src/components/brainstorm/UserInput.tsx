@@ -36,7 +36,7 @@ export function UserInput({ onSubmit, disabled = false, placeholder = "Таны 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          style={{ display: "flex", alignItems: "flex-end", gap: "0.75rem", borderRadius: "1rem", border: "1px solid rgba(255,255,255,0.1)", backgroundColor: "rgba(255,255,255,0.05)", padding: "0.75rem", backdropFilter: "blur(4px)" }}
+          style={{ display: "flex", alignItems: "flex-end", gap: "0.75rem", borderRadius: "1rem", border: "1px solid #E5E7EB", backgroundColor: "#FFFFFF", padding: "0.75rem" }}
         >
           <textarea
             ref={textareaRef}
@@ -46,12 +46,12 @@ export function UserInput({ onSubmit, disabled = false, placeholder = "Таны 
             onKeyDown={handleKeyDown}
             disabled={disabled}
             placeholder={placeholder}
-            style={{ flex: 1, resize: "none", backgroundColor: "transparent", fontSize: "0.875rem", color: "white", outline: "none", border: "none", fontFamily: "inherit" }}
+            style={{ flex: 1, resize: "none", backgroundColor: "transparent", fontSize: "0.875rem", color: "#111827", outline: "none", border: "none", fontFamily: "inherit" }}
           />
           <button
             onClick={handleSubmit}
             disabled={disabled || !value.trim()}
-            style={{ flexShrink: 0, borderRadius: "0.75rem", backgroundColor: "white", color: "black", padding: "0.5rem 1rem", fontSize: "0.875rem", fontWeight: 600, border: "none", cursor: (disabled || !value.trim()) ? "not-allowed" : "pointer", opacity: (disabled || !value.trim()) ? 0.3 : 1, transition: "opacity 0.2s" }}
+            style={{ flexShrink: 0, borderRadius: "0.75rem", backgroundColor: "#0043FF", color: "#fff", padding: "0.5rem 1rem", fontSize: "0.875rem", fontWeight: 600, border: "none", cursor: (disabled || !value.trim()) ? "not-allowed" : "pointer", opacity: (disabled || !value.trim()) ? 0.3 : 1, transition: "opacity 0.2s" }}
           >
             Илгээх
           </button>

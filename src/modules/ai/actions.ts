@@ -61,9 +61,10 @@ export async function regenerateAnalysisAction(
       internalPageId
     });
     const result = await executeAnalysisJob(jobId);
+    console.log("[ai] executeAnalysisJob result:", result);
     if (!result.ok) {
       console.error("[ai] Analysis job returned error:", result.error);
-      return { error: "Analysis failed. Please try again." };
+      return { error: result.error ?? "Analysis failed. Please try again." };
     }
     revalidatePath("/dashboard");
     return { message: "Analysis regenerated from saved metrics." };
