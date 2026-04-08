@@ -36,19 +36,33 @@ ${transcript}
 
 {
   "summary": "Хэлэлцүүлгийн ерөнхий дүгнэлт (2-3 өгүүлбэр)",
-  "top_ideas": ["Шилдэг санаа 1", "Шилдэг санаа 2", "Шилдэг санаа 3", "..."],
-  "next_actions": ["Дараагийн алхам 1", "Дараагийн алхам 2", "..."],
+  "top_ideas": [
+    { "text": "Санааны агуулга", "agent": "агентын нэр (Монголоор)", "agent_emoji": "emoji" },
+    ...
+  ],
+  "next_actions": [
+    { "text": "Дараагийн алхмын агуулга", "agent": "агентын нэр", "agent_emoji": "emoji" },
+    ...
+  ],
   "content": "Дэлгэрэнгүй тайлан (markdown format, Монгол хэлээр)"
 }
 
+top_ideas болон next_actions-ийн agent талбарт тухайн санааг хамгийн тодорхой дэвшүүлсэн агентын нэрийг (Маркетер/Аналист/Скептик/Идеалист/Психолог/Модератор) бичнэ. Хэд хэдэн агент хэрэглэгч хэлсэн бол хамгийн шийдвэрлэх үүрэг гүйцэтгэсэн агентыг сонгоно.
+
 Монгол хэлээр бич. JSON-ийг цэвэр буцаа (markdown code block-гүй).`;
+}
+
+interface AttributedItem {
+  text: string;
+  agent?: string;
+  agent_emoji?: string;
 }
 
 export interface GeneratedReport {
   content: string;
   summary: string;
-  top_ideas: string[];
-  next_actions: string[];
+  top_ideas: (string | AttributedItem)[];
+  next_actions: (string | AttributedItem)[];
 }
 
 export async function generateReport(
@@ -82,8 +96,8 @@ export async function generateReport(
     parsed = {
       content: "Тайлан үүсгэхэд алдаа гарлаа. Хэлэлцүүлгийн дэлгэрэнгүй мэдээллийг дээр харна уу.",
       summary: `"${topic}" сэдвээр ${messages.length} мессежтэй хэлэлцүүлэг болов.`,
-      top_ideas: [],
-      next_actions: [],
+      top_ideas: [] as AttributedItem[],
+      next_actions: [] as AttributedItem[],
     };
   }
 

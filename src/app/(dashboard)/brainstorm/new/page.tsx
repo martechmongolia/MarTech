@@ -12,12 +12,50 @@ import type { AgentId, UserTurnMode, SessionType } from "@/lib/brainstorm/types"
 import { AGENTS, AGENT_ORDER } from "@/lib/brainstorm/agents";
 import "../brainstorm.css";
 
-const SESSION_MODES: { id: SessionType; emoji: string; label: string; desc: string }[] = [
-  { id: 'six_hats',    emoji: '🎩', label: 'Six Thinking Hats', desc: 'Бүх өнцгийг нээ — хамгийн нотлогдсон арга' },
-  { id: 'round_robin', emoji: '🔄', label: 'Round Robin',        desc: 'Санааг ээлжлэн давхарлан хөгжүүл' },
-  { id: 'disney',      emoji: '🎥', label: 'Walt Disney',        desc: 'Мөрөөд → Бодоод → Шүүмжил' },
-  { id: 'scamper',     emoji: '🔍', label: 'SCAMPER',            desc: 'Одоо байгааг 7 аргаар хувиргана' },
-  { id: 'free_flow',   emoji: '⚡', label: 'Free Flow',           desc: 'Чөлөөт хэлэлцүүлэг' },
+const SESSION_MODES: { id: SessionType; emoji: string; label: string; desc: string; steps: string }[] = [
+  {
+    id: 'six_hats',
+    emoji: '🎩',
+    label: 'Six Thinking Hats',
+    desc: 'Бүх өнцгийг нээ — хамгийн нотлогдсон арга',
+    steps: '⚪ Баримт → 🟡 Боломж → ⚫ Эрсдэл → 🟢 Бүтээлч → 🔴 Мэдрэмж → 🔵 Дүгнэлт',
+  },
+  {
+    id: 'round_robin',
+    emoji: '🔄',
+    label: 'Round Robin',
+    desc: 'Санааг ээлжлэн давхарлан хөгжүүл',
+    steps: 'Агент бүр өмнөхийн санааг нэг алхам гүнзгийрүүлж, дараа нь шинэ санаа нэмнэ',
+  },
+  {
+    id: 'disney',
+    emoji: '🎥',
+    label: 'Walt Disney',
+    desc: 'Мөрөөд → Бодоод → Шүүмжил',
+    steps: '✨ Мөрөөдөгч (хязгааргүй) → 🔧 Реалист (яаж хийх) → 🤔 Шүүмжлэгч (сул тал)',
+  },
+  {
+    id: 'scamper',
+    emoji: '🔍',
+    label: 'SCAMPER',
+    desc: 'Одоо байгааг 7 аргаар хувиргана',
+    steps: 'Substitute · Combine · Adapt · Modify · Put to other uses · Eliminate · Reverse',
+  },
+  {
+    id: 'free_flow',
+    emoji: '⚡',
+    label: 'Free Flow',
+    desc: 'Чөлөөт хэлэлцүүлэг',
+    steps: 'Агентууд өөрийн дүрийн дагуу чөлөөтэй хэлэлцэнэ — арга зүйн хязгааргүй',
+  },
+];
+
+// Жишээ сэдвүүд — нэг товшилтоор оруулах боломжтой
+const SAMPLE_TOPICS = [
+  "Манай бизнест шинэ хэрэглэгч татах стратеги юу вэ?",
+  "Цахим дэлгүүр нээхэд ямар сорилтууд тулгарах вэ?",
+  "Баг доторх харилцааг яаж сайжруулах вэ?",
+  "Бүтээгдэхүүний үнийг яаж тогтоох вэ?",
 ];
 
 const TURN_MODES: { value: UserTurnMode; label: string; desc: string }[] = [
@@ -210,7 +248,22 @@ export default function NewBrainstormPage() {
                     <span style={{ fontSize: '1.25rem' }}>{mode.emoji}</span>
                     <span style={{ fontSize: '0.875rem', fontWeight: 'bold' }}>{mode.label}</span>
                   </div>
-                  <p style={{ fontSize: '0.75rem', color: '#6B7280' }}>{mode.desc}</p>
+                  <p style={{ fontSize: '0.75rem', color: '#6B7280', margin: 0 }}>{mode.desc}</p>
+                  {/* Method tooltip: steps shown when selected */}
+                  {sessionType === mode.id && (
+                    <p style={{
+                      fontSize: '0.7rem',
+                      color: '#4f46e5',
+                      marginTop: '0.4rem',
+                      marginBottom: 0,
+                      padding: '0.3rem 0.5rem',
+                      background: 'rgba(79,70,229,0.08)',
+                      borderRadius: '6px',
+                      lineHeight: 1.5,
+                    }}>
+                      {mode.steps}
+                    </p>
+                  )}
                 </button>
               ))}
             </div>
@@ -235,6 +288,28 @@ export default function NewBrainstormPage() {
           {/* Topic */}
           <div className="bs-form-group">
             <label className="bs-label">Хэлэлцүүлэх сэдэв *</label>
+            {/* Sample topic chips */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.625rem' }}>
+              {SAMPLE_TOPICS.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTopic(t)}
+                  style={{
+                    fontSize: '0.72rem',
+                    padding: '3px 10px',
+                    borderRadius: '999px',
+                    border: topic === t ? '1px solid #4f46e5' : '1px solid #E5E7EB',
+                    background: topic === t ? 'rgba(79,70,229,0.1)' : '#F9FAFB',
+                    color: topic === t ? '#4f46e5' : '#6B7280',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
             <textarea
               rows={3}
               value={topic}

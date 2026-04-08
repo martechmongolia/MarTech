@@ -47,13 +47,19 @@ export interface BrainstormMessage {
   created_at: string;
 }
 
+export interface AttributedItem {
+  text: string;
+  agent?: string;
+  agent_emoji?: string;
+}
+
 export interface BrainstormReport {
   id: string;
   session_id: string;
   content: string;
   summary: string;
-  top_ideas: string[];
-  next_actions: string[];
+  top_ideas: (string | AttributedItem)[];
+  next_actions: (string | AttributedItem)[];
   generated_at: string;
 }
 
@@ -64,7 +70,8 @@ export interface AgentDefinition {
   emoji: string;
   color: string;         // Tailwind color token e.g. "blue-500"
   bgColor: string;       // e.g. "blue-900"
-  description: string;   // short one-liner
+  description: string;   // short one-liner shown in setup
+  mission: string;       // one-sentence mission shown during session (Agent Identity Card)
   systemPrompt: string;  // full Монгол system prompt
 }
 

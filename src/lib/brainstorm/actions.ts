@@ -51,7 +51,7 @@ export async function createSession(
       user_id: user.id,
       topic: payload.topic,
       total_rounds: payload.total_rounds ?? 3,
-      current_round: 0,
+      current_round: 1,
       status: "pending",
       language: payload.language ?? "mn",
       active_agents: payload.active_agents ?? AGENT_ORDER,
