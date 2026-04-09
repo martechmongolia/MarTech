@@ -6,35 +6,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/modules/auth/session";
 import { getUserSessions } from "@/lib/brainstorm/actions";
-import type { BrainstormSession } from "@/lib/brainstorm/types";
+import { BrainstormSessionList } from "./BrainstormSessionList";
 import "./brainstorm.css";
-
-function SessionCard({ session }: { session: BrainstormSession }) {
-  const statusLabel: Record<string, string> = {
-    pending: "🟡 Хүлээж байна",
-    active: "🟢 Идэвхтэй",
-    completed: "✅ Дууссан",
-    cancelled: "⛔ Цуцлагдсан",
-  };
-
-  return (
-    <Link href={`/brainstorm/${session.id}`} className="bs-glass-card">
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "8px" }}>
-        <h3 style={{ fontSize: "1.125rem", fontWeight: "600", color: "#111827", margin: 0 }}>{session.topic}</h3>
-        <span style={{ flexShrink: 0, fontSize: "0.75rem", padding: "4px 8px", borderRadius: "999px", background: "#F3F4F6", color: "#374151", border: "1px solid #E5E7EB" }}>
-          {statusLabel[session.status] ?? session.status}
-        </span>
-      </div>
-      <p style={{ fontSize: "0.75rem", color: "#6B7280", display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
-        <span>🔄 {session.total_rounds} раунд</span>
-        <span>·</span>
-        <span>🤖 {session.active_agents.length} агент</span>
-        <span>·</span>
-        <span>📅 {new Date(session.created_at).toLocaleDateString("mn-MN")}</span>
-      </p>
-    </Link>
-  );
-}
 
 export default async function BrainstormPage() {
   const user = await getCurrentUser();
@@ -59,21 +32,7 @@ export default async function BrainstormPage() {
           </Link>
         </div>
 
-        {sessions.length === 0 ? (
-          <div className="bs-glass-panel bs-empty-state">
-            <span className="bs-empty-state-icon">💬</span>
-            <p className="bs-empty-state-text">Одоогоор хэлэлцүүлэг байхгүй байна.</p>
-            <Link href="/brainstorm/new" className="bs-btn-secondary">
-              Эхний хэлэлцүүлгийг эхлүүл
-            </Link>
-          </div>
-        ) : (
-          <div className="bs-session-grid">
-            {sessions.map((s) => (
-              <SessionCard key={s.id} session={s} />
-            ))}
-          </div>
-        )}
+        <BrainstormSessionList initialSessions={sessions} />
       </div>
     </div>
   );

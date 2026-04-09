@@ -206,12 +206,16 @@ export async function cancelSession(sessionId: string): Promise<void> {
 
 // ─── deleteSession ─────────────────────────────────────────
 export async function deleteSession(sessionId: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Нэвтрэх шаардлагатай");
+
   const supabase = await getSupabaseServerClient();
   const { error } = await supabase
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .from("brainstorm_sessions" as any)
     .delete()
-    .eq("id", sessionId);
+    .eq("id", sessionId)
+    .eq("user_id", user.id);
 
   if (error) throw new Error(`Session устгахад алдаа: ${error.message}`);
 }
