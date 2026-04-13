@@ -17,8 +17,10 @@
     "@supabase/supabase-js": "2.99.3",
     "ai": "^6.0.146",
     "framer-motion": "^12.38.0",
+    "mammoth": "^1.12.0",
     "next": "16.2.1",
     "openai": "^6.33.0",
+    "pdfjs-dist": "^4.9.155",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "resend": "^6.10.0"

@@ -67,6 +67,8 @@ export function TrainingWizard({ brandManager, sections, initialSection }: Props
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const meta = SECTION_META[currentSection];
   const currentIdx = SECTION_ORDER.indexOf(currentSection);
@@ -110,7 +112,102 @@ export function TrainingWizard({ brandManager, sections, initialSection }: Props
     return [first, ...tail];
   }, []);
 
-  // Fix #1: Optimistic user message — шууд харуулах
+  // File upload handler — extract text and inject into chat
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || uploading || loading) return;
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    setUploading(true);
+
+    // Show uploading indicator as user message
+    const uploadingMsg: TrainingMessage = {
+      role: "user",
+      content: `📎 ${file.name} файл боловсруулж байна...`,
+      timestamp: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, uploadingMsg]);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/brand-managers/train/extract", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errBody.error ?? `Алдаа (${res.status})`);
+      }
+
+      const data = (await res.json()) as {
+        fileName: string;
+        extractedText: string;
+        charCount: number;
+        truncated: boolean;
+      };
+
+      // Replace uploading message with actual content
+      const docMessage = `📎 **${data.fileName}** файлаас олсон мэдээлэл:\n\n${data.extractedText}${data.truncated ? "\n\n⚠️ Текст хэт урт тул хасагдсан хэсэг байна." : ""}`;
+
+      setMessages((prev) => {
+        // Remove the "боловсруулж байна" placeholder
+        const withoutPlaceholder = prev.filter((m) => m !== uploadingMsg);
+        return [...withoutPlaceholder, { role: "user", content: docMessage, timestamp: new Date().toISOString() }];
+      });
+
+      // Auto-send to AI for processing
+      setLoading(true);
+      const trainRes = await fetch("/api/brand-managers/train", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brandManagerId: brandManager.id,
+          sectionType: currentSection,
+          messages: getWindowedMessages(messages),
+          userMessage: docMessage,
+        }),
+      });
+
+      if (!trainRes.ok) throw new Error(`Server error: ${trainRes.status}`);
+
+      const trainData = (await trainRes.json()) as {
+        assistantMessage: string;
+        sectionComplete: boolean;
+        score: number;
+      };
+
+      setMessages((prev) => [...prev, {
+        role: "assistant",
+        content: trainData.assistantMessage,
+        timestamp: new Date().toISOString(),
+      }]);
+
+      if (trainData.sectionComplete) {
+        setSectionDone(true);
+        setCompletionMap((prev) => ({ ...prev, [currentSection]: true }));
+        setScoreMap((prev) => ({ ...prev, [currentSection]: trainData.score }));
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Файл боловсруулж чадсангүй";
+      // Replace placeholder with error
+      setMessages((prev) => {
+        const withoutPlaceholder = prev.filter((m) => m !== uploadingMsg);
+        return [...withoutPlaceholder, {
+          role: "assistant",
+          content: `❌ ${msg}`,
+          timestamp: new Date().toISOString(),
+        }];
+      });
+    } finally {
+      setUploading(false);
+      setLoading(false);
+    }
+  }
+
+  // Optimistic user message — шууд харуулах
   async function sendMessage() {
     if (!input.trim() || loading) return;
     const userMsg = input.trim();
@@ -341,20 +438,37 @@ export function TrainingWizard({ brandManager, sections, initialSection }: Props
                 ✏️ Засах
               </button>
             )}
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.docx,.jpg,.jpeg,.png,.webp"
+              style={{ display: "none" }}
+              onChange={handleFileUpload}
+            />
+            {/* 📎 Файл товч */}
+            <button
+              className="train-wizard__attach-btn"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading || uploading}
+              title="PDF, DOCX, зураг файл оруулах"
+            >
+              {uploading ? "⏳" : "📎"}
+            </button>
             <textarea
               ref={inputRef}
               className="train-wizard__input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Хариулт бичих... (Enter = илгээх, Shift+Enter = мөр)"
+              placeholder="Хариулт бичих эсвэл 📎 файл оруулах... (Enter = илгээх)"
               rows={2}
-              disabled={loading}
+              disabled={loading || uploading}
             />
             <Button
               variant="primary"
               onClick={sendMessage}
-              disabled={!input.trim() || loading}
+              disabled={!input.trim() || loading || uploading}
             >
               {loading ? "..." : "Илгээх"}
             </Button>

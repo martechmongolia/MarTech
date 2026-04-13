@@ -156,8 +156,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Message history too long" }, { status: 400 });
   }
 
-  // userMessage хэт урт байвал хайчлах (token bomb)
-  const safeUserMessage = userMessage.slice(0, 4000);
+  // userMessage хэт урт байвал хайчлах (token bomb) — 8000 char (документын текст дэмжих)
+  const safeUserMessage = userMessage.slice(0, 8000);
 
   // Fix #4a: parallel queries — 2x → 1x latency
   const [bm, sections] = await Promise.all([
