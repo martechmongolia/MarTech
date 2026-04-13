@@ -18,7 +18,6 @@ type Props = {
   initialSection: SectionType;
 };
 
-// Fix #6: sections-ийн live state — props-оос initialize, section complete болоход update хийнэ
 type SectionCompletionMap = Record<string, boolean>;
 
 const INITIAL_PROMPTS: Record<SectionType, string> = {
@@ -34,30 +33,34 @@ const INITIAL_PROMPTS: Record<SectionType, string> = {
   feedback_loop:     "Сүүлд, feedback-ийн тогтолцооны талаар ярилцъя. Хэрэглэгчдээс ямар санал хүсэлт хамгийн их ирдэг вэ?",
 };
 
+function makeInitialMessages(section: SectionType): TrainingMessage[] {
+  return [{
+    role: "assistant",
+    content: INITIAL_PROMPTS[section],
+    timestamp: new Date().toISOString(),
+  }];
+}
+
 export function TrainingWizard({ brandManager, sections, initialSection }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const paramSection = searchParams.get("section") as SectionType | null;
 
-  const [currentSection, setCurrentSection] = useState<SectionType>(
-    paramSection ?? initialSection
-  );
-  const [messages, setMessages] = useState<TrainingMessage[]>([
-    {
-      role: "assistant",
-      content: INITIAL_PROMPTS[paramSection ?? initialSection],
-      timestamp: new Date().toISOString(),
-    },
-  ]);
+  const startSection = paramSection ?? initialSection;
+
+  const [currentSection, setCurrentSection] = useState<SectionType>(startSection);
+  const [messages, setMessages] = useState<TrainingMessage[]>(makeInitialMessages(startSection));
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sectionDone, setSectionDone] = useState(false);
 
-  // Fix #6: sections completion — live state (props freeze ашиглахгүй)
+  // Fix #3: Section бүрийн чат түүхийг хадгалах
+  const [sectionMessages, setSectionMessages] = useState<Record<string, TrainingMessage[]>>({});
+
+  // Sections completion — live state
   const [completionMap, setCompletionMap] = useState<SectionCompletionMap>(() =>
     Object.fromEntries(sections.map((s) => [s.section_type, s.is_complete]))
   );
-  // Score per section for sidebar display
   const [scoreMap, setScoreMap] = useState<Record<string, number>>(() =>
     Object.fromEntries(sections.map((s) => [s.section_type, s.completeness_score]))
   );
@@ -74,44 +77,60 @@ export function TrainingWizard({ brandManager, sections, initialSection }: Props
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Fix #3: Section switch — чат түүх хадгалж, сэргээх
   const switchSection = useCallback((section: SectionType) => {
-    setCurrentSection(section);
-    setMessages([
-      {
-        role: "assistant",
-        content: INITIAL_PROMPTS[section],
-        timestamp: new Date().toISOString(),
-      },
-    ]);
-    // If this section was already completed, show done state immediately
-    setSectionDone(false);
-    setInput("");
-  }, []);
+    // Одоогийн section-ийн messages хадгалах
+    setMessages((currentMsgs) => {
+      setSectionMessages((prev) => ({ ...prev, [currentSection]: currentMsgs }));
+      return currentMsgs; // return same to avoid extra re-render
+    });
 
-  // Fix #9: useCallback-д оруулах — render бүрт шинэ instance үүсгэхгүй
+    setCurrentSection(section);
+
+    // Шинэ section-д хуучин түүх байвал сэргээх
+    setSectionMessages((prev) => {
+      const saved = prev[section];
+      if (saved && saved.length > 0) {
+        setMessages(saved);
+      } else {
+        setMessages(makeInitialMessages(section));
+      }
+      return prev;
+    });
+
+    setSectionDone(completionMap[section] ?? false);
+    setInput("");
+  }, [currentSection, completionMap]);
+
   const MAX_HISTORY = 20;
   const getWindowedMessages = useCallback((msgs: TrainingMessage[]): TrainingMessage[] => {
     if (msgs.length <= MAX_HISTORY) return msgs;
-    // Эхний assistant мессежийг хадгалж (context), сүүлийн N-1-г авна
     const first = msgs[0];
     const tail = msgs.slice(-(MAX_HISTORY - 1));
     return [first, ...tail];
   }, []);
 
+  // Fix #1: Optimistic user message — шууд харуулах
   async function sendMessage() {
     if (!input.trim() || loading) return;
     const userMsg = input.trim();
+    const userTimestamp = new Date().toISOString();
+
+    // Шууд user мессежийг харуулна
+    const userMessage: TrainingMessage = { role: "user", content: userMsg, timestamp: userTimestamp };
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
 
     try {
+      // Server-д messages (user мессежгүй) + userMessage тусдаа явуулна
       const res = await fetch("/api/brand-managers/train", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           brandManagerId: brandManager.id,
           sectionType: currentSection,
-          messages: getWindowedMessages(messages),
+          messages: getWindowedMessages(messages), // user мессеж нэмэгдэхээс ӨМНӨХ messages
           userMessage: userMsg,
         }),
       });
@@ -121,17 +140,23 @@ export function TrainingWizard({ brandManager, sections, initialSection }: Props
       }
 
       const data = (await res.json()) as {
+        assistantMessage: string;
         messages: TrainingMessage[];
         sectionComplete: boolean;
         score: number;
         nextSection: SectionType | null;
       };
 
-      setMessages(data.messages);
+      // Зөвхөн assistant хариуг нэмнэ (user мессеж аль хэдийн харагдаж байна)
+      const assistantMsg: TrainingMessage = {
+        role: "assistant",
+        content: data.assistantMessage,
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
 
       if (data.sectionComplete) {
         setSectionDone(true);
-        // Fix #6: completion state-г live update хийнэ
         setCompletionMap((prev) => ({ ...prev, [currentSection]: true }));
         setScoreMap((prev) => ({ ...prev, [currentSection]: data.score }));
       }
@@ -150,6 +175,22 @@ export function TrainingWizard({ brandManager, sections, initialSection }: Props
     }
   }
 
+  // Fix #2: Сүүлийн мессежийг засварлах
+  function handleEditLastMessage() {
+    setMessages((prev) => {
+      // Сүүлийн user мессежийг олох
+      const lastUserIdx = prev.map((m) => m.role).lastIndexOf("user");
+      if (lastUserIdx === -1) return prev;
+
+      const lastUserMsg = prev[lastUserIdx];
+      // User мессеж + түүний дараах бүх мессежийг хасах (rollback)
+      const rolled = prev.slice(0, lastUserIdx);
+      setInput(lastUserMsg.content);
+      return rolled;
+    });
+    inputRef.current?.focus();
+  }
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -159,9 +200,11 @@ export function TrainingWizard({ brandManager, sections, initialSection }: Props
 
   const nextSection =
     currentIdx < SECTION_ORDER.length - 1 ? SECTION_ORDER[currentIdx + 1] : null;
-
-  // Fix #6: completionMap-г ашиглана — props биш live state
   const allComplete = SECTION_ORDER.every((st) => completionMap[st]);
+
+  // Сүүлийн мессеж user-ийнх эсэх (edit товч харуулахад)
+  const lastMsg = messages[messages.length - 1];
+  const canEditLast = !loading && lastMsg?.role === "assistant" && messages.length >= 2;
 
   return (
     <div className="train-wizard">
@@ -183,6 +226,9 @@ export function TrainingWizard({ brandManager, sections, initialSection }: Props
             const isActive = st === currentSection;
             const isDone = completionMap[st] ?? false;
             const score = scoreMap[st] ?? 0;
+            const hasSavedHistory = st === currentSection
+              ? messages.length > 1
+              : (sectionMessages[st]?.length ?? 0) > 1;
             return (
               <button
                 key={st}
@@ -199,6 +245,8 @@ export function TrainingWizard({ brandManager, sections, initialSection }: Props
                   <span className="train-wizard__section-check">✓</span>
                 ) : score > 0 ? (
                   <span className="train-wizard__section-score">{score}%</span>
+                ) : hasSavedHistory && !isDone ? (
+                  <span className="train-wizard__section-score" style={{ opacity: 0.5 }}>💬</span>
                 ) : null}
               </button>
             );
@@ -222,7 +270,7 @@ export function TrainingWizard({ brandManager, sections, initialSection }: Props
 
         <div className="train-wizard__messages">
           {messages.map((msg, i) => (
-            <div key={i} className={`train-msg train-msg--${msg.role}`}>
+            <div key={`${i}-${msg.timestamp}`} className={`train-msg train-msg--${msg.role}`}>
               {msg.role === "assistant" && (
                 <div
                   className="train-msg__avatar"
@@ -283,6 +331,16 @@ export function TrainingWizard({ brandManager, sections, initialSection }: Props
 
         {!sectionDone && (
           <div className="train-wizard__input-area">
+            {/* Fix #2: Засварлах товч */}
+            {canEditLast && (
+              <button
+                onClick={handleEditLastMessage}
+                className="train-wizard__edit-btn"
+                title="Сүүлийн хариултаа засварлах"
+              >
+                ✏️ Засах
+              </button>
+            )}
             <textarea
               ref={inputRef}
               className="train-wizard__input"

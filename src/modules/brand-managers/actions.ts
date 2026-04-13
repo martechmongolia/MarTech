@@ -174,3 +174,42 @@ export async function archiveBrandManager(id: string): Promise<void> {
   if (error) throw error;
   revalidatePath("/brand-managers");
 }
+
+export async function deleteBrandManager(id: string): Promise<void> {
+  const { org } = await requireOrg();
+  const admin = getSupabaseAdminClient();
+
+  // Ownership verify
+  const { data: bm } = await admin
+    .from("brand_managers")
+    .select("id")
+    .eq("id", id)
+    .eq("organization_id", org.id)
+    .single();
+  if (!bm) throw new Error("Brand manager not found or access denied");
+
+  // Storage cleanup: delete all visual asset files
+  const { data: assets } = await admin
+    .from("brand_visual_assets")
+    .select("file_path")
+    .eq("brand_manager_id", id);
+
+  if (assets && assets.length > 0) {
+    const { getSupabaseServerClient } = await import("@/lib/supabase/server");
+    const supabase = await getSupabaseServerClient();
+    const paths = assets.map((a) => a.file_path as string).filter(Boolean);
+    if (paths.length > 0) {
+      await supabase.storage.from("brand-assets").remove(paths);
+    }
+  }
+
+  // Delete brand manager (CASCADE deletes sections, sessions, assets, tokens)
+  const { error } = await admin
+    .from("brand_managers")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", org.id);
+  if (error) throw error;
+
+  revalidatePath("/brand-managers");
+}

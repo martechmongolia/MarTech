@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { Button } from "@/components/ui";
 import { BrandScoreRing } from "@/components/brand-managers/brand-score-ring";
 import { KnowledgeSectionList } from "@/components/brand-managers/knowledge-section-list";
+import { BrandKnowledgeSummary } from "@/components/brand-managers/brand-knowledge-summary";
 import { getCurrentUser } from "@/modules/auth/session";
 import { getCurrentUserOrganization } from "@/modules/organizations/data";
 import { getBrandManager, getBrandKnowledgeSections } from "@/modules/brand-managers/actions";
@@ -70,6 +71,17 @@ export default async function BrandManagerDetailPage({ params }: Props) {
           <h2 className="bm-detail__sections-title">Мэдлэгийн давхаргууд</h2>
           <KnowledgeSectionList
             brandManagerId={id}
+            sections={SECTION_ORDER.map((st) => ({
+              type: st,
+              meta: SECTION_META[st],
+              data: sectionMap[st] ?? null,
+            }))}
+          />
+        </div>
+
+        <div className="bm-detail__sections" style={{ marginTop: "2rem" }}>
+          <h2 className="bm-detail__sections-title">📖 Мэдлэгийн тойм</h2>
+          <BrandKnowledgeSummary
             sections={SECTION_ORDER.map((st) => ({
               type: st,
               meta: SECTION_META[st],

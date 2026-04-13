@@ -2535,6 +2535,14 @@ code {
 .bm-card__score-bar { flex: 1; height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
 .bm-card__score-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
 .bm-card__score-label { font-size: 0.75rem; color: var(--text-secondary); white-space: nowrap; }
+.bm-card__delete-btn {
+  background: none; border: none; cursor: pointer; padding: 0.25rem;
+  font-size: 0.875rem; opacity: 0; transition: opacity 0.15s;
+  border-radius: 4px;
+}
+.bm-card:hover .bm-card__delete-btn { opacity: 0.6; }
+.bm-card__delete-btn:hover { opacity: 1 !important; background: rgba(239,68,68,0.1); }
+.bm-card__delete-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* ── Create modal ───────────────────────────────────────── */
 .bm-create-modal-overlay {
@@ -2572,6 +2580,23 @@ code {
 }
 .bm-detail__overview-hint { color: var(--text-secondary); font-size: 0.9rem; margin: 0; }
 .bm-detail__sections-title { font-size: 1.05rem; font-weight: 700; margin: 0 0 0.75rem; }
+
+/* ── Brand knowledge summary ───────────────────────────── */
+.bm-summary { display: flex; flex-direction: column; gap: 1rem; }
+.bm-summary__section {
+  background: white; border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+.bm-summary__section:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.bm-summary__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.875rem 1rem; border-bottom: 1px solid var(--border);
+  background: #FAFBFC;
+}
+.bm-summary__content {
+  padding: 1rem 1.25rem; font-size: 0.875rem; line-height: 1.6;
+}
 
 /* ── Knowledge section list ─────────────────────────────── */
 .bm-sections { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -2698,7 +2723,16 @@ code {
 .train-wizard__input-area {
   display: flex; gap: 0.75rem; align-items: flex-end;
   padding: 1rem 1.5rem; border-top: 1px solid var(--border); background: white;
+  position: relative;
 }
+.train-wizard__edit-btn {
+  position: absolute; top: -2rem; right: 1.5rem;
+  background: white; border: 1px solid var(--border); border-radius: 6px;
+  padding: 0.25rem 0.625rem; font-size: 0.75rem; cursor: pointer;
+  color: var(--text-secondary); transition: all 0.15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.train-wizard__edit-btn:hover { color: var(--brand-blue); border-color: var(--brand-blue); }
 .train-wizard__input {
   flex: 1; border: 1px solid var(--border); border-radius: 10px;
   padding: 0.75rem 1rem; font-size: 0.9rem; resize: none;
