@@ -33,6 +33,10 @@ export type PostMetricSummary = {
   impressions: number | null;
   engagements: number | null;
   reactions: number | null;
+  reach: number | null;
+  shares: number | null;
+  clicks: number | null;
+  comments: number | null;
 };
 
 export const getRecentSyncJobsForOrganization = cache(
@@ -77,22 +81,30 @@ export const getLatestDailyMetricForPage = cache(
 export const getLatestFailedSyncJobForOrganization = cache(
   async (organizationId: string): Promise<SyncJobSummary | null> => {
     const supabase = await getSupabaseServerClient();
-    const { data, error } = await supabase
+
+    // Get the latest sync job regardless of status
+    const { data: latestJob, error: latestError } = await supabase
       .from("meta_sync_jobs")
       .select(
         "id,organization_id,meta_page_id,job_type,status,attempt_count,scheduled_at,started_at,finished_at,error_message,created_at"
       )
       .eq("organization_id", organizationId)
-      .eq("status", "failed")
+      .in("status", ["failed", "succeeded"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (error) {
-      throw error;
+    if (latestError) {
+      throw latestError;
     }
 
-    return (data ?? null) as SyncJobSummary | null;
+    // Only show failed banner if the most recent job is a failure
+    // (i.e. a successful sync after a failure clears the banner)
+    if (!latestJob || latestJob.status !== "failed") {
+      return null;
+    }
+
+    return latestJob as SyncJobSummary;
   }
 );
 
@@ -142,7 +154,7 @@ export const getRecentPostMetricsForPage = cache(
     const supabase = await getSupabaseServerClient();
     const { data, error } = await supabase
       .from("page_post_metrics")
-      .select("meta_post_id,post_created_at,message_excerpt,post_type,impressions,engagements,reactions")
+      .select("meta_post_id,post_created_at,message_excerpt,post_type,impressions,engagements,reactions,reach,shares,clicks,comments")
       .eq("meta_page_id", internalPageId)
       .order("post_created_at", { ascending: false })
       .limit(limit);

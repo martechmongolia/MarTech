@@ -2,12 +2,9 @@
 
 import { useState } from "react";
 import type { DailyMetricSummary, PostMetricSummary, SyncJobSummary } from "@/modules/sync/data";
+import { formatRelativeTime } from "@/lib/utils/time";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-function impressionsProxy(d: DailyMetricSummary): number | null {
-  return d.impressions ?? d.reach ?? null;
-}
 
 function avg(nums: number[]): number | null {
   if (nums.length === 0) return null;
@@ -54,36 +51,6 @@ function truncateByCodePoints(s: string, max: number): { text: string; truncated
   const units = Array.from(s);
   if (units.length <= max) return { text: s, truncated: false };
   return { text: units.slice(0, max).join(""), truncated: true };
-}
-
-function _deltaClass(v: number | null | undefined): string {
-  if (v == null) return "ana-kpi__delta--neutral";
-  if (v > 0) return "ana-kpi__delta--up";
-  if (v < 0) return "ana-kpi__delta--down";
-  return "ana-kpi__delta--neutral";
-}
-
-function _deltaSign(v: number | null | undefined): string {
-  if (v == null) return "~";
-  if (v > 0) return "↑";
-  if (v < 0) return "↓";
-  return "~";
-}
-
-function formatRelativeTime(dateStr: string | null | undefined): string {
-  if (!dateStr) return "—";
-  try {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "Дөнгөж сая";
-    if (mins < 60) return `${mins}м өмнө`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}ц өмнө`;
-    const days = Math.floor(hrs / 24);
-    return `${days}ө өмнө`;
-  } catch {
-    return "—";
-  }
 }
 
 // ── MetricBarChart ("use client" sub-component) ───────────────────────────────
@@ -140,7 +107,7 @@ function MetricBarChart({
         </div>
       </div>
 
-      <svg width="100%" viewBox={`0 0 ${W} ${H + 16}`} aria-hidden>
+      <svg width="100%" viewBox={`0 0 ${W} ${H + 16}`} role="img" aria-label={`28 хоногийн ${tab === "reach" ? "хүрэлцээ" : "engagement"} тренд. ${n} өгөгдлийн цэг.`}>
         {series.map((v, i) => {
           const barH = Math.max(2, Math.round((v / max) * (H - 10)));
           const x = 10 + i * step;
@@ -210,10 +177,13 @@ const DONUT_COLORS: Record<string, string> = {
 };
 const DONUT_OTHER = "#94a3b8";
 
+const KNOWN_POST_TYPES = new Set(["VIDEO", "IMAGE", "REEL", "LINK", "CAROUSEL", "STATUS"]);
+
 function DonutChart({ posts }: { posts: PostMetricSummary[] }) {
   const typeCounts = new Map<string, number>();
   for (const p of posts) {
-    const k = (p.post_type ?? "OTHER").toUpperCase();
+    const raw = (p.post_type ?? "OTHER").toUpperCase();
+    const k = KNOWN_POST_TYPES.has(raw) ? raw : "OTHER";
     typeCounts.set(k, (typeCounts.get(k) ?? 0) + 1);
   }
   const total = posts.length || 1;
@@ -241,7 +211,7 @@ function DonutChart({ posts }: { posts: PostMetricSummary[] }) {
         <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>Пост байхгүй.</p>
       ) : (
         <div className="ana-donut-wrap">
-          <svg viewBox="0 0 110 110" width={110} height={110} style={{ flexShrink: 0 }}>
+          <svg viewBox="0 0 110 110" width={110} height={110} style={{ flexShrink: 0 }} role="img" aria-label={`Контент хольц: ${entries.map(([type, count]) => `${type} ${count}`).join(", ")}`}>
             {/* background ring */}
             <circle cx={cx} cy={cy} r={r} fill="none" stroke="#E5E7EB" strokeWidth={16} />
             {segments.map((seg) => (
@@ -295,15 +265,20 @@ function LeaderboardBlock({ posts }: { posts: PostMetricSummary[] }) {
         <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>Постын метрик байхгүй.</p>
       ) : (
         <div className="ana-leaderboard">
+          {/* Header */}
+          <div className="ana-leaderboard__row" style={{ fontSize: "0.65rem", fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: "1px solid #E5E7EB", paddingBottom: "0.5rem" }}>
+            <span style={{ width: "1.5rem" }}>#</span>
+            <span style={{ flex: 1 }}>Пост</span>
+            <span className="ana-leaderboard__num">Харагдац</span>
+            <span className="ana-leaderboard__num">Reactions</span>
+            <span className="ana-leaderboard__num">Shares</span>
+          </div>
           {top5.map((p, i) => {
             const { text: excerptRaw, truncated: excerptTruncated } = truncateByCodePoints(
               p.message_excerpt ?? "",
-              45
+              40
             );
             const excerpt = excerptRaw || "—";
-            const imp = p.impressions ?? 0;
-            const eng = p.engagements ?? 0;
-            const engPct = imp > 0 ? `${((eng / imp) * 100).toFixed(1)}%` : "—";
 
             return (
               <div key={p.meta_post_id} className="ana-leaderboard__row">
@@ -316,12 +291,13 @@ function LeaderboardBlock({ posts }: { posts: PostMetricSummary[] }) {
                 <span className="ana-leaderboard__excerpt" style={{ color: "#111827" }} title={p.message_excerpt ?? ""}>
                   {excerpt}
                   {excerptTruncated ? "…" : ""}
+                  {p.post_type ? (
+                    <span className="ana-leaderboard__badge" style={{ marginLeft: "0.375rem" }}>{p.post_type}</span>
+                  ) : null}
                 </span>
-                {p.post_type ? (
-                  <span className="ana-leaderboard__badge">{p.post_type}</span>
-                ) : null}
-                <span className="ana-leaderboard__num" style={{ color: "#6B7280" }}>{formatNum(imp)}</span>
-                <span className="ana-leaderboard__num" style={{ color: "#6B7280" }}>{engPct}</span>
+                <span className="ana-leaderboard__num" style={{ color: "#6B7280" }}>{formatNum(p.impressions)}</span>
+                <span className="ana-leaderboard__num" style={{ color: "#6B7280" }}>{formatNum(p.reactions)}</span>
+                <span className="ana-leaderboard__num" style={{ color: "#6B7280" }}>{formatNum(p.shares)}</span>
               </div>
             );
           })}
@@ -337,17 +313,13 @@ export function PageAnalyticsBlock(props: {
   pageName: string;
   dailySeries: DailyMetricSummary[];
   posts: PostMetricSummary[];
-  latestJob: SyncJobSummary | null;
   lastSucceededJob: SyncJobSummary | null;
-  latestMetricDate: string | null;
   pageLastSyncedAt: string | null;
 }) {
   const {
     dailySeries,
     posts,
-    latestJob: _latestJob,
     lastSucceededJob,
-    latestMetricDate: _latestMetricDate,
     pageLastSyncedAt,
   } = props;
 
@@ -360,7 +332,8 @@ export function PageAnalyticsBlock(props: {
   // KPI values
   const followers = latestMetric?.followers_count ?? null;
   const followerDelta = latestMetric?.follower_delta ?? null;
-  const reach = impressionsProxy(latestMetric ?? ({} as DailyMetricSummary));
+  const reachVal = latestMetric?.reach ?? null;
+  const impressionsVal = latestMetric?.impressions ?? null;
   const engRate = latestMetric?.engagement_rate ?? null;
 
   const posts7d = posts.filter((p) => {
@@ -370,13 +343,36 @@ export function PageAnalyticsBlock(props: {
   const posts7dCount = posts7d.length;
 
   // 7d vs prior 7d comparisons
-  const reachCompare = compareWindows(dailySeries, impressionsProxy);
+  const reachCompare = compareWindows(dailySeries, (d) => d.reach ?? d.impressions ?? null);
+  const impressionsCompare = compareWindows(dailySeries, (d) => d.impressions ?? null);
   const engCompare = compareWindows(dailySeries, (d) => d.engagement_rate ?? null);
 
+  // Engagement totals from posts
+  const totalReactions = posts.reduce((s, p) => s + (p.reactions ?? 0), 0);
+  const totalClicks = posts.reduce((s, p) => s + (p.clicks ?? 0), 0);
+  const totalShares = posts.reduce((s, p) => s + (p.shares ?? 0), 0);
+  const totalComments = posts.reduce((s, p) => s + (p.comments ?? 0), 0);
+  const engagementTotal = totalReactions + totalClicks + totalShares + totalComments;
+
+  // Best posting time analysis
+  const postHourMap = new Map<number, { count: number; totalEng: number }>();
+  for (const p of posts) {
+    const hr = new Date(p.post_created_at).getHours();
+    if (Number.isNaN(hr)) continue;
+    const prev = postHourMap.get(hr) ?? { count: 0, totalEng: 0 };
+    prev.count++;
+    prev.totalEng += (p.engagements ?? 0) + (p.reactions ?? 0);
+    postHourMap.set(hr, prev);
+  }
+  const bestHourEntry = [...postHourMap.entries()]
+    .filter(([, v]) => v.count >= 1)
+    .sort((a, b) => (b[1].totalEng / b[1].count) - (a[1].totalEng / a[1].count))[0];
+  const bestHour = bestHourEntry ? bestHourEntry[0] : null;
+
   // Bar chart series
-  const reachSeries = dailySeries.map((d) => impressionsProxy(d) ?? 0);
+  const reachSeries = dailySeries.map((d) => d.reach ?? d.impressions ?? 0);
   const engChartSeries = dailySeries.map((d) =>
-    d.engagement_rate != null ? d.engagement_rate * 100 : (d.engaged_users ?? 0)
+    d.engagement_rate != null ? d.engagement_rate * 100 : 0
   );
   const chartDates = dailySeries.map((d) => d.metric_date);
   const postDates = posts.map((p) => p.post_created_at.slice(0, 10));
@@ -445,45 +441,65 @@ export function PageAnalyticsBlock(props: {
 
   return (
     <>
-      {/* LAYER 1 — Hero KPI Strip */}
+      {/* LAYER 1 — Hero KPI Strip (5 cards) */}
       <div className="dash-kpi-grid">
         {/* Followers */}
         <div className="dash-kpi-card">
-          <div className="dash-kpi-label">Followers</div>
+          <div className="dash-kpi-label">Дагагчид</div>
           <div className="dash-kpi-value">{formatNum(followers)}</div>
           {followerDelta != null ? (
             <div className={`dash-kpi-delta ${followerDelta >= 0 ? "dash-delta-up" : "dash-delta-down"}`}>
               <span>{followerDelta >= 0 ? "↑" : "↓"}</span>
-              <span>{Math.abs(followerDelta)} today</span>
+              <span>{Math.abs(followerDelta)} өнөөдөр</span>
             </div>
           ) : (
-            <div className="dash-kpi-delta dash-delta-neutral">— no daily delta</div>
+            <div className="dash-kpi-delta dash-delta-neutral">— өөрчлөлтгүй</div>
           )}
+          <p style={{ margin: 0, fontSize: "0.6875rem", color: "#9CA3AF", lineHeight: 1.3 }}>Таны хуудсыг дагаж байгаа хүмүүсийн тоо</p>
         </div>
 
         {/* Reach */}
         <div className="dash-kpi-card">
-          <div className="dash-kpi-label">Reach (28d)</div>
-          <div className="dash-kpi-value">{formatNum(reach)}</div>
+          <div className="dash-kpi-label">Хүрэлт</div>
+          <div className="dash-kpi-value">{formatNum(reachVal ?? impressionsVal)}</div>
           <ReachDeltaBadge />
+          <p style={{ margin: 0, fontSize: "0.6875rem", color: "#9CA3AF", lineHeight: 1.3 }}>Контентыг харсан давтагдашгүй хүмүүсийн тоо</p>
+        </div>
+
+        {/* Impressions */}
+        <div className="dash-kpi-card">
+          <div className="dash-kpi-label">Харагдац</div>
+          <div className="dash-kpi-value">{formatNum(impressionsVal)}</div>
+          {impressionsCompare?.change ? (
+            <div className={`dash-kpi-delta ${!impressionsCompare.change.startsWith("-") ? "dash-delta-up" : "dash-delta-down"}`}>
+              <span>{!impressionsCompare.change.startsWith("-") ? "↑" : "↓"}</span>
+              <span>{Math.abs(parseFloat(impressionsCompare.change))}%</span>
+              <span style={{ fontSize: "0.65rem", opacity: 0.7, fontWeight: 400 }}>vs өмнөх 7 хоног</span>
+            </div>
+          ) : (
+            <div className="dash-kpi-delta dash-delta-neutral"><span>—</span><span>Өгөгдөл хүрэлцэхгүй</span></div>
+          )}
+          <p style={{ margin: 0, fontSize: "0.6875rem", color: "#9CA3AF", lineHeight: 1.3 }}>Контент нийт хэдэн удаа харагдсан</p>
         </div>
 
         {/* Engagement Rate */}
         <div className="dash-kpi-card">
-          <div className="dash-kpi-label">Engagement</div>
+          <div className="dash-kpi-label">Оролцоо</div>
           <div className="dash-kpi-value">
             {engRate != null ? formatPct(engRate) : formatNum(latestMetric?.engaged_users)}
           </div>
           <EngDeltaBadge />
+          <p style={{ margin: 0, fontSize: "0.6875rem", color: "#9CA3AF", lineHeight: 1.3 }}>Контенттой харилцсан хүмүүсийн хувь</p>
         </div>
 
         {/* Posts Status */}
         <div className="dash-kpi-card">
-          <div className="dash-kpi-label">Activity (7d)</div>
-          <div className="dash-kpi-value">{posts7dCount} posts</div>
+          <div className="dash-kpi-label">Идэвхжил (7 хоног)</div>
+          <div className="dash-kpi-value">{posts7dCount} пост</div>
           <div className={`dash-kpi-delta ${posts7dCount >= 3 ? "dash-delta-up" : posts7dCount >= 1 ? "dash-delta-neutral" : "dash-delta-down"}`}>
-            <span>{posts7dCount >= 3 ? "● Active" : posts7dCount >= 1 ? "● Moderate" : "○ Inactive"}</span>
+            <span>{posts7dCount >= 3 ? "● Идэвхтэй" : posts7dCount >= 1 ? "● Дунд зэрэг" : "○ Идэвхгүй"}</span>
           </div>
+          <p style={{ margin: 0, fontSize: "0.6875rem", color: "#9CA3AF", lineHeight: 1.3 }}>Сүүлийн 7 хоногт оруулсан постын тоо</p>
         </div>
       </div>
 
@@ -503,7 +519,79 @@ export function PageAnalyticsBlock(props: {
         <LeaderboardBlock posts={posts} />
       </div>
 
-      {/* LAYER 4 — Cadence Row */}
+      {/* LAYER 4 — Engagement Breakdown + Best Time */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "2.5rem", marginTop: "2.5rem" }}>
+        {/* Engagement задаргаа */}
+        <div>
+          <p className="ana-section-title" style={{ color: "#111827" }}>Оролцооны задаргаа</p>
+          {engagementTotal === 0 ? (
+            <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>Өгөгдөл байхгүй.</p>
+          ) : (
+            <div style={{ display: "grid", gap: "0.625rem" }}>
+              {([
+                { label: "Reactions", value: totalReactions, color: "#ef4444" },
+                { label: "Clicks", value: totalClicks, color: "#0043FF" },
+                { label: "Shares", value: totalShares, color: "#10b981" },
+                { label: "Comments", value: totalComments, color: "#f59e0b" },
+              ] as const).map((item) => {
+                const pct = engagementTotal > 0 ? (item.value / engagementTotal) * 100 : 0;
+                return (
+                  <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <span style={{ width: "5rem", fontSize: "0.75rem", color: "#6B7280", fontWeight: 500 }}>{item.label}</span>
+                    <div style={{ flex: 1, height: "0.5rem", background: "#F3F4F6", borderRadius: "999px", overflow: "hidden" }}>
+                      <div style={{ width: `${Math.max(pct, 1)}%`, height: "100%", background: item.color, borderRadius: "999px", transition: "width 0.3s" }} />
+                    </div>
+                    <span style={{ width: "3.5rem", fontSize: "0.75rem", color: "#111827", fontWeight: 600, textAlign: "right" }}>{formatNum(item.value)}</span>
+                    <span style={{ width: "2.5rem", fontSize: "0.65rem", color: "#9CA3AF", textAlign: "right" }}>{Math.round(pct)}%</span>
+                  </div>
+                );
+              })}
+              <p style={{ margin: "0.5rem 0 0", fontSize: "0.6875rem", color: "#9CA3AF", lineHeight: 1.4 }}>
+                Нийт {formatNum(engagementTotal)} оролцоо — таны audience контенттой хэрхэн харилцаж байгааг харуулна
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Хамгийн сайн цаг */}
+        <div>
+          <p className="ana-section-title" style={{ color: "#111827" }}>Хамгийн сайн цаг</p>
+          {bestHour != null ? (
+            <div style={{ padding: "1rem", background: "#F0FDF4", borderRadius: "0.75rem", border: "1px solid #BBF7D0" }}>
+              <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#10b981" }}>
+                {String(bestHour).padStart(2, "0")}:00 — {String((bestHour + 2) % 24).padStart(2, "0")}:00
+              </div>
+              <p style={{ margin: "0.5rem 0 0", fontSize: "0.8125rem", color: "#374151", lineHeight: 1.5 }}>
+                Таны audience хамгийн идэвхтэй байдаг цагийн хүрээ. Энэ цагт пост оруулбал илүү олон хүнд хүрэх магадлалтай.
+              </p>
+              <div style={{ marginTop: "0.75rem", display: "grid", gridTemplateColumns: "repeat(24, 1fr)", gap: "1px", height: "2rem" }}>
+                {Array.from({ length: 24 }, (_, hr) => {
+                  const data = postHourMap.get(hr);
+                  const maxEng = Math.max(...[...postHourMap.values()].map(v => v.totalEng / v.count), 1);
+                  const barH = data ? Math.max(10, (data.totalEng / data.count / maxEng) * 100) : 5;
+                  return (
+                    <div key={hr} style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" }}>
+                      <div style={{
+                        height: `${barH}%`,
+                        background: bestHour != null && hr >= bestHour && hr < bestHour + 2 ? "#10b981" : "#D1D5DB",
+                        borderRadius: "1px",
+                        minHeight: "2px",
+                      }} />
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.6rem", color: "#9CA3AF", marginTop: "0.125rem" }}>
+                <span>00</span><span>06</span><span>12</span><span>18</span><span>23</span>
+              </div>
+            </div>
+          ) : (
+            <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>Хангалттай пост өгөгдөл байхгүй байна.</p>
+          )}
+        </div>
+      </div>
+
+      {/* LAYER 5 — Cadence Row */}
       <div style={{ 
         marginTop: "2.5rem", 
         display: "grid", 
@@ -533,7 +621,7 @@ export function PageAnalyticsBlock(props: {
         <div>
           <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#6B7280", textTransform: "uppercase", marginBottom: "0.25rem" }}>Last Sync</div>
           <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#111827" }}>
-            {formatRelativeTime(lastSyncTime)}
+            {formatRelativeTime(lastSyncTime, "mn")}
           </div>
         </div>
       </div>

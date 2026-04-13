@@ -32,16 +32,17 @@ export async function regenerateAnalysisAction(
     };
   }
 
-  const organizationId = formData.get("organizationId");
   const internalPageId = formData.get("internalPageId");
-  if (typeof organizationId !== "string" || typeof internalPageId !== "string") {
+  if (typeof internalPageId !== "string") {
     return { error: "Invalid request." };
   }
 
   const org = await getCurrentUserOrganization(user.id);
-  if (!org || org.id !== organizationId) {
-    return { error: "Organization mismatch." };
+  if (!org) {
+    return { error: "Organization not found." };
   }
+
+  const organizationId = org.id;
 
   const supabase = await getSupabaseServerClient();
   const { data: page, error: pageErr } = await supabase

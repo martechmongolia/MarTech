@@ -16,6 +16,28 @@ import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/types/database";
 
 const ERR_MAX = 4000;
+const SYNC_TIMEOUT_MS = 30_000;
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer!);
+  }
+}
+
+async function batchMap<T, R>(items: T[], fn: (item: T) => Promise<R>, concurrency: number): Promise<R[]> {
+  const results: R[] = [];
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency);
+    results.push(...await Promise.all(batch.map(fn)));
+  }
+  return results;
+}
 
 export async function executeMetaSyncJob(jobId: string): Promise<void> {
   const admin = getSupabaseAdminClient();
@@ -82,12 +104,16 @@ export async function executeMetaSyncJob(jobId: string): Promise<void> {
     const until = Math.floor(Date.now() / 1000);
     const since = until - 7 * 86400;
 
-    const series = await fetchPageDailyInsightsSeries({
-      metaPageId: fbPageId,
-      pageAccessToken: pageToken,
-      sinceUnix: since,
-      untilUnix: until
-    });
+    const series = await withTimeout(
+      fetchPageDailyInsightsSeries({
+        metaPageId: fbPageId,
+        pageAccessToken: pageToken,
+        sinceUnix: since,
+        untilUnix: until
+      }),
+      SYNC_TIMEOUT_MS,
+      "fetchPageDailyInsightsSeries"
+    );
 
     const dailyRows = normalizeDailyMetricsFromInsights(series);
     if (dailyRows.length > 0) {
@@ -117,55 +143,37 @@ export async function executeMetaSyncJob(jobId: string): Promise<void> {
     const posts = await fetchRecentPagePosts({
       metaPageId: fbPageId,
       pageAccessToken: pageToken,
-      limit: 12
+      limit: 30
     });
 
-    const postPayload: Array<{
-      organization_id: string;
-      meta_page_id: string;
-      meta_post_id: string;
-      post_created_at: string;
-      message_excerpt: string | null;
-      post_type: string | null;
-      reach: number | null;
-      impressions: number | null;
-      engagements: number | null;
-      reactions: number | null;
-      comments: number | null;
-      shares: number | null;
-      clicks: number | null;
-      raw_metrics: Json;
-    }> = [];
-
-    for (const p of posts.slice(0, 10)) {
+    const postSlice = posts.slice(0, 25);
+    const postPayload = await batchMap(postSlice, async (p) => {
       const insights = await fetchPostInsightTotals({ postId: p.id, pageAccessToken: pageToken });
       const views = insights.post_media_view;
       const clicks = insights.post_clicks;
+      const postReach = insights.post_impressions_unique;
       const reactionsMap = insights.post_reactions_by_type_total;
       const totalReactions = typeof reactionsMap === "object" && reactionsMap != null
         ? Object.values(reactionsMap as Record<string, number>).reduce((a, b) => a + (b || 0), 0)
         : null;
 
-      postPayload.push({
+      return {
         organization_id: job.organization_id,
         meta_page_id: job.meta_page_id,
         meta_post_id: p.id,
         post_created_at: p.created_time,
         message_excerpt: excerptMessage(p.message),
-        post_type: null,
-        reach: null,
-        impressions:
-          typeof views === "number" ? Math.round(views) : null,
-        engagements:
-          typeof clicks === "number" ? Math.round(clicks) : null,
+        post_type: (p.type ?? null) as string | null,
+        reach: typeof postReach === "number" ? Math.round(postReach) : (null as number | null),
+        impressions: typeof views === "number" ? Math.round(views) : null,
+        engagements: typeof clicks === "number" ? Math.round(clicks) : null,
         reactions: totalReactions != null ? Math.round(totalReactions) : null,
-        comments: null,
-        shares: null,
-        clicks:
-          typeof clicks === "number" ? Math.round(clicks) : null,
-        raw_metrics: insights as Json
-      });
-    }
+        comments: null as number | null,
+        shares: p.shares?.count != null ? Math.round(p.shares.count) : (null as number | null),
+        clicks: typeof clicks === "number" ? Math.round(clicks) : null,
+        raw_metrics: insights as Json,
+      };
+    }, 5);
 
     if (postPayload.length > 0) {
       const { error: postErr } = await admin.from("page_post_metrics").upsert(postPayload, {

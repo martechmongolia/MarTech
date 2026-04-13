@@ -17,6 +17,8 @@ export type MetaPostListItem = {
   id: string;
   created_time: string;
   message?: string;
+  type?: string;
+  shares?: { count: number };
 };
 
 type GraphInsightsResponse = {
@@ -56,7 +58,10 @@ async function graphGet<T>(url: URL, pageAccessToken: string): Promise<T> {
 
 const DAILY_METRICS = [
   "page_follows",
-  "page_media_view"
+  "page_media_view",
+  "page_impressions",
+  "page_engaged_users",
+  "page_post_engagements",
 ] as const;
 
 export async function fetchPageDailyInsightsSeries(params: {
@@ -90,7 +95,7 @@ export async function fetchRecentPagePosts(params: {
   limit?: number;
 }): Promise<MetaPostListItem[]> {
   const url = graphUrl(`/${params.metaPageId}/posts`);
-  url.searchParams.set("fields", "id,created_time,message");
+  url.searchParams.set("fields", "id,created_time,message,type,shares");
   url.searchParams.set("limit", String(params.limit ?? 15));
 
   const json = await graphGet<GraphPostsResponse>(url, params.pageAccessToken);
@@ -102,7 +107,7 @@ export async function fetchPostInsightTotals(params: {
   pageAccessToken: string;
 }): Promise<Record<string, number | Record<string, number>>> {
   const url = graphUrl(`/${params.postId}/insights`);
-  url.searchParams.set("metric", "post_media_view,post_clicks,post_reactions_by_type_total");
+  url.searchParams.set("metric", "post_media_view,post_clicks,post_reactions_by_type_total,post_impressions_unique");
   try {
     const json = await graphGet<GraphPostInsightsResponse>(url, params.pageAccessToken);
     const map: Record<string, number | Record<string, number>> = {};

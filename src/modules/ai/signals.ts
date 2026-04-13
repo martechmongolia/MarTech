@@ -14,7 +14,7 @@ function impressionsProxy(row: NormalizedDailyMetric): number | null {
 }
 
 function engagementProxy(row: NormalizedDailyMetric): number | null {
-  return row.engagement_rate ?? (row.engaged_users != null ? row.engaged_users : null);
+  return row.engagement_rate ?? null;
 }
 
 export function extractDeterministicSignals(
@@ -134,6 +134,118 @@ export function extractDeterministicSignals(
     }
   }
 
+  // ── best_performing_time ──
+  if (posts.length >= 3) {
+    const hourMap = new Map<number, { count: number; totalEng: number }>();
+    for (const p of posts) {
+      const hr = new Date(p.post_created_at).getHours();
+      if (Number.isNaN(hr)) continue;
+      const eng = (p.engagements ?? 0) + (p.reactions ?? 0);
+      const prev = hourMap.get(hr) ?? { count: 0, totalEng: 0 };
+      prev.count++;
+      prev.totalEng += eng;
+      hourMap.set(hr, prev);
+    }
+    const bestHour = [...hourMap.entries()]
+      .filter(([, v]) => v.count >= 1)
+      .sort((a, b) => (b[1].totalEng / b[1].count) - (a[1].totalEng / a[1].count))[0];
+    if (bestHour) {
+      const hr = bestHour[0];
+      const avgEng = Math.round(bestHour[1].totalEng / bestHour[1].count);
+      signals.push({
+        id: "best_performing_time",
+        severity: "info",
+        title: "Хамгийн сайн цагийн бүс тодорхойлогдсон",
+        detail: `Хамгийн engagement ихтэй постууд ${String(hr).padStart(2, "0")}:00-${String((hr + 2) % 24).padStart(2, "0")}:00 цагт оруулагдсан (дундаж engagement: ${avgEng}).`,
+        evidence: { bestHour: hr, avgEngagement: avgEng, sampleSize: bestHour[1].count }
+      });
+    }
+  }
+
+  // ── content_type_winner ──
+  if (posts.length >= 3) {
+    const typeEngMap = new Map<string, { count: number; totalEng: number }>();
+    for (const p of posts.slice(0, 20)) {
+      const key = p.post_type ?? "unknown";
+      const eng = (p.engagements ?? 0) + (p.reactions ?? 0);
+      const prev = typeEngMap.get(key) ?? { count: 0, totalEng: 0 };
+      prev.count++;
+      prev.totalEng += eng;
+      typeEngMap.set(key, prev);
+    }
+    const entries = [...typeEngMap.entries()]
+      .filter(([, v]) => v.count >= 2)
+      .map(([type, v]) => ({ type, avgEng: v.totalEng / v.count, count: v.count }))
+      .sort((a, b) => b.avgEng - a.avgEng);
+    if (entries.length >= 2) {
+      const best = entries[0];
+      const second = entries[1];
+      const ratio = second.avgEng > 0 ? best.avgEng / second.avgEng : 0;
+      if (ratio > 1.3) {
+        signals.push({
+          id: "content_type_winner",
+          severity: "info",
+          title: "Engagement-ийн хувьд давуу контент төрөл",
+          detail: `${best.type} постууд бусад төрлөөс ${ratio.toFixed(1)}x илүү engagement авдаг (дундаж: ${Math.round(best.avgEng)} vs ${Math.round(second.avgEng)}).`,
+          evidence: { bestType: best.type, bestAvg: best.avgEng, secondType: second.type, secondAvg: second.avgEng, ratio }
+        });
+      }
+    }
+  }
+
+  // ── high_reactions_low_shares ──
+  {
+    const totReactions = posts.reduce((s, p) => s + (p.reactions ?? 0), 0);
+    const totShares = posts.reduce((s, p) => s + (p.shares ?? 0), 0);
+    if (totReactions > 10 && totShares >= 0) {
+      const shareRatio = totShares / totReactions;
+      if (shareRatio < 0.05 && totReactions > 20) {
+        signals.push({
+          id: "high_reactions_low_shares",
+          severity: "info",
+          title: "Reactions өндөр, shares бага — share-лах уриалга дутмаг",
+          detail: `Нийт ${totReactions} reaction байгаа ч зөвхөн ${totShares} share. Контент сонирхолтой ч хуваалцах түлхэц дутмаг.`,
+          evidence: { totalReactions: totReactions, totalShares: totShares, shareRatio }
+        });
+      } else if (shareRatio > 0.15) {
+        signals.push({
+          id: "high_reactions_low_shares",
+          severity: "info",
+          title: "Viral потенциал — reactions + shares хоёулаа өндөр",
+          detail: `Нийт ${totReactions} reaction, ${totShares} share. Share-ийн харьцаа ${(shareRatio * 100).toFixed(1)}% — контент идэвхтэй тархаж байна.`,
+          evidence: { totalReactions: totReactions, totalShares: totShares, shareRatio }
+        });
+      }
+    }
+  }
+
+  // ── engagement_quality ──
+  {
+    const totClicks = posts.reduce((s, p) => s + (p.clicks ?? 0), 0);
+    const totReactions = posts.reduce((s, p) => s + (p.reactions ?? 0), 0);
+    const totShares = posts.reduce((s, p) => s + (p.shares ?? 0), 0);
+    const total = totClicks + totReactions + totShares;
+    if (total > 20) {
+      const clickPct = totClicks / total;
+      const reactionPct = totReactions / total;
+      let quality: string;
+      if (clickPct > 0.6) {
+        quality = "Traffic-д чиглэсэн — clicks давамгай";
+      } else if (reactionPct > 0.7) {
+        quality = "Brand awareness — reactions давамгай";
+      } else {
+        quality = "Тэнцвэртэй — clicks, reactions, shares жигд";
+      }
+      signals.push({
+        id: "engagement_quality",
+        severity: "info",
+        title: "Engagement-ийн чанарын профайл",
+        detail: `${quality}. Clicks ${Math.round(clickPct * 100)}%, Reactions ${Math.round(reactionPct * 100)}%, Shares ${Math.round((1 - clickPct - reactionPct) * 100)}%.`,
+        evidence: { clicks: totClicks, reactions: totReactions, shares: totShares, clickPct, reactionPct }
+      });
+    }
+  }
+
   if (signals.length === 0) {
     signals.push({
       id: "insufficient_signal_window",
@@ -228,6 +340,67 @@ export function draftRecommendationsFromSignals(signals: DeterministicSignal[]):
         title: "Давамгай форматын хувилбаруудыг зорилготой турших",
         description: "Сүүлийн sample-д нэг post төрөл давамгайлж байна.",
         action_items: ["Давамгай post_type дээр 1-2 шинэ хувилбар туршиж, дараагийн синкийн дараа engagement_rate-ийн ялгааг харьцуул."],
+        evidence_signal_ids: [s.id],
+        source: "rule"
+      });
+    }
+    if (s.id === "best_performing_time") {
+      const hr = typeof s.evidence?.bestHour === "number" ? s.evidence.bestHour : null;
+      out.push({
+        priority: "medium",
+        category: "timing",
+        title: "Хамгийн сайн цагт пост оруулах",
+        description: hr != null
+          ? `${String(hr).padStart(2, "0")}:00-${String((hr + 2) % 24).padStart(2, "0")}:00 цагт таны audience хамгийн идэвхтэй.`
+          : "Хамгийн engagement өндөр цагийн бүсэд пост оруулах нь хүрэлтийг нэмэгдүүлнэ.",
+        action_items: [
+          hr != null
+            ? `Дараагийн 3 постыг ${String(hr).padStart(2, "0")}:00 орчимд нийтэлж, engagement-ийн ялгааг шалга.`
+            : "Дараагийн 3 постын цагийг өөрчилж engagement-ийн ялгааг шалга."
+        ],
+        evidence_signal_ids: [s.id],
+        source: "rule"
+      });
+    }
+    if (s.id === "content_type_winner") {
+      const bestType = typeof s.evidence?.bestType === "string" ? s.evidence.bestType : "тухайн төрөл";
+      out.push({
+        priority: "medium",
+        category: "content",
+        title: `${bestType} контентод илүү анхаарал хандуулах`,
+        description: `${bestType} постууд бусад төрлөөс engagement-оор илүү сайн ажилладаг.`,
+        action_items: [
+          `Ирэх долоо хоногт ${bestType} контент 2-3 удаа нэмж оруулаад engagement-ийн ялгааг хянаарай.`
+        ],
+        evidence_signal_ids: [s.id],
+        source: "rule"
+      });
+    }
+    if (s.id === "high_reactions_low_shares") {
+      const shareRatio = typeof s.evidence?.shareRatio === "number" ? s.evidence.shareRatio : 0;
+      if (shareRatio < 0.05) {
+        out.push({
+          priority: "medium",
+          category: "engagement",
+          title: "Share хийх уриалга нэмэх",
+          description: "Контент reactions авч байгаа ч share цөөн. Хуваалцах уриалга нэмэх нь organic reach-ийг өсгөнө.",
+          action_items: [
+            "Дараагийн 2-3 постын төгсгөлд 'Найздаа share хийгээрэй' гэсэн CTA нэмж, share тоог хянаарай."
+          ],
+          evidence_signal_ids: [s.id],
+          source: "rule"
+        });
+      }
+    }
+    if (s.id === "engagement_quality") {
+      out.push({
+        priority: "low",
+        category: "engagement",
+        title: "Engagement чанарын профайл хянах",
+        description: "Таны engagement-ийн бүтэц одоогоор тодорхой болсон — энэ чиглэлд тохируулж ажиллаарай.",
+        action_items: [
+          "Clicks давамгай бол линк бүхий контентод анхаарч, reactions давамгай бол brand awareness зорилгод тохируулан стратегиа сайжруул."
+        ],
         evidence_signal_ids: [s.id],
         source: "rule"
       });

@@ -29,16 +29,17 @@ export async function manualSyncPageAction(
     };
   }
 
-  const organizationId = formData.get("organizationId");
   const internalPageId = formData.get("internalPageId");
-  if (typeof organizationId !== "string" || typeof internalPageId !== "string") {
+  if (typeof internalPageId !== "string") {
     return { error: "Invalid request." };
   }
 
   const org = await getCurrentUserOrganization(user.id);
-  if (!org || org.id !== organizationId) {
-    return { error: "Organization mismatch." };
+  if (!org) {
+    return { error: "Organization not found." };
   }
+
+  const organizationId = org.id;
 
   const supabase = await getSupabaseServerClient();
   const { data: page, error: pageErr } = await supabase
@@ -59,12 +60,16 @@ export async function manualSyncPageAction(
       jobType: "manual_sync",
       payload: { trigger: "manual_dashboard" }
     });
-    await executeMetaSyncJob(jobId);
+    const actionTimeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Sync timed out")), 35_000)
+    );
+    await Promise.race([executeMetaSyncJob(jobId), actionTimeout]);
     revalidatePath("/dashboard");
     revalidatePath("/pages");
     return { message: "Sync completed." };
   } catch (e) {
     console.error("[sync] manualSyncPageAction failed:", e instanceof Error ? e.message : e);
+    revalidatePath("/dashboard");
     return { error: "Sync failed. Please try again." };
   }
 }
@@ -76,6 +81,13 @@ export async function retrySyncJobAction(
   const user = await getCurrentUser();
   if (!user) {
     return { error: "You must be signed in." };
+  }
+
+  const entitlement = await checkOrganizationFeatureLimit(user.id, "manual_sync");
+  if (!entitlement.allowed) {
+    return {
+      error: `Daily sync limit reached (${entitlement.used}/${entitlement.limit}). Try again tomorrow.`
+    };
   }
 
   const jobId = formData.get("jobId");
@@ -108,12 +120,16 @@ export async function retrySyncJobAction(
   }
 
   try {
-    await executeMetaSyncJob(jobId);
+    const actionTimeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Sync timed out")), 35_000)
+    );
+    await Promise.race([executeMetaSyncJob(jobId), actionTimeout]);
     revalidatePath("/dashboard");
     revalidatePath("/pages");
     return { message: "Sync completed." };
   } catch (e) {
     console.error("[sync] retrySyncJobAction failed:", e instanceof Error ? e.message : e);
+    revalidatePath("/dashboard");
     return { error: "Sync retry failed. Please try again." };
   }
 }

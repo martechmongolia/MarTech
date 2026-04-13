@@ -37,6 +37,9 @@ export function normalizeDailyMetricsFromInsights(series: PageInsightSeries[]): 
     const m = map.get(d) ?? {};
     const follows = m.page_follows;
     const views = m.page_media_view;
+    const pageImpressions = m.page_impressions;
+    const engagedUsers = m.page_engaged_users;
+    const postEngagements = m.page_post_engagements;
 
     const delta =
       follows != null && prevFans != null ? Math.round(follows - prevFans) : null;
@@ -44,19 +47,33 @@ export function normalizeDailyMetricsFromInsights(series: PageInsightSeries[]): 
       prevFans = follows;
     }
 
+    const impressions = views != null ? Math.round(views) : null;
+    const reach = pageImpressions != null ? Math.round(pageImpressions) : null;
+    const engaged = engagedUsers != null ? Math.round(engagedUsers) : null;
+
+    // engagement_rate = engaged_users / impressions (or reach)
+    const denominator = impressions ?? reach;
+    const engagementRate =
+      engaged != null && denominator != null && denominator > 0
+        ? engaged / denominator
+        : null;
+
     rows.push({
       metric_date: d,
       followers_count: follows != null ? Math.round(follows) : null,
       follower_delta: delta,
-      reach: null,
-      impressions: views != null ? Math.round(views) : null,
-      engaged_users: null,
-      post_count: null,
-      engagement_rate: null,
+      reach,
+      impressions,
+      engaged_users: engaged,
+      post_count: postEngagements != null ? Math.round(postEngagements) : null,
+      engagement_rate: engagementRate,
       raw_metrics: {
         source: "meta_graph_insights_day",
         page_follows: m.page_follows ?? null,
-        page_media_view: m.page_media_view ?? null
+        page_media_view: m.page_media_view ?? null,
+        page_impressions: m.page_impressions ?? null,
+        page_engaged_users: m.page_engaged_users ?? null,
+        page_post_engagements: m.page_post_engagements ?? null,
       }
     });
   }

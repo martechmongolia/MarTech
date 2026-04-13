@@ -29,22 +29,7 @@ import {
   getRecentPostMetricsForPage,
   getRecentSyncJobsForOrganization,
 } from "@/modules/sync/data";
-
-function formatRelativeTime(dateStr: string | null | undefined): string {
-  if (!dateStr) return "Never";
-  try {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "Just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    const days = Math.floor(hrs / 24);
-    return `${days}d ago`;
-  } catch {
-    return "—";
-  }
-}
+import { formatRelativeTime } from "@/lib/utils/time";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -84,7 +69,6 @@ export default async function DashboardPage() {
           getRecentAnalysisJobsForPage(p.id, 6),
           getReportHistoryForPage(p.id, 10),
         ]);
-      const recs = aiReport ? await getRecommendationsForReport(aiReport.id) : [];
       return {
         page: p,
         metric,
@@ -96,7 +80,7 @@ export default async function DashboardPage() {
         aiJob,
         aiJobRuns,
         reportHistory,
-        recs,
+        recs: aiReport ? await getRecommendationsForReport(aiReport.id) : [],
       };
     })
   );
@@ -151,7 +135,6 @@ export default async function DashboardPage() {
             {pageCards.map(
               ({
                 page,
-                job,
                 lastOkJob,
                 dailySeries,
                 postMetrics,
@@ -160,7 +143,6 @@ export default async function DashboardPage() {
                 aiJobRuns,
                 reportHistory,
                 recs,
-                metric,
               }) => {
                 const lastSyncedAt = lastOkJob?.finished_at ?? page.last_synced_at;
                 return (
@@ -177,13 +159,11 @@ export default async function DashboardPage() {
                       </div>
                       <div style={{ display: "flex", gap: "0.5rem" }}>
                         <ManualSyncForm
-                          organizationId={organization.id}
                           internalPageId={page.id}
                           pageLabel={page.name}
                           disabled={!manualEntitlement.allowed}
                         />
                         <RegenerateAnalysisForm
-                          organizationId={organization.id}
                           internalPageId={page.id}
                           disabled={!aiEntitlement.allowed}
                         />
@@ -196,9 +176,7 @@ export default async function DashboardPage() {
                         pageName={page.name}
                         dailySeries={dailySeries}
                         posts={postMetrics}
-                        latestJob={job}
                         lastSucceededJob={lastOkJob}
-                        latestMetricDate={metric?.metric_date ?? null}
                         pageLastSyncedAt={page.last_synced_at}
                       />
 
@@ -250,7 +228,7 @@ export default async function DashboardPage() {
                   <p style={{ margin: 0, fontSize: "0.75rem", color: "#9CA3AF" }}>
                     {formatRelativeTime(j.finished_at || j.created_at)}
                   </p>
-                  {(j.status === "failed" || j.status === "queued") && <RetrySyncJobForm jobId={j.id} />}
+                  {j.status === "failed" && <RetrySyncJobForm jobId={j.id} />}
                 </div>
               </div>
             ))}

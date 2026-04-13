@@ -5,7 +5,6 @@ import { Button } from "@/components/ui";
 import { manualSyncPageAction, type SyncActionState } from "@/modules/sync/actions";
 
 type ManualSyncFormProps = {
-  organizationId: string;
   internalPageId: string;
   pageLabel: string;
   disabled?: boolean;
@@ -14,7 +13,6 @@ type ManualSyncFormProps = {
 const initial: SyncActionState = {};
 
 export function ManualSyncForm({
-  organizationId,
   internalPageId,
   pageLabel: _pageLabel,
   disabled = false
@@ -23,7 +21,6 @@ export function ManualSyncForm({
 
   return (
     <form action={formAction} className="ui-form-inline">
-      <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="internalPageId" value={internalPageId} />
       <Button type="submit" variant="secondary" disabled={pending || disabled}>
         {pending ? "Syncing…" : "Manual sync"}

@@ -21,9 +21,14 @@ function compactPosts(rows: NormalizedPostMetric[]): Record<string, unknown>[] {
   return rows.slice(0, 15).map((p) => ({
     meta_post_id: p.meta_post_id,
     created_at: p.post_created_at,
+    post_type: p.post_type,
     impressions: p.impressions,
+    reach: p.reach,
     engagements: p.engagements,
-    post_type: p.post_type
+    reactions: p.reactions,
+    shares: p.shares,
+    clicks: p.clicks,
+    comments: p.comments,
   }));
 }
 

@@ -100,11 +100,13 @@ export const getRecommendationsForReport = cache(
 export const getLatestFailedAnalysisJobForOrganization = cache(
   async (organizationId: string): Promise<AnalysisJobStatusView | null> => {
     const supabase = await getSupabaseServerClient();
-    const { data, error } = await supabase
+
+    // Get the latest analysis job regardless of status
+    const { data: latestJob, error } = await supabase
       .from("analysis_jobs")
       .select("id,status,error_message,source_sync_job_id,scheduled_at,started_at,finished_at,created_at")
       .eq("organization_id", organizationId)
-      .eq("status", "failed")
+      .in("status", ["failed", "succeeded"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -113,7 +115,12 @@ export const getLatestFailedAnalysisJobForOrganization = cache(
       throw error;
     }
 
-    return (data ?? null) as AnalysisJobStatusView | null;
+    // Only show failed banner if the most recent job is a failure
+    if (!latestJob || latestJob.status !== "failed") {
+      return null;
+    }
+
+    return latestJob as AnalysisJobStatusView;
   }
 );
 
