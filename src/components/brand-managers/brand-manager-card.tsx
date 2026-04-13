@@ -13,10 +13,10 @@ const STATUS_LABEL: Record<BrandManager["status"], string> = {
 export function BrandManagerCard({ brandManager: bm }: Props) {
   const initials = bm.name
     .split(" ")
-    .map((w) => w[0])
+    .map((w) => w[0] ?? "")
     .join("")
     .slice(0, 2)
-    .toUpperCase();
+    .toUpperCase() || "?";
 
   return (
     <Link href={`/brand-managers/${bm.id}`} className="bm-card">

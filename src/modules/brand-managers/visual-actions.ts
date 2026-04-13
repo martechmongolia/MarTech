@@ -291,7 +291,7 @@ export async function auditVisualAsset(
     .single();
 
   const context = designTokens
-    ? `Брэндийн өнгөнүүд: ${JSON.stringify(designTokens.colors)}. Визуаль стиль: ${designTokens.visual_style}. Keywords: ${(designTokens.visual_keywords as string[]).join(", ")}.`
+    ? `Брэндийн өнгөнүүд: ${JSON.stringify(designTokens.colors)}. Визуаль стиль: ${designTokens.visual_style}. Keywords: ${((designTokens.visual_keywords as string[] | null) ?? []).join(", ")}.`
     : "Брэндийн design tokens тодорхойлогдоогүй.";
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {

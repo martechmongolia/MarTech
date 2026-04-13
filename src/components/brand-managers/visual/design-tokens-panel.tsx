@@ -68,8 +68,12 @@ export function DesignTokensPanel({ brandManagerId, tokens, onUpdate }: Props) {
         // Panel-аас save хийхэд хэрэглэгч intentionally өнгө устгасан байж болно
         // → colors-г tokens.colors-тай merge хийлгэхгүй, шууд replace хийнэ
         // Шийдэл: colors-г тусдаа replace endpoint-оор явуулна
+        const validColors = colors.filter(c => /^#[0-9a-f]{6}$/i.test(c.hex));
+        if (validColors.length < colors.length) {
+          setSaveError(`${colors.length - validColors.length} хүчингүй өнгө хасагдлаа`);
+        }
         const updated = {
-          colors,
+          colors: validColors,
           fonts,
           visual_style: visualStyle,
           visual_keywords: keywords.split(",").map((k) => k.trim()).filter(Boolean),

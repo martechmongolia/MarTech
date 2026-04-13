@@ -6,10 +6,25 @@ import { SECTION_META, SECTION_ORDER, type SectionType, type TrainingMessage } f
 
 const OPENAI_API = "https://api.openai.com/v1/chat/completions";
 
+// ── In-memory rate limiter ────────────────────────────────────
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+function checkTrainRateLimit(userId: string, max = 30, windowMs = 5 * 60 * 1000): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= max) return false;
+  entry.count++;
+  return true;
+}
+
 type OAIMessage = { role: "system" | "user" | "assistant"; content: string };
 
 async function openaiChat(messages: OAIMessage[], jsonMode = false): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEY тохируулагдаагүй");
   const model = process.env.AI_MODEL ?? "gpt-4o-mini";
   const res = await fetch(OPENAI_API, {
     method: "POST",
@@ -91,7 +106,8 @@ Completeness score (0-100): 0=огт байхгүй, 50=хэсэгчлэн, 80=�
       content: (p.content as Record<string, unknown>) ?? {},
       score: Math.min(100, Math.max(0, (p.score as number) ?? 0)),
     };
-  } catch {
+  } catch (e) {
+    console.warn("[train] extractContent JSON parse failed:", e instanceof Error ? e.message : e);
     return { content: {}, score: 0 };
   }
 }
@@ -104,6 +120,11 @@ export async function POST(req: NextRequest) {
   const org = await getCurrentUserOrganization(user.id);
   if (!org) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
+  // Rate limit: 30 messages per 5 minutes per user
+  if (!checkTrainRateLimit(user.id)) {
+    return NextResponse.json({ error: "Хэт олон мессеж илгээлээ. Түр хүлээнэ үү." }, { status: 429 });
+  }
+
   const body = (await req.json()) as {
     brandManagerId: string;
     sectionType: SectionType;
@@ -114,6 +135,11 @@ export async function POST(req: NextRequest) {
   const { brandManagerId, sectionType, messages, userMessage } = body;
   if (!brandManagerId || !sectionType || !userMessage) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  }
+
+  // Validate sectionType against known values
+  if (!SECTION_ORDER.includes(sectionType)) {
+    return NextResponse.json({ error: "Invalid section type" }, { status: 400 });
   }
 
   // Fix #8: Prompt injection guard — зөвхөн user/assistant role-г зөвшөөрнө

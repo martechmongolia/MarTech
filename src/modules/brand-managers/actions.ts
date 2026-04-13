@@ -41,7 +41,10 @@ export async function getBrandManager(id: string): Promise<BrandManager | null> 
     .eq("id", id)
     .eq("organization_id", org.id)
     .single();
-  if (error) return null;
+  if (error) {
+    console.error("[brand-managers] getBrandManager failed:", error.message);
+    return null;
+  }
   return data as BrandManager;
 }
 
@@ -78,12 +81,15 @@ export async function createBrandManager(params: {
   const { org } = await requireOrg();
   const admin = getSupabaseAdminClient();
 
+  const safeName = params.name.replace(/<[^>]*>/g, "").trim().slice(0, 100);
+  if (!safeName) throw new Error("Нэр хоосон байна");
+
   const { data, error } = await admin
     .from("brand_managers")
     .insert({
       organization_id: org.id,
-      name: params.name,
-      description: params.description ?? null,
+      name: safeName,
+      description: params.description?.slice(0, 500) ?? null,
       avatar_color: params.avatarColor ?? "#0043FF",
       status: "draft",
       overall_score: 0,
@@ -146,9 +152,13 @@ export async function updateKnowledgeSection(params: {
 
   if (error) throw error;
 
-  await admin.rpc("recalculate_brand_manager_score", {
-    p_brand_manager_id: params.brandManagerId,
-  });
+  try {
+    await admin.rpc("recalculate_brand_manager_score", {
+      p_brand_manager_id: params.brandManagerId,
+    });
+  } catch (e) {
+    console.warn("[brand-managers] Score recalculation failed (best-effort):", e instanceof Error ? e.message : e);
+  }
 
   revalidatePath(`/brand-managers/${params.brandManagerId}`);
 }

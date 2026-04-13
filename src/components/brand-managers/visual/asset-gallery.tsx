@@ -55,7 +55,13 @@ export function AssetGallery({ brandManagerId, assetType, assets: initialAssets 
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
   async function uploadFile(file: File) {
+    if (file.size > MAX_FILE_SIZE) {
+      showToast("Файлын хэмжээ 50MB-с хэтэрч байна");
+      return;
+    }
     setUploadState("uploading");
     setUploadProgress(0);
 
