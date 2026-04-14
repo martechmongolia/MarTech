@@ -176,7 +176,9 @@ export async function executeMetaSyncJob(jobId: string): Promise<void> {
     const postSlice = posts.slice(0, 25);
     const postPayload = await batchMap(postSlice, async (p) => {
       const insights = await fetchPostInsightTotals({ postId: p.id, pageAccessToken: pageToken });
-      const views = insights.post_media_view;
+      // Prefer modern post_impressions; fall back to legacy post_media_view for
+      // backward compatibility with older API versions.
+      const views = insights.post_impressions ?? insights.post_media_view;
       const clicks = insights.post_clicks;
       const postReach = insights.post_impressions_unique;
       const reactionsMap = insights.post_reactions_by_type_total;
