@@ -1,8 +1,12 @@
 "use client";
 // ============================================================
-// RoundTable — Oval layout with sin/cos positioning (FE-01)
+// RoundTable — Boardroom-style oval table with agent seats.
+// Replaces the holographic look with a modern conference-room
+// aesthetic: glass/wood table surface, agenda card on top,
+// soft ambient lighting around the speaking participant.
 // ============================================================
 
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import type { AgentId } from "@/lib/brainstorm/types";
 import { AgentSeat } from "./AgentSeat";
@@ -13,52 +17,80 @@ interface RoundTableProps {
   messages: Array<{ agentId: AgentId | null; content: string; role: string; id: string }>;
   topic: string;
   streamingContent?: string;
+  spokenAgentIds?: Set<AgentId>;
+  nextAgentId?: AgentId | null;
 }
 
+// Position seated participants on an oval *just outside* the table bumper
+// so half-avatar overlaps the wooden rim — like real people seated at a
+// conference table, not floating in the air around it.
 function getAgentPosition(index: number, total: number) {
   const angle = (index / total) * 2 * Math.PI - Math.PI / 2;
   return {
-    x: 400 + 320 * Math.cos(angle),
-    y: 300 + 220 * Math.sin(angle),
+    x: 400 + 305 * Math.cos(angle),
+    y: 300 + 215 * Math.sin(angle),
   };
 }
 
-export function RoundTable({ activeAgents, speakingAgentId, messages, topic, streamingContent }: RoundTableProps) {
-  const getLastMessage = (agentId: AgentId) => {
-    const msgs = messages.filter((m) => m.agentId === agentId);
-    return msgs[msgs.length - 1]?.content ?? null;
-  };
+export function RoundTable({
+  activeAgents,
+  speakingAgentId,
+  messages,
+  topic,
+  streamingContent,
+  spokenAgentIds,
+  nextAgentId,
+}: RoundTableProps) {
+  const lastMessageMap = useMemo(() => {
+    const map = new Map<AgentId, string>();
+    for (const m of messages) {
+      if (m.role === "agent" && m.agentId) {
+        map.set(m.agentId, m.content);
+      }
+    }
+    return map;
+  }, [messages]);
 
   return (
-    <div className="bs-round-table-wrapper" style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", height: 700 }}>
-      {/* Holographic Table surface */}
+    <div className="bs-room">
+      {/* Cinematic ambient — dark room around the table */}
+      <div className="bs-room-ambient" aria-hidden />
+      <div className="bs-room-vignette" aria-hidden />
+
+      {/* Boardroom table — layered: shadow → wooden bumper → brass trim → leather surface → center spotlight → agenda */}
       <motion.div
-        className="bs-holo-table"
-        style={{
-          width: 500,
-          height: 300,
-        }}
-        initial={{ opacity: 0, scale: 0.9 }}
+        className="bs-table"
+        initial={{ opacity: 0, scale: 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
       >
-        <div className="bs-holo-waves" style={{ animationDelay: '0s' }}></div>
-        <div className="bs-holo-waves" style={{ animationDelay: '2s' }}></div>
-        
-        {/* Topic label inside hologam */}
-        <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", padding: "0 3rem", textAlign: "center", position: "absolute", inset: 0, zIndex: 10 }}>
-          <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-            {topic}
-          </p>
+        <div className="bs-table-shadow" aria-hidden />
+        <div className="bs-table-bumper" aria-hidden />
+        <div className="bs-table-trim" aria-hidden />
+        <div className="bs-table-leather" aria-hidden>
+          <div className="bs-table-leather-noise" aria-hidden />
+          <div className="bs-table-spotlight" aria-hidden />
         </div>
+
+        {/* Agenda card on the table */}
+        <div className="bs-agenda">
+          <div className="bs-agenda-clip" aria-hidden />
+          <div className="bs-agenda-eyebrow">Хэлэлцэх асуудал</div>
+          <p className="bs-agenda-title">{topic || "Сэдэв тодорхойлогдоогүй"}</p>
+        </div>
+
+        {/* Ambient props on the table — coffee + pen for realism */}
+        <div className="bs-prop bs-prop--mug" aria-hidden title="Кофе">☕</div>
+        <div className="bs-prop bs-prop--pen" aria-hidden title="Үзэг">✏️</div>
       </motion.div>
 
-      {/* Agent seats */}
-      <div className="absolute inset-0 pointer-events-none" style={{ marginLeft: 'calc(50% - 400px)', marginTop: 'calc(50% - 350px)' }}>
+      {/* Agent seats around the table */}
+      <div className="bs-room-seats" aria-hidden={false}>
         {activeAgents.map((agentId, index) => {
           const pos = getAgentPosition(index, activeAgents.length);
           const isSpeaking = agentId === speakingAgentId;
-          const lastMsg = isSpeaking && streamingContent ? streamingContent : getLastMessage(agentId);
+          const lastMsg =
+            isSpeaking && streamingContent ? streamingContent : lastMessageMap.get(agentId) ?? null;
 
           return (
             <AgentSeat
@@ -67,6 +99,8 @@ export function RoundTable({ activeAgents, speakingAgentId, messages, topic, str
               x={pos.x}
               y={pos.y}
               isSpeaking={isSpeaking}
+              hasSpoken={spokenAgentIds?.has(agentId) ?? false}
+              isNext={nextAgentId === agentId}
               lastMessage={lastMsg}
               index={index}
             />

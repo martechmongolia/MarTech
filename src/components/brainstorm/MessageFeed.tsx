@@ -1,13 +1,16 @@
 "use client";
 // ============================================================
-// MessageFeed — FE-06
+// MessageFeed — Chat-style transcript with agent-themed cards,
+// role badges, timestamps, and a typing animation while
+// streaming.
 // ============================================================
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { AgentId, BrainstormMessage } from "@/lib/brainstorm/types";
 import { AGENTS } from "@/lib/brainstorm/agents";
-import { PixelArtAvatarSVG } from "./PixelArtAvatarSVG";
+import { BoardroomAvatar } from "./BoardroomAvatar";
+import { agentTheme } from "./agent-palette";
 
 interface MessageFeedProps {
   messages: BrainstormMessage[];
@@ -22,8 +25,20 @@ export function MessageFeed({ messages, streamingContent, streamingAgentId }: Me
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, streamingContent]);
 
+  if (messages.length === 0 && !streamingAgentId) {
+    return (
+      <div className="bs-feed-empty">
+        <div className="bs-feed-empty-icon">💭</div>
+        <h3 className="bs-feed-empty-title">Хэлэлцүүлэг эхлэх гэж байна</h3>
+        <p className="bs-feed-empty-text">
+          AI агентууд ээлжлэн санаагаа дэвшүүлж эхэлнэ. Эхний хариулт хэдэн секунд хүлээгээрэй.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", overflowY: "auto", paddingRight: "1rem", paddingBottom: "2.5rem", width: "100%" }}>
+    <div className="bs-feed">
       <AnimatePresence initial={false}>
         {messages.map((msg) => (
           <MessageRow key={msg.id} message={msg} />
@@ -52,50 +67,98 @@ export function MessageFeed({ messages, streamingContent, streamingAgentId }: Me
   );
 }
 
+// Stable, locale-independent HH:MM formatter (avoids SSR/CSR drift)
+function formatTime(iso: string): string {
+  try {
+    const d = new Date(iso);
+    const hh = d.getHours().toString().padStart(2, "0");
+    const mm = d.getMinutes().toString().padStart(2, "0");
+    return `${hh}:${mm}`;
+  } catch {
+    return "";
+  }
+}
+
 function MessageRow({ message }: { message: BrainstormMessage }) {
   const isUser = message.role === "user";
   const agent = message.agent_id ? AGENTS[message.agent_id] : null;
+  const theme = agentTheme(message.agent_id);
+
+  // Hydration-safe: only render time client-side after mount
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (isUser) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="bs-msg-row bs-msg-row--user"
+      >
+        <div className="bs-msg-bubble bs-msg-bubble--user">
+          <p className="bs-msg-content">{message.content}</p>
+          {mounted && (
+            <span className="bs-msg-time" suppressHydrationWarning>
+              {formatTime(message.created_at)}
+            </span>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-      style={{ display: "flex", gap: "1rem", justifyContent: isUser ? "flex-end" : "flex-start", width: "100%" }}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className="bs-msg-row bs-msg-row--agent"
+      style={{ "--agent-color": theme.color, "--agent-bg": theme.bg, "--agent-border": theme.border } as React.CSSProperties}
     >
-      {!isUser && agent && (
-        <div style={{ marginTop: "0.25rem", flexShrink: 0, position: "relative", filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.1))" }}>
-          <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(99, 102, 241, 0.1)", filter: "blur(8px)", borderRadius: "9999px" }}></div>
-          <PixelArtAvatarSVG agentId={message.agent_id!} size={42} isSpeaking={message.is_streaming} />
+      {/* Avatar */}
+      {agent && message.agent_id && (
+        <div className="bs-msg-avatar">
+          <BoardroomAvatar
+            agentId={message.agent_id}
+            size={44}
+            isSpeaking={message.is_streaming}
+          />
         </div>
       )}
 
-      <div
-        className={isUser ? "bs-message-user" : "bs-message-agent"}
-        style={{
-          borderRadius: "1rem",
-          padding: "1rem 1.25rem",
-          fontSize: "15px",
-          lineHeight: 1.6,
-
-          transition: "all 0.3s",
-          maxWidth: isUser ? "75%" : "85%",
-        }}
-      >
-        {!isUser && agent && (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderBottom: "1px solid #C7D2FE", paddingBottom: "0.5rem", marginBottom: "0.5rem" }}>
-            <span style={{ fontSize: "0.875rem" }}>{agent.emoji}</span>
-            <span style={{ fontSize: "0.875rem", fontWeight: "bold", color: "#4F46E5", letterSpacing: "0.025em" }}>{agent.name}</span>
-          </div>
+      <div className="bs-msg-bubble bs-msg-bubble--agent">
+        {agent && (
+          <header className="bs-msg-header">
+            <span className="bs-msg-name">
+              <span aria-hidden>{agent.emoji}</span> {agent.name}
+            </span>
+            <span className="bs-msg-role">{theme.role}</span>
+            {mounted && !message.is_streaming && (
+              <span className="bs-msg-time" suppressHydrationWarning>
+                {formatTime(message.created_at)}
+              </span>
+            )}
+            {message.is_streaming && <TypingDots />}
+          </header>
         )}
-        <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>
+        <p className="bs-msg-content">
           {message.content}
-          {message.is_streaming && (
-            <span style={{ marginLeft: "4px", display: "inline-block", width: "10px", height: "16px", backgroundColor: "#60a5fa", verticalAlign: "middle", animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}></span>
-          )}
+          {message.is_streaming && message.content && <span className="bs-msg-cursor" aria-hidden />}
         </p>
       </div>
     </motion.div>
+  );
+}
+
+function TypingDots() {
+  return (
+    <span className="bs-typing" aria-label="Ярьж байна">
+      <span className="bs-typing-dot" />
+      <span className="bs-typing-dot" />
+      <span className="bs-typing-dot" />
+    </span>
   );
 }

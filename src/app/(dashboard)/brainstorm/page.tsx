@@ -1,5 +1,5 @@
 // ============================================================
-// Brainstorm — Session жагсаалт (FE-07 list)
+// Brainstorm — Session list page (FE-07)
 // ============================================================
 
 import Link from "next/link";
@@ -17,20 +17,21 @@ export default async function BrainstormPage() {
 
   return (
     <div className="bs-page-container">
-      <div className="bs-bg-glow"></div>
-      
       <div className="bs-max-w-4xl">
-        <div className="bs-header-row">
-          <div>
-            <h1 className="bs-heading text-4xl">🧠 AI Brainstorming</h1>
-            <p className="bs-subtitle">
+        {/* Header */}
+        <header className="bs-page-header">
+          <div className="bs-page-header-left">
+            <span className="bs-page-eyebrow">AI Brainstorming</span>
+            <h1 className="bs-page-title">🧠 Хэлэлцүүлгүүд</h1>
+            <p className="bs-page-subtitle">
               6 төрлийн AI агенттэй хэлэлцүүлэг эхлүүлж, шинэ санаа гарга
             </p>
           </div>
-          <Link href="/brainstorm/new" className="bs-btn-primary">
-            <span style={{ fontSize: "1.25rem", marginRight: "8px" }}>+</span> Шинэ хэлэлцүүлэг
+          <Link href="/brainstorm/new" className="bs-btn-primary bs-page-cta">
+            <span style={{ fontSize: "1.15rem", marginRight: "0.5rem", lineHeight: 1 }}>+</span>
+            Шинэ хэлэлцүүлэг
           </Link>
-        </div>
+        </header>
 
         <BrainstormSessionList initialSessions={sessions} />
       </div>

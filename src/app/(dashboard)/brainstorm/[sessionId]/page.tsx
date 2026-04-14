@@ -3,7 +3,7 @@
 // Brainstorm — Round Table session page
 // ============================================================
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import type { AgentId, BrainstormMessage, BrainstormReport, BrainstormSession, StreamEvent } from "@/lib/brainstorm/types";
@@ -12,19 +12,21 @@ import { RoundTable } from "@/components/brainstorm/RoundTable";
 import { MessageFeed } from "@/components/brainstorm/MessageFeed";
 import { UserInput } from "@/components/brainstorm/UserInput";
 import { ReportView } from "@/components/brainstorm/ReportView";
+import { AgentLegend } from "@/components/brainstorm/AgentLegend";
+import { agentTheme, AGENT_PALETTE } from "@/components/brainstorm/agent-palette";
 import { cancelSession } from "@/lib/brainstorm/actions";
 import "../brainstorm.css";
 
 type ViewMode = "table" | "feed";
 
-// Agent color map for identity card accent
+// Legacy alias for components still using the old constant
 const AGENT_COLORS: Record<AgentId, string> = {
-  marketer:    "#f97316",
-  analyst:     "#3b82f6",
-  skeptic:     "#ef4444",
-  idealist:    "#a855f7",
-  psychologist:"#22c55e",
-  moderator:   "#eab308",
+  marketer:     AGENT_PALETTE.marketer.color,
+  analyst:      AGENT_PALETTE.analyst.color,
+  skeptic:      AGENT_PALETTE.skeptic.color,
+  idealist:     AGENT_PALETTE.idealist.color,
+  psychologist: AGENT_PALETTE.psychologist.color,
+  moderator:    AGENT_PALETTE.moderator.color,
 };
 
 export default function BrainstormSessionPage() {
@@ -355,29 +357,62 @@ export default function BrainstormSessionPage() {
     return `${Math.floor(s / 60)} мин ${s % 60} сек`;
   };
 
+  // ── Legend state: which agents have already spoken in current round ─
+  const spokenAgentIds = useMemo(() => {
+    const set = new Set<AgentId>();
+    for (const m of messages) {
+      if (m.role === "agent" && m.agent_id && m.round_number === currentRound) {
+        set.add(m.agent_id);
+      }
+    }
+    return set;
+  }, [messages, currentRound]);
+
+  // Predict next agent in round-robin order based on already-spoken
+  const nextAgentId: AgentId | null = useMemo(() => {
+    if (streamingAgentId || sessionCompleted) return null;
+    for (const id of activeAgents) {
+      if (!spokenAgentIds.has(id)) return id;
+    }
+    return null;
+  }, [streamingAgentId, sessionCompleted, activeAgents, spokenAgentIds]);
+
+  // Header status — agent-aware copy
+  const speakingAgent = streamingAgentId ? AGENTS[streamingAgentId] : null;
+  const speakingTheme = streamingAgentId ? agentTheme(streamingAgentId) : null;
+
   // ── Render ───────────────────────────────────────────────
   return (
     <div className="bs-session-layout">
 
-      {/* ── Header ────────────────────────────────────────── */}
-      <div className="bs-session-header bs-session-header-wrapper" style={{ position: "absolute", top: 0, zIndex: 50 }}>
+      {/* ── Top bar (header + legend + progress) — flex stack, no overlap ─ */}
+      <div className="bs-session-topbar">
+      <div className="bs-session-header bs-session-header-wrapper">
         <div className="bs-session-header-left">
-          <button onClick={() => router.push("/brainstorm")} className="bs-back-btn">←</button>
+          <button onClick={() => router.push("/brainstorm")} className="bs-back-btn" aria-label="Буцах">←</button>
           <div style={{ minWidth: 0 }}>
             <h1 className="bs-session-title">{session?.topic ?? "Хэлэлцүүлэг..."}</h1>
             <p className="bs-session-status">
-              Раунд {currentRound}/{totalRounds}
-              <span style={{ margin: "0 0.4rem" }}>•</span>
-              {isStreaming ? (
-                <span style={{ color: "#60a5fa" }}>🟢 Ярьж байна...</span>
+              <span className="bs-status-round">Раунд {currentRound}/{totalRounds}</span>
+              <span className="bs-status-divider">•</span>
+              {isStreaming && speakingAgent && speakingTheme ? (
+                <span className="bs-status-pill" style={{ background: speakingTheme.bg, color: speakingTheme.color, borderColor: speakingTheme.border }}>
+                  <span className="bs-status-live-dot" style={{ background: speakingTheme.color }} />
+                  {speakingAgent.emoji} {speakingAgent.name} ярьж байна
+                </span>
+              ) : isStreaming ? (
+                <span className="bs-status-pill bs-status-pill--info">
+                  <span className="bs-status-live-dot" />
+                  Ярьж байна…
+                </span>
               ) : waitingUserTurn ? (
-                <span style={{ color: "#facc15" }}>⏳ Таны ээлж</span>
+                <span className="bs-status-pill bs-status-pill--warn">⏳ Таны ээлж</span>
               ) : sessionCompleted ? (
-                <span style={{ color: "#34d399" }}>✅ Дууссан</span>
+                <span className="bs-status-pill bs-status-pill--ok">✅ Дууссан</span>
               ) : isResumeNeeded ? (
-                <span style={{ color: "#f97316" }}>⚠️ Холболт тасарсан</span>
+                <span className="bs-status-pill bs-status-pill--alert">⚠️ Холболт тасарсан</span>
               ) : (
-                <span style={{ color: "#9CA3AF" }}>⏸ Хүлээж байна</span>
+                <span className="bs-status-pill bs-status-pill--muted">⏸ Хүлээж байна</span>
               )}
             </p>
           </div>
@@ -398,7 +433,7 @@ export default function BrainstormSessionPage() {
                 } finally { setIsCancelling(false); }
               }}
               disabled={isCancelling}
-              style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: "8px", color: "#B91C1C", padding: "6px 12px", fontSize: "0.8rem", cursor: "pointer", fontWeight: 600 }}
+              className="bs-cancel-btn"
             >
               {isCancelling ? "..." : "⏹ Зогсоох"}
             </button>
@@ -410,15 +445,30 @@ export default function BrainstormSessionPage() {
         </div>
       </div>
 
+      {/* ── Agent legend strip ────────────────────────────── */}
+      {activeAgents.length > 0 && (
+        <div className="bs-legend-wrap">
+          <AgentLegend
+            activeAgents={activeAgents}
+            speakingAgentId={streamingAgentId}
+            spokenAgentIds={spokenAgentIds}
+            nextAgentId={nextAgentId}
+            onAgentClick={waitingUserTurn ? (id) => { setAskAgentOpen(true); setAskAgentTarget(id); } : undefined}
+          />
+        </div>
+      )}
+
       {/* ── Progress bar ──────────────────────────────────── */}
-      <div style={{ position: "absolute", top: 64, left: 0, right: 0, zIndex: 49, height: "3px", background: "rgba(255,255,255,0.08)" }}>
+      <div className="bs-progress-track">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${progressPct}%` }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          style={{ height: "100%", background: sessionCompleted ? "linear-gradient(90deg,#10b981,#34d399)" : "linear-gradient(90deg,#4f46e5,#7c3aed)" }}
+          className="bs-progress-fill"
+          data-completed={sessionCompleted}
         />
       </div>
+      </div>{/* /bs-session-topbar */}
 
       {/* ── Agent Identity Card ────────────────────────────── */}
       <AnimatePresence>
@@ -483,6 +533,8 @@ export default function BrainstormSessionPage() {
                 streamingContent={streamingContent}
                 messages={feedMessages}
                 topic={session?.topic ?? ""}
+                spokenAgentIds={spokenAgentIds}
+                nextAgentId={nextAgentId}
               />
             ) : (
               <MessageFeed
@@ -497,8 +549,8 @@ export default function BrainstormSessionPage() {
           <AnimatePresence>
             {isResumeNeeded && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bs-user-input-wrapper">
-                <div className="bs-glass-panel" style={{ padding: "1rem", display: "flex", alignItems: "center", gap: "1rem", justifyContent: "space-between" }}>
-                  <p style={{ fontSize: "0.8rem", color: "#f97316", margin: 0 }}>⚠️ Холболт тасарсан. Хэлэлцүүлгийг үргэлжлүүлэх үү?</p>
+                <div className="bs-glass-panel" style={{ padding: "1rem", display: "flex", alignItems: "center", gap: "1rem", justifyContent: "space-between", borderColor: "#FED7AA", background: "#FFF7ED" }}>
+                  <p style={{ fontSize: "0.875rem", color: "#9A3412", margin: 0, fontWeight: 600 }}>⚠️ Холболт тасарсан. Хэлэлцүүлгийг үргэлжлүүлэх үү?</p>
                   <button onClick={() => startStream()} className="bs-btn-primary" style={{ fontSize: "0.875rem", padding: "0.5rem 1.25rem" }}>▶️ Үргэлжлүүлэх</button>
                 </div>
               </motion.div>
@@ -509,8 +561,8 @@ export default function BrainstormSessionPage() {
           <AnimatePresence>
             {sessionCompleted && !isGeneratingReport && !report && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="bs-user-input-wrapper">
-                <div className="bs-glass-panel" style={{ padding: "1rem", display: "flex", alignItems: "center", gap: "1rem", justifyContent: "space-between", borderColor: "rgba(16,185,129,0.3)", background: "rgba(16,185,129,0.05)" }}>
-                  <p style={{ fontSize: "0.875rem", color: "#34d399", margin: 0, fontWeight: 600 }}>✅ Хэлэлцүүлэг амжилттай дуусав!</p>
+                <div className="bs-glass-panel" style={{ padding: "1rem", display: "flex", alignItems: "center", gap: "1rem", justifyContent: "space-between", borderColor: "#A7F3D0", background: "#ECFDF5" }}>
+                  <p style={{ fontSize: "0.875rem", color: "#065F46", margin: 0, fontWeight: 600 }}>✅ Хэлэлцүүлэг амжилттай дуусав!</p>
                   <button onClick={generateReport} className="bs-btn-primary" style={{ fontSize: "0.875rem", padding: "0.5rem 1.25rem" }}>📋 Тайлан үүсгэх</button>
                 </div>
               </motion.div>
@@ -521,8 +573,8 @@ export default function BrainstormSessionPage() {
           <AnimatePresence>
             {isGeneratingReport && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                style={{ padding: "0.75rem 1rem", textAlign: "center", fontSize: "0.85rem", color: "#a5b4fc", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
-                <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #a5b4fc", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                style={{ padding: "0.75rem 1rem", textAlign: "center", fontSize: "0.875rem", color: "#4F46E5", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", fontWeight: 600 }}>
+                <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #4F46E5", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                 Тайлан бэлтгэж байна...
               </motion.div>
             )}

@@ -219,12 +219,13 @@ export default function NewBrainstormPage() {
           <h1 className="bs-heading text-3xl" style={{ margin: 0 }}>✨ Шинэ Brainstorming үүсгэх</h1>
           {credits !== null && (
             <div style={{
-              background: credits > 0 ? "rgba(79,70,229,0.2)" : "rgba(239,68,68,0.15)",
-              border: `1px solid ${credits > 0 ? "rgba(79,70,229,0.4)" : "rgba(239,68,68,0.4)"}`,
+              background: credits > 0 ? "#EEF2FF" : "#FEF2F2",
+              border: `1px solid ${credits > 0 ? "#C7D2FE" : "#FECACA"}`,
               borderRadius: "0.75rem",
               padding: "0.5rem 1rem",
               fontSize: "0.875rem",
-              color: credits > 0 ? "#a5b4fc" : "#fca5a5",
+              fontWeight: 600,
+              color: credits > 0 ? "#4338CA" : "#B91C1C",
               whiteSpace: "nowrap",
             }}>
               🎟 {credits} credit үлдсэн
@@ -395,7 +396,7 @@ export default function NewBrainstormPage() {
           {error && (
             <motion.p
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", padding: "12px", borderRadius: "8px", fontSize: "0.875rem" }}
+              style={{ background: "#FEF2F2", border: "1px solid #FECACA", color: "#B91C1C", padding: "12px", borderRadius: "8px", fontSize: "0.875rem", fontWeight: 500 }}
             >
               {error}
             </motion.p>
@@ -460,9 +461,10 @@ export default function NewBrainstormPage() {
                 target="_blank"
                 rel="noreferrer"
                 style={{
-                  display: "block", background: "#4f46e5", color: '#111827',
+                  display: "block", background: "#4F46E5", color: "#FFFFFF",
                   borderRadius: "0.75rem", padding: "0.75rem", marginBottom: "0.75rem",
-                  textDecoration: "none", fontWeight: "bold",
+                  textDecoration: "none", fontWeight: 700, fontSize: "0.95rem",
+                  boxShadow: "0 2px 8px rgba(79,70,229,0.25)",
                 }}
               >
                 📱 QPay-ээр төлөх
@@ -470,7 +472,7 @@ export default function NewBrainstormPage() {
             )}
 
             {paymentPolling ? (
-              <p style={{ color: "#60a5fa", fontSize: "0.85rem", marginTop: "0.5rem" }}>
+              <p style={{ color: "#1D4ED8", fontSize: "0.85rem", marginTop: "0.5rem", fontWeight: 500 }}>
                 ⏳ Төлбөр шалгаж байна...
               </p>
             ) : (
@@ -482,7 +484,7 @@ export default function NewBrainstormPage() {
                     pollingRef.current = null;
                   }
                 }}
-                style={{ color: "#64748b", background: "none", border: "none", cursor: "pointer", marginTop: "0.5rem" }}
+                style={{ color: "#6B7280", background: "none", border: "none", cursor: "pointer", marginTop: "0.5rem", fontSize: "0.875rem" }}
               >
                 Хаах
               </button>
