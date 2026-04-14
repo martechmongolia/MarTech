@@ -3,6 +3,7 @@
  * Callable from server actions today; same entrypoint can be invoked by a worker in Phase 6+.
  */
 import { getMetaEnv } from "@/lib/env/server";
+import { MetaApiError } from "@/lib/meta/client";
 import { decryptSecret } from "@/lib/meta/crypto";
 import {
   fetchPageDailyInsightsSeries,
@@ -10,6 +11,7 @@ import {
   fetchRecentPagePosts
 } from "@/lib/meta/insights";
 import { schedulePostSyncAnalysis } from "@/modules/ai/post-sync-hook";
+import { ensureFreshToken, markConnectionTokenInvalid } from "@/modules/meta/token-refresh";
 import { incrementManualSyncUsage } from "@/modules/subscriptions/usage-admin";
 import { normalizeDailyMetricsFromInsights, excerptMessage } from "@/modules/sync/normalize";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -92,13 +94,38 @@ export async function executeMetaSyncJob(jobId: string): Promise<void> {
       throw new Error("Job organization mismatch");
     }
 
-    const enc = pageRow.page_access_token_encrypted;
-    if (!enc) {
+    // Refresh the connection token if it's near expiry. ensureFreshToken also
+    // re-runs page discovery so the page-level tokens are re-issued in lockstep
+    // — important because we read page_access_token_encrypted right after.
+    const freshness = await ensureFreshToken(pageRow.meta_connection_id);
+    if (freshness.status !== "active") {
+      throw new Error(
+        freshness.status === "revoked"
+          ? "Meta хандалт цуцлагдсан байна — Дашбоардаас дахин холбоно уу"
+          : "Meta хандалт хүчингүй болсон байна — Дашбоардаас дахин холбоно уу"
+      );
+    }
+
+    // Re-fetch the page row in case ensureFreshToken's discovery refreshed
+    // the page access token.
+    let encToUse = pageRow.page_access_token_encrypted;
+    if (freshness.refreshed) {
+      const { data: refreshedPage } = await admin
+        .from("meta_pages")
+        .select("page_access_token_encrypted")
+        .eq("id", job.meta_page_id)
+        .single();
+      if (refreshedPage?.page_access_token_encrypted) {
+        encToUse = refreshedPage.page_access_token_encrypted;
+      }
+    }
+
+    if (!encToUse) {
       throw new Error("Missing page access token; reconnect Meta for this page");
     }
 
     const { tokenEncryptionKey } = getMetaEnv();
-    const pageToken = decryptSecret(enc, tokenEncryptionKey);
+    const pageToken = decryptSecret(encToUse, tokenEncryptionKey);
     const fbPageId = pageRow.meta_page_id;
 
     const until = Math.floor(Date.now() / 1000);
@@ -213,6 +240,24 @@ export async function executeMetaSyncJob(jobId: string): Promise<void> {
       console.warn("[sync] Post-sync analysis scheduling failed:", e instanceof Error ? e.message : e);
     }
   } catch (e) {
+    // If Meta says the token is invalid at runtime, flip the connection to
+    // expired/revoked so the dashboard can surface a reconnect banner — even
+    // when ensureFreshToken thought the cached token was fine.
+    if (e instanceof MetaApiError && e.isTokenInvalid()) {
+      try {
+        const { data: pageRow } = await admin
+          .from("meta_pages")
+          .select("meta_connection_id")
+          .eq("id", job.meta_page_id)
+          .single();
+        if (pageRow?.meta_connection_id) {
+          await markConnectionTokenInvalid(pageRow.meta_connection_id, e);
+        }
+      } catch (markErr) {
+        console.warn("[sync] failed to mark connection invalid:", markErr instanceof Error ? markErr.message : markErr);
+      }
+    }
+
     const msg = e instanceof Error ? e.message : String(e);
     const trimmed = msg.length > ERR_MAX ? msg.slice(0, ERR_MAX) : msg;
     await admin

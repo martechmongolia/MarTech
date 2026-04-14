@@ -1,27 +1,6 @@
 import type { AnalysisJobStatusView } from "@/modules/ai/data";
 import type { SyncJobSummary } from "@/modules/sync/data";
-
-/** Strip sensitive details (tokens, fbtrace_id, etc.) from error messages shown to users. */
-function sanitizeErrorMessage(raw: string): string {
-  // Try to extract the user-friendly message from Meta Graph API JSON errors
-  try {
-    const parsed = JSON.parse(raw.replace(/^[^{]*/, ""));
-    if (parsed?.error?.message && typeof parsed.error.message === "string") {
-      return parsed.error.message;
-    }
-  } catch {
-    // not JSON — fall through
-  }
-
-  // Strip known sensitive patterns (tokens, secrets, trace IDs)
-  return raw
-    .replace(/"fbtrace_id"\s*:\s*"[^"]*"/g, "")
-    .replace(/[a-z_]*access[_.]?token[a-z_]*[=:][^,}\s"']*/gi, "")
-    .replace(/[a-z_]*secret[a-z_]*[=:][^,}\s"']*/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .trim()
-    .slice(0, 200);
-}
+import { sanitizeErrorMessage } from "@/lib/utils/error";
 
 export function OperationalHealthBanner(props: {
   failedSync: SyncJobSummary | null;

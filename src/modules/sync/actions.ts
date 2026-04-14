@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/modules/auth/session";
+import { MetaApiError } from "@/lib/meta/client";
 import { getCurrentUserOrganization } from "@/modules/organizations/data";
 import { checkOrganizationFeatureLimit } from "@/modules/subscriptions/entitlements";
 import { enqueueMetaSyncJob } from "@/modules/sync/enqueue";
@@ -12,6 +13,21 @@ export type SyncActionState = {
   error?: string;
   message?: string;
 };
+
+const RECONNECT_HINT =
+  "Meta хандалт хүчингүй боллоо. Дашбоардын дээд талаас «Дахин холбох» дарж шинэчлэнэ үү.";
+
+/** Translate a sync exception into a user-facing message. */
+function describeSyncError(e: unknown): string {
+  if (e instanceof MetaApiError && e.isTokenInvalid()) {
+    return RECONNECT_HINT;
+  }
+  if (e instanceof Error && /Meta хандалт/.test(e.message)) {
+    // Already a friendly Mongolian message thrown from executeMetaSyncJob.
+    return e.message;
+  }
+  return "Sync failed. Please try again.";
+}
 
 export async function manualSyncPageAction(
   _prev: SyncActionState,
@@ -70,7 +86,7 @@ export async function manualSyncPageAction(
   } catch (e) {
     console.error("[sync] manualSyncPageAction failed:", e instanceof Error ? e.message : e);
     revalidatePath("/dashboard");
-    return { error: "Sync failed. Please try again." };
+    return { error: describeSyncError(e) };
   }
 }
 
@@ -130,6 +146,6 @@ export async function retrySyncJobAction(
   } catch (e) {
     console.error("[sync] retrySyncJobAction failed:", e instanceof Error ? e.message : e);
     revalidatePath("/dashboard");
-    return { error: "Sync retry failed. Please try again." };
+    return { error: describeSyncError(e) };
   }
 }

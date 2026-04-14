@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import "./dashboard.css";
 import { AiInsightsBlock } from "@/components/ai/ai-insights-block";
 import { RegenerateAnalysisForm } from "@/components/ai/regenerate-analysis-form";
+import { MetaReconnectBanner } from "@/components/dashboard/meta-reconnect-banner";
 import { OperationalHealthBanner } from "@/components/dashboard/operational-health-banner";
 import { PageAnalyticsBlock } from "@/components/dashboard/page-analytics-block";
 import { ManualSyncForm } from "@/components/sync/manual-sync-form";
@@ -17,7 +18,7 @@ import {
 } from "@/modules/ai/data";
 import { getCurrentUser } from "@/modules/auth/session";
 import { getCurrentUserOrganization } from "@/modules/organizations/data";
-import { getOrganizationMetaPages } from "@/modules/meta/data";
+import { getOrganizationMetaConnection, getOrganizationMetaPages } from "@/modules/meta/data";
 import { getCurrentOrganizationSubscription } from "@/modules/subscriptions/data";
 import { checkOrganizationFeatureLimit } from "@/modules/subscriptions/entitlements";
 import {
@@ -42,7 +43,7 @@ export default async function DashboardPage() {
     redirect("/setup-organization");
   }
 
-  const [subscription, pages, recentJobs, manualEntitlement, aiEntitlement, failedSync, failedAnalysis] =
+  const [subscription, pages, recentJobs, manualEntitlement, aiEntitlement, failedSync, failedAnalysis, metaConnection] =
     await Promise.all([
       getCurrentOrganizationSubscription(user.id),
       getOrganizationMetaPages(organization.id),
@@ -51,6 +52,7 @@ export default async function DashboardPage() {
       checkOrganizationFeatureLimit(user.id, "generate_ai_report"),
       getLatestFailedSyncJobForOrganization(organization.id),
       getLatestFailedAnalysisJobForOrganization(organization.id),
+      getOrganizationMetaConnection(organization.id),
     ]);
 
   const selectedPages = pages.filter((p) => p.is_selected && p.status === "active");
@@ -102,6 +104,9 @@ export default async function DashboardPage() {
           + Connect Page
         </Link>
       </header>
+
+      {/* Reconnect Meta — shown first when the connection is no longer valid */}
+      <MetaReconnectBanner connection={metaConnection} />
 
       {/* Operational alerts */}
       <OperationalHealthBanner failedSync={failedSync} failedAnalysis={failedAnalysis} />

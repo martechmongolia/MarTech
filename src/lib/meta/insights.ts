@@ -2,6 +2,7 @@
  * Meta Graph page insights + posts (server-side only). Responses are normalized by sync layer.
  */
 import { getMetaEnv } from "@/lib/env/server";
+import { buildMetaApiError } from "@/lib/meta/client";
 
 export type InsightSeriesPoint = {
   endTime: string;
@@ -51,7 +52,7 @@ async function graphGet<T>(url: URL, pageAccessToken: string): Promise<T> {
   const res = await fetch(url.toString(), { method: "GET", cache: "no-store" });
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(`Meta Graph error (${res.status}): ${text}`);
+    throw buildMetaApiError(res.status, text);
   }
   return JSON.parse(text) as T;
 }
