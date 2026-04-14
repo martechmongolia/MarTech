@@ -186,18 +186,26 @@ export async function executeMetaSyncJob(jobId: string): Promise<void> {
         ? Object.values(reactionsMap as Record<string, number>).reduce((a, b) => a + (b || 0), 0)
         : null;
 
+      // `p.type` was deprecated in Graph API v3.3. Prefer the modern
+      // `attachments[0].media_type` (e.g. "photo", "video", "link"), fall back
+      // to the legacy `type` string when older API versions still return it.
+      const modernType = p.attachments?.data?.[0]?.media_type ?? p.attachments?.data?.[0]?.type;
+      const postType = (modernType ?? p.type ?? null) as string | null;
+
       return {
         organization_id: job.organization_id,
         meta_page_id: job.meta_page_id,
         meta_post_id: p.id,
         post_created_at: p.created_time,
         message_excerpt: excerptMessage(p.message),
-        post_type: (p.type ?? null) as string | null,
+        post_type: postType,
         reach: typeof postReach === "number" ? Math.round(postReach) : (null as number | null),
         impressions: typeof views === "number" ? Math.round(views) : null,
         engagements: typeof clicks === "number" ? Math.round(clicks) : null,
         reactions: totalReactions != null ? Math.round(totalReactions) : null,
         comments: null as number | null,
+        // `shares.count` on /posts is deprecated in v3.3+ and has no direct
+        // replacement on the aggregated edge. Accept null when absent.
         shares: p.shares?.count != null ? Math.round(p.shares.count) : (null as number | null),
         clicks: typeof clicks === "number" ? Math.round(clicks) : null,
         raw_metrics: insights as Json,

@@ -18,8 +18,17 @@ export type MetaPostListItem = {
   id: string;
   created_time: string;
   message?: string;
+  // `type` and `shares` were deprecated in Graph API v3.3 (see error code 12:
+  // "deprecate_post_aggregated_fields_for_attachement"). Kept optional here
+  // because older API versions still return them; newer versions won't.
   type?: string;
   shares?: { count: number };
+  attachments?: {
+    data?: Array<{
+      media_type?: string;
+      type?: string;
+    }>;
+  };
 };
 
 type GraphInsightsResponse = {
@@ -142,12 +151,42 @@ export async function fetchRecentPagePosts(params: {
   pageAccessToken: string;
   limit?: number;
 }): Promise<MetaPostListItem[]> {
-  const url = graphUrl(`/${params.metaPageId}/posts`);
-  url.searchParams.set("fields", "id,created_time,message,type,shares");
-  url.searchParams.set("limit", String(params.limit ?? 15));
+  // Meta deprecated `type` and `shares` on the /posts edge in Graph API v3.3
+  // ("deprecate_post_aggregated_fields_for_attachement", error code 12).
+  // Use `attachments{media_type,type}` as the modern replacement for the old
+  // `type` string. `shares.count` has no 1:1 replacement on the aggregated
+  // edge — we drop it and accept null downstream.
+  //
+  // Try the modern field set first. If Meta returns code 12 for an older API
+  // version that doesn't know `attachments` yet, fall back to a minimal field
+  // set. Either way we never let a deprecated field take down the whole sync.
+  const baseFields = "id,created_time,message";
+  const modernFields = `${baseFields},attachments{media_type,type}`;
 
-  const json = await graphGet<GraphPostsResponse>(url, params.pageAccessToken);
-  return json.data ?? [];
+  const buildUrl = (fields: string) => {
+    const url = graphUrl(`/${params.metaPageId}/posts`);
+    url.searchParams.set("fields", fields);
+    url.searchParams.set("limit", String(params.limit ?? 15));
+    return url;
+  };
+
+  try {
+    const json = await graphGet<GraphPostsResponse>(buildUrl(modernFields), params.pageAccessToken);
+    return json.data ?? [];
+  } catch (err) {
+    if (err instanceof MetaApiError && err.isTokenInvalid()) throw err;
+    // code 12 = deprecated field; code 100 = unknown field — either way retry
+    // with the minimal safe field set.
+    if (err instanceof MetaApiError && (err.code === 12 || err.code === 100)) {
+      console.warn(
+        `[meta/insights] /posts modern fields rejected (code ${err.code}); retrying with minimal fields:`,
+        err.fbMessage
+      );
+      const json = await graphGet<GraphPostsResponse>(buildUrl(baseFields), params.pageAccessToken);
+      return json.data ?? [];
+    }
+    throw err;
+  }
 }
 
 const POST_METRICS = [
