@@ -1,55 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { FacebookAiTabs } from "../FacebookAiTabs";
+import type { FbKnowledgeBaseItem } from "@/modules/facebook-ai/types";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+type Category = FbKnowledgeBaseItem["category"];
 
-type Category = "FAQ" | "Бүтээгдэхүүн" | "Бодлого" | "Холбоо барих";
+const CATEGORIES: Category[] = ["faq", "product", "policy", "contact", "general"];
 
-type KnowledgeItem = {
-  id: string;
-  title: string;
-  content: string;
-  category: Category;
-  createdAt: string;
+const CATEGORY_LABELS: Record<Category, string> = {
+  faq: "FAQ",
+  product: "Бүтээгдэхүүн",
+  policy: "Бодлого",
+  contact: "Холбоо барих",
+  general: "Ерөнхий",
 };
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const MOCK_ITEMS: KnowledgeItem[] = [
-  {
-    id: "1",
-    title: "Хүргэлт хэрхэн ажилладаг вэ?",
-    content:
-      "Бид Улаанбаатар хотын дотор 1-2 хоногийн дотор хүргэлт хийдэг. Орон нутагт 3-5 хоног болдог. Хүргэлтийн хөлс 3,000₮-с эхэлнэ.",
-    category: "FAQ",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-  },
-  {
-    id: "2",
-    title: "Буцаалт, солилцоо",
-    content:
-      "Бараа авснаас хойш 7 хоногийн дотор буцаалт хийх боломжтой. Гэмтэлтэй эсвэл буруу бараа ирсэн тохиолдолд үнэгүй солино.",
-    category: "Бодлого",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-  },
-  {
-    id: "3",
-    title: "Хэмжээний гарын авлага",
-    content:
-      "XS: 44-46, S: 48-50, M: 52-54, L: 56-58, XL: 60-62. Хэмжээ тодорхойгүй бол манай багтай холбогдоорой.",
-    category: "Бүтээгдэхүүн",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-  },
-];
-
-const CATEGORIES: Category[] = ["FAQ", "Бүтээгдэхүүн", "Бодлого", "Холбоо барих"];
-
 const CATEGORY_COLORS: Record<Category, { bg: string; color: string }> = {
-  FAQ: { bg: "#EEF2FF", color: "#4F46E5" },
-  Бүтээгдэхүүн: { bg: "#ECFDF5", color: "#065F46" },
-  Бодлого: { bg: "#FFFBEB", color: "#92400E" },
-  "Холбоо барих": { bg: "#FEF2F2", color: "#B91C1C" },
+  faq: { bg: "#EEF2FF", color: "#4F46E5" },
+  product: { bg: "#ECFDF5", color: "#065F46" },
+  policy: { bg: "#FFFBEB", color: "#92400E" },
+  contact: { bg: "#FEF2F2", color: "#B91C1C" },
+  general: { bg: "#F3F4F6", color: "#374151" },
 };
 
 function timeAgo(dateStr: string): string {
@@ -69,15 +41,17 @@ function ItemModal({
   initial,
   onSave,
   onClose,
+  saving,
 }: {
   mode: ModalMode;
-  initial?: Partial<KnowledgeItem>;
-  onSave: (item: Omit<KnowledgeItem, "id" | "createdAt">) => void;
+  initial?: Partial<FbKnowledgeBaseItem>;
+  onSave: (item: { title: string; content: string; category: Category }) => void;
   onClose: () => void;
+  saving: boolean;
 }) {
   const [title, setTitle] = useState(initial?.title ?? "");
   const [content, setContent] = useState(initial?.content ?? "");
-  const [category, setCategory] = useState<Category>(initial?.category ?? "FAQ");
+  const [category, setCategory] = useState<Category>(initial?.category ?? "faq");
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = () => {
@@ -193,7 +167,7 @@ function ItemModal({
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {CATEGORY_LABELS[c]}
                 </option>
               ))}
             </select>
@@ -238,9 +212,17 @@ function ItemModal({
             <p style={{ color: "#B91C1C", fontSize: "0.8125rem", margin: 0 }}>{error}</p>
           )}
 
-          <div style={{ display: "flex", gap: "0.625rem", justifyContent: "flex-end", marginTop: "0.25rem" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "0.625rem",
+              justifyContent: "flex-end",
+              marginTop: "0.25rem",
+            }}
+          >
             <button
               onClick={onClose}
+              disabled={saving}
               style={{
                 padding: "0.5rem 1rem",
                 background: "#F9FAFB",
@@ -248,13 +230,15 @@ function ItemModal({
                 border: "1px solid #E5E7EB",
                 borderRadius: "0.5rem",
                 fontSize: "0.875rem",
-                cursor: "pointer",
+                cursor: saving ? "not-allowed" : "pointer",
+                opacity: saving ? 0.6 : 1,
               }}
             >
               Цуцлах
             </button>
             <button
               onClick={handleSubmit}
+              disabled={saving}
               style={{
                 padding: "0.5rem 1.25rem",
                 background: "#4F46E5",
@@ -263,10 +247,11 @@ function ItemModal({
                 borderRadius: "0.5rem",
                 fontSize: "0.875rem",
                 fontWeight: 600,
-                cursor: "pointer",
+                cursor: saving ? "not-allowed" : "pointer",
+                opacity: saving ? 0.6 : 1,
               }}
             >
-              {mode === "add" ? "Нэмэх" : "Хадгалах"}
+              {saving ? "Хадгалж байна…" : mode === "add" ? "Нэмэх" : "Хадгалах"}
             </button>
           </div>
         </div>
@@ -281,10 +266,12 @@ function KnowledgeCard({
   item,
   onEdit,
   onDelete,
+  busy,
 }: {
-  item: KnowledgeItem;
+  item: FbKnowledgeBaseItem;
   onEdit: () => void;
   onDelete: () => void;
+  busy: boolean;
 }) {
   const catStyle = CATEGORY_COLORS[item.category];
 
@@ -326,10 +313,10 @@ function KnowledgeCard({
                 color: catStyle.color,
               }}
             >
-              {item.category}
+              {CATEGORY_LABELS[item.category]}
             </span>
             <span style={{ fontSize: "0.75rem", color: "#9CA3AF" }}>
-              {timeAgo(item.createdAt)}
+              {timeAgo(item.updated_at ?? item.created_at)}
             </span>
           </div>
           <h4
@@ -362,6 +349,7 @@ function KnowledgeCard({
           <button
             onClick={onEdit}
             title="Засах"
+            disabled={busy}
             style={{
               padding: "0.375rem 0.625rem",
               background: "#F9FAFB",
@@ -369,7 +357,8 @@ function KnowledgeCard({
               border: "1px solid #E5E7EB",
               borderRadius: "0.375rem",
               fontSize: "0.8125rem",
-              cursor: "pointer",
+              cursor: busy ? "not-allowed" : "pointer",
+              opacity: busy ? 0.6 : 1,
             }}
           >
             ✏️
@@ -377,6 +366,7 @@ function KnowledgeCard({
           <button
             onClick={onDelete}
             title="Устгах"
+            disabled={busy}
             style={{
               padding: "0.375rem 0.625rem",
               background: "#FEF2F2",
@@ -384,7 +374,8 @@ function KnowledgeCard({
               border: "1px solid #FECACA",
               borderRadius: "0.375rem",
               fontSize: "0.8125rem",
-              cursor: "pointer",
+              cursor: busy ? "not-allowed" : "pointer",
+              opacity: busy ? 0.6 : 1,
             }}
           >
             🗑️
@@ -397,42 +388,95 @@ function KnowledgeCard({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function KnowledgeBaseClient({ orgId }: { orgId: string }) {
-  const [items, setItems] = useState<KnowledgeItem[]>(MOCK_ITEMS);
-  const [showModal, setShowModal] = useState(false);
-  const [editingItem, setEditingItem] = useState<KnowledgeItem | null>(null);
+interface Props {
+  orgId: string;
+  initialItems: FbKnowledgeBaseItem[];
+}
 
-  // suppress unused orgId lint
+export function KnowledgeBaseClient({ orgId, initialItems }: Props) {
+  const [items, setItems] = useState<FbKnowledgeBaseItem[]>(initialItems);
+  const [showModal, setShowModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<FbKnowledgeBaseItem | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  // suppress unused orgId lint — reserved for future multi-org switching
   void orgId;
 
-  const handleAdd = (data: Omit<KnowledgeItem, "id" | "createdAt">) => {
-    const newItem: KnowledgeItem = {
-      id: String(Date.now()),
-      ...data,
-      createdAt: new Date().toISOString(),
-    };
-    setItems((prev) => [newItem, ...prev]);
-    setShowModal(false);
+  async function reload() {
+    try {
+      const res = await fetch("/api/facebook-ai/knowledge", { cache: "no-store" });
+      const data = (await res.json()) as { items?: FbKnowledgeBaseItem[]; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Татаж чадсангүй");
+      setItems(data.items ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Алдаа гарлаа");
+    }
+  }
+
+  const handleAdd = (form: { title: string; content: string; category: Category }) => {
+    setError(null);
+    startTransition(async () => {
+      try {
+        const res = await fetch("/api/facebook-ai/knowledge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
+        const data = (await res.json()) as { item?: FbKnowledgeBaseItem; error?: string };
+        if (!res.ok) throw new Error(data.error ?? "Нэмэж чадсангүй");
+        if (data.item) setItems((prev) => [data.item as FbKnowledgeBaseItem, ...prev]);
+        setShowModal(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Алдаа гарлаа");
+      }
+    });
   };
 
-  const handleEdit = (data: Omit<KnowledgeItem, "id" | "createdAt">) => {
+  const handleEdit = (form: { title: string; content: string; category: Category }) => {
     if (!editingItem) return;
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === editingItem.id ? { ...item, ...data } : item
-      )
-    );
-    setEditingItem(null);
+    setError(null);
+    const id = editingItem.id;
+    startTransition(async () => {
+      try {
+        const res = await fetch(`/api/facebook-ai/knowledge/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
+        const data = (await res.json()) as { error?: string };
+        if (!res.ok) throw new Error(data.error ?? "Хадгалж чадсангүй");
+        setItems((prev) =>
+          prev.map((it) => (it.id === id ? { ...it, ...form } : it)),
+        );
+        setEditingItem(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Алдаа гарлаа");
+      }
+    });
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Энэ мэдлэгийн мэдээллийг устгах уу?")) {
-      setItems((prev) => prev.filter((item) => item.id !== id));
-    }
+    if (!confirm("Энэ мэдлэгийн мэдээллийг устгах уу?")) return;
+    setError(null);
+    startTransition(async () => {
+      try {
+        const res = await fetch(`/api/facebook-ai/knowledge/${id}`, {
+          method: "DELETE",
+        });
+        const data = (await res.json()) as { error?: string };
+        if (!res.ok) throw new Error(data.error ?? "Устгаж чадсангүй");
+        setItems((prev) => prev.filter((it) => it.id !== id));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Алдаа гарлаа");
+      }
+    });
   };
 
   return (
     <div className="page-content">
+      <FacebookAiTabs />
+
       {/* Header */}
       <div className="page-header-row">
         <div>
@@ -459,7 +503,22 @@ export function KnowledgeBaseClient({ orgId }: { orgId: string }) {
             📥 Импортлох (coming soon)
           </button>
           <button
+            onClick={() => reload()}
+            style={{
+              padding: "0.5rem 0.875rem",
+              background: "#F9FAFB",
+              color: "#6B7280",
+              border: "1px solid #E5E7EB",
+              borderRadius: "0.5rem",
+              fontSize: "0.8125rem",
+              cursor: "pointer",
+            }}
+          >
+            🔄 Шинэчлэх
+          </button>
+          <button
             onClick={() => setShowModal(true)}
+            disabled={isPending}
             style={{
               padding: "0.5rem 1rem",
               background: "#4F46E5",
@@ -468,10 +527,11 @@ export function KnowledgeBaseClient({ orgId }: { orgId: string }) {
               borderRadius: "0.5rem",
               fontSize: "0.875rem",
               fontWeight: 600,
-              cursor: "pointer",
+              cursor: isPending ? "not-allowed" : "pointer",
               display: "flex",
               alignItems: "center",
               gap: "0.375rem",
+              opacity: isPending ? 0.6 : 1,
             }}
           >
             + Нэмэх
@@ -479,70 +539,56 @@ export function KnowledgeBaseClient({ orgId }: { orgId: string }) {
         </div>
       </div>
 
-      {/* Items */}
+      {error ? (
+        <div
+          style={{
+            marginBottom: "1rem",
+            padding: "0.75rem 1rem",
+            background: "#FEF2F2",
+            border: "1px solid #FECACA",
+            borderRadius: "0.5rem",
+            color: "#B91C1C",
+            fontSize: "0.875rem",
+          }}
+        >
+          {error}
+        </div>
+      ) : null}
+
       {items.length === 0 ? (
         <div
           style={{
-            padding: "5rem 2rem",
+            padding: "3rem 2rem",
             textAlign: "center",
-            background: "#F9FAFB",
-            border: "1px dashed #D1D5DB",
-            borderRadius: "0.75rem",
             color: "#6B7280",
+            background: "#FFFFFF",
+            border: "1px solid #E5E7EB",
+            borderRadius: "0.75rem",
           }}
         >
-          <div style={{ fontSize: "3rem", marginBottom: "0.75rem" }}>📭</div>
-          <p style={{ fontSize: "0.9375rem", marginBottom: "0.375rem", color: "#6B7280" }}>
-            Мэдлэгийн сан хоосон байна.
+          <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>📭</div>
+          <p style={{ fontSize: "0.9375rem", margin: 0 }}>
+            Мэдлэгийн сан хоосон байна. "+ Нэмэх" товчийг дарна уу.
           </p>
-          <p style={{ fontSize: "0.875rem", color: "#9CA3AF" }}>
-            FAQ эсвэл бүтээгдэхүүний мэдээллийг нэмнэ үү.
-          </p>
-          <button
-            onClick={() => setShowModal(true)}
-            style={{
-              marginTop: "1.25rem",
-              padding: "0.5rem 1.25rem",
-              background: "#4F46E5",
-              color: "#FFFFFF",
-              border: "none",
-              borderRadius: "0.5rem",
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            + Эхний мэдлэгийг нэмэх
-          </button>
         </div>
       ) : (
-        <div>
-          <p
-            style={{
-              fontSize: "0.8125rem",
-              color: "#9CA3AF",
-              marginBottom: "0.875rem",
-            }}
-          >
-            {items.length} мэдлэгийн зүйл
-          </p>
-          {items.map((item) => (
-            <KnowledgeCard
-              key={item.id}
-              item={item}
-              onEdit={() => setEditingItem(item)}
-              onDelete={() => handleDelete(item.id)}
-            />
-          ))}
-        </div>
+        items.map((item) => (
+          <KnowledgeCard
+            key={item.id}
+            item={item}
+            onEdit={() => setEditingItem(item)}
+            onDelete={() => handleDelete(item.id)}
+            busy={isPending}
+          />
+        ))
       )}
 
-      {/* Modals */}
       {showModal && (
         <ItemModal
           mode="add"
           onSave={handleAdd}
           onClose={() => setShowModal(false)}
+          saving={isPending}
         />
       )}
       {editingItem && (
@@ -551,6 +597,7 @@ export function KnowledgeBaseClient({ orgId }: { orgId: string }) {
           initial={editingItem}
           onSave={handleEdit}
           onClose={() => setEditingItem(null)}
+          saving={isPending}
         />
       )}
     </div>

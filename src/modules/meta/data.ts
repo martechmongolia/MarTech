@@ -51,7 +51,7 @@ export const getOrganizationMetaPages = cache(async (organizationId: string): Pr
   const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from("meta_pages")
-    .select("id,organization_id,meta_connection_id,meta_page_id,name,category,is_selectable,is_selected,status,last_synced_at,created_at,updated_at")
+    .select("id,organization_id,meta_connection_id,meta_page_id,name,category,is_selectable,is_selected,status,last_synced_at,created_at,updated_at,comment_ai_enabled,webhook_subscribed_at")
     .eq("organization_id", organizationId)
     .order("name", { ascending: true });
 

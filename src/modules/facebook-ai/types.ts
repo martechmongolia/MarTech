@@ -32,15 +32,19 @@ export interface FbReply {
   created_at: string;
 }
 
+/**
+ * Facade over meta_pages — Facebook AI code always loads page connections
+ * through this shape. Populated via mapMetaPageToConnection() in data.ts.
+ */
 export interface FbPageConnection {
-  id: string;
+  id: string; // meta_pages.id (uuid)
   org_id: string;
-  page_id: string;
+  page_id: string; // Facebook page_id (text)
   page_name: string;
   page_access_token_encrypted: string;
   is_active: boolean;
-  webhook_subscribed: boolean;
-  settings: Record<string, unknown>;
+  comment_ai_enabled: boolean;
+  webhook_subscribed_at: string | null;
 }
 
 export interface FbReplySettings {
@@ -57,14 +61,16 @@ export interface FbReplySettings {
   fallback_message: string;
 }
 
+/** Matches fb_knowledge_base schema (migration 20260404008). */
 export interface FbKnowledgeBaseItem {
   id: string;
   org_id: string;
-  connection_id: string;
-  question: string;
-  answer: string;
-  tags: string[];
+  title: string;
+  content: string;
+  category: 'faq' | 'product' | 'policy' | 'contact' | 'general';
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface WebhookCommentEntry {

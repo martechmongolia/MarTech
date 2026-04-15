@@ -8,6 +8,7 @@
  */
 
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { decryptSecret } from '@/lib/meta/crypto';
 import { getMetaEnv } from '@/lib/env/server';
 import type { FbComment, FbPageConnection, FbReply, FbKnowledgeBaseItem, FbReplySettings } from './types';
@@ -24,6 +25,9 @@ function fromTable(supabase: any, table: string) {
 // Page connections — backed by meta_pages table (already stores encrypted tokens)
 // ---------------------------------------------------------------------------
 
+const META_PAGE_CONNECTION_COLUMNS =
+  'id,organization_id,meta_page_id,name,page_access_token_encrypted,status,comment_ai_enabled,webhook_subscribed_at';
+
 /** Map a meta_pages row to the FbPageConnection shape used throughout facebook-ai. */
 function mapMetaPageToConnection(row: Record<string, any>): FbPageConnection {
   return {
@@ -33,8 +37,8 @@ function mapMetaPageToConnection(row: Record<string, any>): FbPageConnection {
     page_name: row.name as string,
     page_access_token_encrypted: (row.page_access_token_encrypted ?? '') as string,
     is_active: row.status === 'active',
-    webhook_subscribed: false, // managed separately
-    settings: {},
+    comment_ai_enabled: (row.comment_ai_enabled ?? false) as boolean,
+    webhook_subscribed_at: (row.webhook_subscribed_at ?? null) as string | null,
   };
 }
 
@@ -42,9 +46,23 @@ export async function getPageConnections(orgId: string): Promise<FbPageConnectio
   const supabase = await getClient();
   const { data, error } = await supabase
     .from('meta_pages')
-    .select('id,organization_id,meta_page_id,name,page_access_token_encrypted,status')
+    .select(META_PAGE_CONNECTION_COLUMNS)
     .eq('organization_id', orgId)
     .eq('status', 'active');
+
+  if (error) throw error;
+  return (data ?? []).map(mapMetaPageToConnection);
+}
+
+/** Fetch pages that have AI enabled (used by settings UI / webhook routing). */
+export async function getActiveAiPageConnections(orgId: string): Promise<FbPageConnection[]> {
+  const supabase = await getClient();
+  const { data, error } = await supabase
+    .from('meta_pages')
+    .select(META_PAGE_CONNECTION_COLUMNS)
+    .eq('organization_id', orgId)
+    .eq('status', 'active')
+    .eq('comment_ai_enabled', true);
 
   if (error) throw error;
   return (data ?? []).map(mapMetaPageToConnection);
@@ -54,9 +72,23 @@ export async function getPageConnectionByPageId(pageId: string): Promise<FbPageC
   const supabase = await getClient();
   const { data, error } = await supabase
     .from('meta_pages')
-    .select('id,organization_id,meta_page_id,name,page_access_token_encrypted,status')
+    .select(META_PAGE_CONNECTION_COLUMNS)
     .eq('meta_page_id', pageId)
     .eq('status', 'active')
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+  return mapMetaPageToConnection(data);
+}
+
+/** Look up a connection by its meta_pages.id UUID (used by processor + replies API). */
+export async function getPageConnectionById(id: string): Promise<FbPageConnection | null> {
+  const supabase = await getClient();
+  const { data, error } = await supabase
+    .from('meta_pages')
+    .select(META_PAGE_CONNECTION_COLUMNS)
+    .eq('id', id)
     .maybeSingle();
 
   if (error) throw error;
@@ -97,6 +129,45 @@ export async function getReplySettings(connectionId: string): Promise<FbReplySet
 
   if (error) throw error;
   return (data ?? null) as FbReplySettings | null;
+}
+
+/**
+ * Upsert a default settings row for a connection if one does not already exist.
+ * Schema defaults (friendly tone, 08:00–22:00, 500/day, standard fallback) are
+ * applied by Postgres. Uses the admin client so this can be called from server
+ * actions where the user's session may not yet satisfy RLS on a brand-new row.
+ */
+export async function ensureReplySettingsForConnection(
+  connectionId: string,
+): Promise<FbReplySettings> {
+  const admin = getSupabaseAdminClient();
+  // Insert with ON CONFLICT DO NOTHING; then read back whatever exists.
+  const { error: insertError } = await (admin as any)
+    .from('fb_reply_settings')
+    .upsert({ connection_id: connectionId }, { onConflict: 'connection_id', ignoreDuplicates: true });
+
+  if (insertError) throw insertError;
+
+  const { data, error: readError } = await (admin as any)
+    .from('fb_reply_settings')
+    .select('*')
+    .eq('connection_id', connectionId)
+    .single();
+
+  if (readError) throw readError;
+  return data as FbReplySettings;
+}
+
+export async function updateReplySettings(
+  connectionId: string,
+  patch: Partial<Omit<FbReplySettings, 'id' | 'connection_id'>>,
+): Promise<void> {
+  const supabase = await getClient();
+  const { error } = await fromTable(supabase, 'fb_reply_settings')
+    .update(patch)
+    .eq('connection_id', connectionId);
+
+  if (error) throw error;
 }
 
 // ---------------------------------------------------------------------------
@@ -182,6 +253,71 @@ export async function getReplies(
   return (data ?? []) as FbReply[];
 }
 
+export async function getReplyById(replyId: string): Promise<FbReply | null> {
+  const supabase = await getClient();
+  const { data, error } = await fromTable(supabase, 'fb_replies')
+    .select('*')
+    .eq('id', replyId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data ?? null) as FbReply | null;
+}
+
+/**
+ * Fetch the most recent reply row (any status) for a given comment id. The UI
+ * only ever cares about the latest reply per comment, which is why we order
+ * descending and take one.
+ */
+export async function getLatestReplyForComment(
+  commentId: string,
+): Promise<FbReply | null> {
+  const supabase = await getClient();
+  const { data, error } = await fromTable(supabase, 'fb_replies')
+    .select('*')
+    .eq('comment_id', commentId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data ?? null) as FbReply | null;
+}
+
+export type FbCommentWithReply = FbComment & { reply: FbReply | null };
+
+/**
+ * Load comments for the dashboard and attach the latest reply (if any). Uses a
+ * single IN query on fb_replies to avoid the N+1 pattern.
+ */
+export async function getCommentsWithReplies(
+  orgId: string,
+  status?: FbComment['status'],
+  limit = 100,
+): Promise<FbCommentWithReply[]> {
+  const comments = await getComments(orgId, status, limit);
+  if (comments.length === 0) return [];
+
+  const supabase = await getClient();
+  const ids = comments.map((c) => c.id);
+  const { data: replies, error } = await fromTable(supabase, 'fb_replies')
+    .select('*')
+    .in('comment_id', ids)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  // Keep only the latest reply per comment.
+  const latestByComment = new Map<string, FbReply>();
+  for (const r of (replies ?? []) as FbReply[]) {
+    if (!latestByComment.has(r.comment_id)) {
+      latestByComment.set(r.comment_id, r);
+    }
+  }
+
+  return comments.map((c) => ({ ...c, reply: latestByComment.get(c.id) ?? null }));
+}
+
 export async function insertReply(
   reply: Omit<FbReply, 'id' | 'created_at'>,
 ): Promise<FbReply> {
@@ -247,10 +383,62 @@ export async function getKnowledgeBase(orgId: string): Promise<FbKnowledgeBaseIt
   const { data, error } = await fromTable(supabase, 'fb_knowledge_base')
     .select('*')
     .eq('org_id', orgId)
-    .eq('is_active', true);
+    .eq('is_active', true)
+    .order('updated_at', { ascending: false });
 
   if (error) throw error;
   return (data ?? []) as FbKnowledgeBaseItem[];
+}
+
+export async function getKnowledgeItemById(
+  itemId: string,
+): Promise<FbKnowledgeBaseItem | null> {
+  const supabase = await getClient();
+  const { data, error } = await fromTable(supabase, 'fb_knowledge_base')
+    .select('*')
+    .eq('id', itemId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data ?? null) as FbKnowledgeBaseItem | null;
+}
+
+export async function insertKnowledgeItem(params: {
+  orgId: string;
+  title: string;
+  content: string;
+  category: FbKnowledgeBaseItem['category'];
+}): Promise<FbKnowledgeBaseItem> {
+  const supabase = await getClient();
+  const { data, error } = await fromTable(supabase, 'fb_knowledge_base')
+    .insert({
+      org_id: params.orgId,
+      title: params.title,
+      content: params.content,
+      category: params.category,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as FbKnowledgeBaseItem;
+}
+
+export async function updateKnowledgeItem(
+  itemId: string,
+  patch: Partial<Pick<FbKnowledgeBaseItem, 'title' | 'content' | 'category' | 'is_active'>>,
+): Promise<void> {
+  const supabase = await getClient();
+  const { error } = await fromTable(supabase, 'fb_knowledge_base')
+    .update(patch)
+    .eq('id', itemId);
+
+  if (error) throw error;
+}
+
+/** Soft delete — sets is_active=false so future embeddings / references survive. */
+export async function softDeleteKnowledgeItem(itemId: string): Promise<void> {
+  await updateKnowledgeItem(itemId, { is_active: false });
 }
 
 // ---------------------------------------------------------------------------

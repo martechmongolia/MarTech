@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/modules/auth/session";
 import { getCurrentUserOrganization } from "@/modules/organizations/data";
+import { getKnowledgeBase } from "@/modules/facebook-ai/data";
 import { KnowledgeBaseClient } from "./KnowledgeBaseClient";
 
 export default async function KnowledgeBasePage() {
@@ -10,5 +11,7 @@ export default async function KnowledgeBasePage() {
   const organization = await getCurrentUserOrganization(user.id);
   if (!organization) redirect("/setup-organization");
 
-  return <KnowledgeBaseClient orgId={organization.id} />;
+  const items = await getKnowledgeBase(organization.id);
+
+  return <KnowledgeBaseClient orgId={organization.id} initialItems={items} />;
 }

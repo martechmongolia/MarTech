@@ -2,7 +2,7 @@
 
 import {
   getCommentById,
-  getPageConnectionByPageId,
+  getPageConnectionById,
   getDecryptedPageToken,
   getReplySettings,
   getKnowledgeBase,
@@ -112,8 +112,8 @@ export async function processComment(commentId: string): Promise<void> {
   await updateCommentStatus(commentId, 'processing');
 
   try {
-    // 2. Fetch page connection
-    const connection = await getPageConnectionByPageId(comment.connection_id);
+    // 2. Fetch page connection (comment.connection_id is a meta_pages.id UUID)
+    const connection = await getPageConnectionById(comment.connection_id);
     if (!connection || !connection.is_active) {
       console.warn(`[fb-ai] No active connection for comment ${commentId}`);
       await updateCommentStatus(commentId, 'skipped');
@@ -221,7 +221,9 @@ export async function processComment(commentId: string): Promise<void> {
         tokens_used: result.tokensUsed,
       });
 
-      await updateCommentStatus(commentId, 'processing', {
+      // Keep comment in 'pending' so UI surfaces it under "Хүлээгдэж байна"
+      // awaiting human approve/reject action.
+      await updateCommentStatus(commentId, 'pending', {
         comment_type: result.commentType,
         sentiment: result.sentiment,
         language: result.language,

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       analysis_jobs: {
@@ -198,6 +223,255 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brainstorm_config: {
+        Row: {
+          growth_monthly_credits: number
+          id: number
+          session_price_amount: number
+          session_price_currency: string
+          starter_monthly_credits: number
+          trial_brainstorm_credits: number
+          trial_days: number
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          growth_monthly_credits?: number
+          id?: number
+          session_price_amount?: number
+          session_price_currency?: string
+          starter_monthly_credits?: number
+          trial_brainstorm_credits?: number
+          trial_days?: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          growth_monthly_credits?: number
+          id?: number
+          session_price_amount?: number
+          session_price_currency?: string
+          starter_monthly_credits?: number
+          trial_brainstorm_credits?: number
+          trial_days?: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      brainstorm_credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          invoice_id: string | null
+          session_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          invoice_id?: string | null
+          session_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          invoice_id?: string | null
+          session_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brainstorm_credit_transactions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "brainstorm_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brainstorm_credits: {
+        Row: {
+          balance: number
+          id: string
+          last_refill_at: string | null
+          last_refill_plan_code: string | null
+          lifetime_used: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          id?: string
+          last_refill_at?: string | null
+          last_refill_plan_code?: string | null
+          lifetime_used?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          id?: string
+          last_refill_at?: string | null
+          last_refill_plan_code?: string | null
+          lifetime_used?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      brainstorm_messages: {
+        Row: {
+          agent_id: string | null
+          content: string
+          created_at: string
+          id: string
+          is_streaming: boolean
+          mentioned_agent_id: string | null
+          role: string
+          round_number: number
+          session_id: string
+          turn_index: number
+        }
+        Insert: {
+          agent_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_streaming?: boolean
+          mentioned_agent_id?: string | null
+          role: string
+          round_number?: number
+          session_id: string
+          turn_index?: number
+        }
+        Update: {
+          agent_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_streaming?: boolean
+          mentioned_agent_id?: string | null
+          role?: string
+          round_number?: number
+          session_id?: string
+          turn_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brainstorm_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "brainstorm_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brainstorm_reports: {
+        Row: {
+          content: string
+          generated_at: string
+          id: string
+          next_actions: Json
+          session_id: string
+          summary: string
+          top_ideas: Json
+        }
+        Insert: {
+          content?: string
+          generated_at?: string
+          id?: string
+          next_actions?: Json
+          session_id: string
+          summary?: string
+          top_ideas?: Json
+        }
+        Update: {
+          content?: string
+          generated_at?: string
+          id?: string
+          next_actions?: Json
+          session_id?: string
+          summary?: string
+          top_ideas?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brainstorm_reports_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "brainstorm_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brainstorm_sessions: {
+        Row: {
+          active_agents: string[]
+          completed_at: string | null
+          constraint_text: string | null
+          created_at: string
+          current_agent_index: number
+          current_phase: string
+          current_round: number
+          id: string
+          language: string
+          session_type: string
+          status: string
+          topic: string
+          total_rounds: number
+          turn_state: Json | null
+          user_id: string
+          user_turn_mode: string
+        }
+        Insert: {
+          active_agents?: string[]
+          completed_at?: string | null
+          constraint_text?: string | null
+          created_at?: string
+          current_agent_index?: number
+          current_phase?: string
+          current_round?: number
+          id?: string
+          language?: string
+          session_type?: string
+          status?: string
+          topic: string
+          total_rounds?: number
+          turn_state?: Json | null
+          user_id: string
+          user_turn_mode?: string
+        }
+        Update: {
+          active_agents?: string[]
+          completed_at?: string | null
+          constraint_text?: string | null
+          created_at?: string
+          current_agent_index?: number
+          current_phase?: string
+          current_round?: number
+          id?: string
+          language?: string
+          session_type?: string
+          status?: string
+          topic?: string
+          total_rounds?: number
+          turn_state?: Json | null
+          user_id?: string
+          user_turn_mode?: string
+        }
+        Relationships: []
       }
       brand_design_tokens: {
         Row: {
@@ -484,6 +758,520 @@ export type Database = {
           },
         ]
       }
+      digest_items: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          importance_score: number
+          original_title: string | null
+          published_at: string | null
+          session_id: string
+          source_name: string
+          source_url: string
+          summary_mn: string
+          title_mn: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          importance_score?: number
+          original_title?: string | null
+          published_at?: string | null
+          session_id: string
+          source_name: string
+          source_url: string
+          summary_mn: string
+          title_mn: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          importance_score?: number
+          original_title?: string | null
+          published_at?: string | null
+          session_id?: string
+          source_name?: string
+          source_url?: string
+          summary_mn?: string
+          title_mn?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digest_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "digest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digest_sessions: {
+        Row: {
+          created_at: string
+          digest_date: string
+          error_message: string | null
+          id: string
+          item_count: number
+          status: string
+          summary_mn: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          digest_date: string
+          error_message?: string | null
+          id?: string
+          item_count?: number
+          status?: string
+          summary_mn?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          digest_date?: string
+          error_message?: string | null
+          id?: string
+          item_count?: number
+          status?: string
+          summary_mn?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      digest_sources: {
+        Row: {
+          category: string
+          created_at: string
+          feed_url: string
+          home_url: string | null
+          id: string
+          is_active: boolean
+          language: string
+          name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          feed_url: string
+          home_url?: string | null
+          id?: string
+          is_active?: boolean
+          language?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          feed_url?: string
+          home_url?: string | null
+          id?: string
+          is_active?: boolean
+          language?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      fb_comments: {
+        Row: {
+          comment_id: string
+          comment_type: string | null
+          commenter_id: string | null
+          commenter_name: string | null
+          connection_id: string | null
+          created_at_facebook: string | null
+          id: string
+          language: string | null
+          message: string
+          org_id: string | null
+          parent_comment_id: string | null
+          post_id: string
+          received_at: string | null
+          sentiment: string | null
+          status: string | null
+        }
+        Insert: {
+          comment_id: string
+          comment_type?: string | null
+          commenter_id?: string | null
+          commenter_name?: string | null
+          connection_id?: string | null
+          created_at_facebook?: string | null
+          id?: string
+          language?: string | null
+          message: string
+          org_id?: string | null
+          parent_comment_id?: string | null
+          post_id: string
+          received_at?: string | null
+          sentiment?: string | null
+          status?: string | null
+        }
+        Update: {
+          comment_id?: string
+          comment_type?: string | null
+          commenter_id?: string | null
+          commenter_name?: string | null
+          connection_id?: string | null
+          created_at_facebook?: string | null
+          id?: string
+          language?: string | null
+          message?: string
+          org_id?: string | null
+          parent_comment_id?: string | null
+          post_id?: string
+          received_at?: string | null
+          sentiment?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fb_comments_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "meta_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fb_comments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fb_knowledge_base: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string | null
+          embedding: string | null
+          id: string
+          is_active: boolean | null
+          org_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          is_active?: boolean | null
+          org_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          is_active?: boolean | null
+          org_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fb_knowledge_base_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fb_replies: {
+        Row: {
+          comment_id: string | null
+          confidence_score: number | null
+          created_at: string | null
+          draft_message: string
+          facebook_reply_id: string | null
+          final_message: string | null
+          id: string
+          model_used: string | null
+          org_id: string | null
+          posted_at: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          tokens_used: number | null
+        }
+        Insert: {
+          comment_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          draft_message: string
+          facebook_reply_id?: string | null
+          final_message?: string | null
+          id?: string
+          model_used?: string | null
+          org_id?: string | null
+          posted_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          tokens_used?: number | null
+        }
+        Update: {
+          comment_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          draft_message?: string
+          facebook_reply_id?: string | null
+          final_message?: string | null
+          id?: string
+          model_used?: string | null
+          org_id?: string | null
+          posted_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          tokens_used?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fb_replies_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "fb_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fb_replies_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fb_replies_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fb_reply_settings: {
+        Row: {
+          auto_reply: boolean | null
+          connection_id: string | null
+          created_at: string | null
+          custom_system_prompt: string | null
+          fallback_message: string | null
+          id: string
+          max_replies_per_day: number | null
+          reply_delay_seconds: number | null
+          reply_language: string | null
+          reply_tone: string | null
+          updated_at: string | null
+          working_days: number[] | null
+          working_hours_end: string | null
+          working_hours_start: string | null
+        }
+        Insert: {
+          auto_reply?: boolean | null
+          connection_id?: string | null
+          created_at?: string | null
+          custom_system_prompt?: string | null
+          fallback_message?: string | null
+          id?: string
+          max_replies_per_day?: number | null
+          reply_delay_seconds?: number | null
+          reply_language?: string | null
+          reply_tone?: string | null
+          updated_at?: string | null
+          working_days?: number[] | null
+          working_hours_end?: string | null
+          working_hours_start?: string | null
+        }
+        Update: {
+          auto_reply?: boolean | null
+          connection_id?: string | null
+          created_at?: string | null
+          custom_system_prompt?: string | null
+          fallback_message?: string | null
+          id?: string
+          max_replies_per_day?: number | null
+          reply_delay_seconds?: number | null
+          reply_language?: string | null
+          reply_tone?: string | null
+          updated_at?: string | null
+          working_days?: number[] | null
+          working_hours_end?: string | null
+          working_hours_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fb_reply_settings_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: true
+            referencedRelation: "meta_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fb_reply_usage: {
+        Row: {
+          id: string
+          month: string
+          org_id: string | null
+          replies_limit: number | null
+          replies_used: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          month: string
+          org_id?: string | null
+          replies_limit?: number | null
+          replies_used?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          month?: string
+          org_id?: string | null
+          replies_limit?: number | null
+          replies_used?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fb_reply_usage_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feature_flags: {
+        Row: {
+          description: string | null
+          enabled: boolean
+          key: string
+          label: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          enabled?: boolean
+          key: string
+          label: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          enabled?: boolean
+          key?: string
+          label?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      generated_posts: {
+        Row: {
+          additional_context: string | null
+          alternative_versions: Json | null
+          content_type: string | null
+          created_at: string | null
+          facebook_post_id: string | null
+          generated_content: string
+          id: string
+          meta_page_id: string | null
+          model_used: string | null
+          org_id: string | null
+          performance_prediction: Json | null
+          published_at: string | null
+          scheduled_at: string | null
+          source_post_ids: string[] | null
+          status: string | null
+          tokens_used: number | null
+          tone: string | null
+          topic: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          additional_context?: string | null
+          alternative_versions?: Json | null
+          content_type?: string | null
+          created_at?: string | null
+          facebook_post_id?: string | null
+          generated_content: string
+          id?: string
+          meta_page_id?: string | null
+          model_used?: string | null
+          org_id?: string | null
+          performance_prediction?: Json | null
+          published_at?: string | null
+          scheduled_at?: string | null
+          source_post_ids?: string[] | null
+          status?: string | null
+          tokens_used?: number | null
+          tone?: string | null
+          topic: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          additional_context?: string | null
+          alternative_versions?: Json | null
+          content_type?: string | null
+          created_at?: string | null
+          facebook_post_id?: string | null
+          generated_content?: string
+          id?: string
+          meta_page_id?: string | null
+          model_used?: string | null
+          org_id?: string | null
+          performance_prediction?: Json | null
+          published_at?: string | null
+          scheduled_at?: string | null
+          source_post_ids?: string[] | null
+          status?: string | null
+          tokens_used?: number | null
+          tone?: string | null
+          topic?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_posts_meta_page_id_fkey"
+            columns: ["meta_page_id"]
+            isOneToOne: false
+            referencedRelation: "meta_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_posts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount: number
@@ -640,6 +1428,8 @@ export type Database = {
       meta_pages: {
         Row: {
           category: string | null
+          comment_ai_enabled: boolean | null
+          comment_ai_settings: Json | null
           created_at: string
           id: string
           is_selectable: boolean
@@ -650,11 +1440,17 @@ export type Database = {
           name: string
           organization_id: string
           page_access_token_encrypted: string | null
+          posts_indexed_count: number | null
+          posts_last_indexed_at: string | null
+          smart_generator_enabled: boolean | null
           status: string
           updated_at: string
+          webhook_subscribed_at: string | null
         }
         Insert: {
           category?: string | null
+          comment_ai_enabled?: boolean | null
+          comment_ai_settings?: Json | null
           created_at?: string
           id?: string
           is_selectable?: boolean
@@ -665,11 +1461,17 @@ export type Database = {
           name: string
           organization_id: string
           page_access_token_encrypted?: string | null
+          posts_indexed_count?: number | null
+          posts_last_indexed_at?: string | null
+          smart_generator_enabled?: boolean | null
           status?: string
           updated_at?: string
+          webhook_subscribed_at?: string | null
         }
         Update: {
           category?: string | null
+          comment_ai_enabled?: boolean | null
+          comment_ai_settings?: Json | null
           created_at?: string
           id?: string
           is_selectable?: boolean
@@ -680,8 +1482,12 @@ export type Database = {
           name?: string
           organization_id?: string
           page_access_token_encrypted?: string | null
+          posts_indexed_count?: number | null
+          posts_last_indexed_at?: string | null
+          smart_generator_enabled?: boolean | null
           status?: string
           updated_at?: string
+          webhook_subscribed_at?: string | null
         }
         Relationships: [
           {
@@ -1077,8 +1883,341 @@ export type Database = {
           },
         ]
       }
+      phyllo_creator_searches: {
+        Row: {
+          created_at: string | null
+          follower_max: number | null
+          follower_min: number | null
+          id: string
+          keywords: string | null
+          organization_id: string
+          result_count: number | null
+          sort_field: string
+          sort_order: string
+          status: string
+          work_platform_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          follower_max?: number | null
+          follower_min?: number | null
+          id?: string
+          keywords?: string | null
+          organization_id: string
+          result_count?: number | null
+          sort_field?: string
+          sort_order?: string
+          status?: string
+          work_platform_id: string
+        }
+        Update: {
+          created_at?: string | null
+          follower_max?: number | null
+          follower_min?: number | null
+          id?: string
+          keywords?: string | null
+          organization_id?: string
+          result_count?: number | null
+          sort_field?: string
+          sort_order?: string
+          status?: string
+          work_platform_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phyllo_creator_searches_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phyllo_creators: {
+        Row: {
+          average_comments: number | null
+          average_likes: number | null
+          average_views: number | null
+          created_at: string | null
+          external_id: string | null
+          follower_count: number | null
+          full_name: string | null
+          id: string
+          is_verified: boolean | null
+          organization_id: string
+          platform_username: string | null
+          profile_pic_url: string | null
+          raw_data: Json | null
+          search_id: string
+          url: string | null
+          work_platform_id: string
+        }
+        Insert: {
+          average_comments?: number | null
+          average_likes?: number | null
+          average_views?: number | null
+          created_at?: string | null
+          external_id?: string | null
+          follower_count?: number | null
+          full_name?: string | null
+          id?: string
+          is_verified?: boolean | null
+          organization_id: string
+          platform_username?: string | null
+          profile_pic_url?: string | null
+          raw_data?: Json | null
+          search_id: string
+          url?: string | null
+          work_platform_id: string
+        }
+        Update: {
+          average_comments?: number | null
+          average_likes?: number | null
+          average_views?: number | null
+          created_at?: string | null
+          external_id?: string | null
+          follower_count?: number | null
+          full_name?: string | null
+          id?: string
+          is_verified?: boolean | null
+          organization_id?: string
+          platform_username?: string | null
+          profile_pic_url?: string | null
+          raw_data?: Json | null
+          search_id?: string
+          url?: string | null
+          work_platform_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phyllo_creators_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phyllo_creators_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "phyllo_creator_searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phyllo_hashtag_trends: {
+        Row: {
+          avg_engagement_rate: number | null
+          created_at: string
+          hashtag: string
+          id: string
+          organization_id: string
+          platform: string
+          post_count: number | null
+          snapshot_at: string
+          top_content: Json | null
+          total_engagement: number | null
+        }
+        Insert: {
+          avg_engagement_rate?: number | null
+          created_at?: string
+          hashtag: string
+          id?: string
+          organization_id: string
+          platform: string
+          post_count?: number | null
+          snapshot_at?: string
+          top_content?: Json | null
+          total_engagement?: number | null
+        }
+        Update: {
+          avg_engagement_rate?: number | null
+          created_at?: string
+          hashtag?: string
+          id?: string
+          organization_id?: string
+          platform?: string
+          post_count?: number | null
+          snapshot_at?: string
+          top_content?: Json | null
+          total_engagement?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phyllo_hashtag_trends_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phyllo_saved_creators: {
+        Row: {
+          created_at: string | null
+          creator_id: string
+          id: string
+          note: string | null
+          organization_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id: string
+          id?: string
+          note?: string | null
+          organization_id: string
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string
+          id?: string
+          note?: string | null
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phyllo_saved_creators_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "phyllo_creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phyllo_saved_creators_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phyllo_search_results: {
+        Row: {
+          comment_count: number | null
+          content_id: string | null
+          created_at: string
+          creator_followers: number | null
+          creator_handle: string | null
+          creator_name: string | null
+          description: string | null
+          engagement_rate: number | null
+          id: string
+          like_count: number | null
+          platform: string
+          published_at: string | null
+          raw_data: Json | null
+          search_id: string
+          share_count: number | null
+          thumbnail_url: string | null
+          title: string | null
+          url: string | null
+          view_count: number | null
+        }
+        Insert: {
+          comment_count?: number | null
+          content_id?: string | null
+          created_at?: string
+          creator_followers?: number | null
+          creator_handle?: string | null
+          creator_name?: string | null
+          description?: string | null
+          engagement_rate?: number | null
+          id?: string
+          like_count?: number | null
+          platform: string
+          published_at?: string | null
+          raw_data?: Json | null
+          search_id: string
+          share_count?: number | null
+          thumbnail_url?: string | null
+          title?: string | null
+          url?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          comment_count?: number | null
+          content_id?: string | null
+          created_at?: string
+          creator_followers?: number | null
+          creator_handle?: string | null
+          creator_name?: string | null
+          description?: string | null
+          engagement_rate?: number | null
+          id?: string
+          like_count?: number | null
+          platform?: string
+          published_at?: string | null
+          raw_data?: Json | null
+          search_id?: string
+          share_count?: number | null
+          thumbnail_url?: string | null
+          title?: string | null
+          url?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phyllo_search_results_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "phyllo_social_searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phyllo_social_searches: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          organization_id: string
+          phyllo_search_id: string | null
+          query: string
+          result_count: number | null
+          search_type: string
+          status: string
+          updated_at: string
+          work_platform_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          organization_id: string
+          phyllo_search_id?: string | null
+          query: string
+          result_count?: number | null
+          search_type: string
+          status?: string
+          updated_at?: string
+          work_platform_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          organization_id?: string
+          phyllo_search_id?: string | null
+          query?: string
+          result_count?: number | null
+          search_type?: string
+          status?: string
+          updated_at?: string
+          work_platform_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phyllo_social_searches_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
+          brainstorm_credits_monthly: number
           code: string
           created_at: string
           currency: string
@@ -1093,6 +2232,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          brainstorm_credits_monthly?: number
           code: string
           created_at?: string
           currency: string
@@ -1107,6 +2247,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          brainstorm_credits_monthly?: number
           code?: string
           created_at?: string
           currency?: string
@@ -1121,6 +2262,78 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      post_embeddings: {
+        Row: {
+          comments: number | null
+          content: string
+          content_type: string | null
+          created_at: string | null
+          embedding: string | null
+          engagement_rate: number | null
+          engagement_score: number | null
+          id: string
+          language: string | null
+          likes: number | null
+          meta_page_id: string | null
+          org_id: string | null
+          post_id: string
+          posted_at: string | null
+          reach: number | null
+          shares: number | null
+        }
+        Insert: {
+          comments?: number | null
+          content: string
+          content_type?: string | null
+          created_at?: string | null
+          embedding?: string | null
+          engagement_rate?: number | null
+          engagement_score?: number | null
+          id?: string
+          language?: string | null
+          likes?: number | null
+          meta_page_id?: string | null
+          org_id?: string | null
+          post_id: string
+          posted_at?: string | null
+          reach?: number | null
+          shares?: number | null
+        }
+        Update: {
+          comments?: number | null
+          content?: string
+          content_type?: string | null
+          created_at?: string | null
+          embedding?: string | null
+          engagement_rate?: number | null
+          engagement_score?: number | null
+          id?: string
+          language?: string | null
+          likes?: number | null
+          meta_page_id?: string | null
+          org_id?: string | null
+          post_id?: string
+          posted_at?: string | null
+          reach?: number | null
+          shares?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_embeddings_meta_page_id_fkey"
+            columns: ["meta_page_id"]
+            isOneToOne: false
+            referencedRelation: "meta_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_embeddings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1362,6 +2575,45 @@ export type Database = {
         Args: { p_brand_manager_id: string }
         Returns: undefined
       }
+      release_quota: {
+        Args: {
+          p_metric_key: string
+          p_organization_id: string
+          p_period_key: string
+        }
+        Returns: undefined
+      }
+      reserve_quota: {
+        Args: {
+          p_limit: number
+          p_metric_key: string
+          p_organization_id: string
+          p_period_key: string
+        }
+        Returns: boolean
+      }
+      search_similar_posts: {
+        Args: {
+          p_embedding: string
+          p_limit?: number
+          p_min_engagement?: number
+          p_org_id: string
+        }
+        Returns: {
+          comments: number
+          content: string
+          content_type: string
+          engagement_rate: number
+          engagement_score: number
+          id: string
+          likes: number
+          post_id: string
+          posted_at: string
+          reach: number
+          shares: number
+          similarity: number
+        }[]
+      }
       set_meta_page_selected: {
         Args: {
           target_meta_page_id: string
@@ -1369,23 +2621,6 @@ export type Database = {
           target_selected: boolean
         }
         Returns: boolean
-      }
-      reserve_quota: {
-        Args: {
-          p_organization_id: string
-          p_metric_key: string
-          p_period_key: string
-          p_limit: number
-        }
-        Returns: boolean
-      }
-      release_quota: {
-        Args: {
-          p_organization_id: string
-          p_metric_key: string
-          p_period_key: string
-        }
-        Returns: undefined
       }
     }
     Enums: {
@@ -1515,6 +2750,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

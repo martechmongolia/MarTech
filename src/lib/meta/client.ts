@@ -141,3 +141,37 @@ export async function fetchAccessiblePages(accessToken: string): Promise<MetaPag
   const data = await parseJson<{ data?: MetaPage[] }>(response);
   return data.data ?? [];
 }
+
+/**
+ * Subscribe a Facebook page to the configured webhook app for `feed` events
+ * (covers comment-add). Requires a page access token (not the user token) and
+ * the `pages_manage_metadata` permission on the app. Idempotent on the FB
+ * side — subscribing a page that's already subscribed is a no-op.
+ *
+ * Docs: https://developers.facebook.com/docs/graph-api/webhooks/reference/page
+ */
+export async function subscribePageToFeedWebhook(
+  pageId: string,
+  pageAccessToken: string
+): Promise<void> {
+  const { apiVersion } = getMetaEnv();
+  const url = new URL(`https://graph.facebook.com/${apiVersion}/${pageId}/subscribed_apps`);
+  url.searchParams.set("subscribed_fields", "feed");
+  url.searchParams.set("access_token", pageAccessToken);
+
+  const response = await fetch(url.toString(), { method: "POST", cache: "no-store" });
+  await parseJson<{ success?: boolean }>(response);
+}
+
+/** Unsubscribe a page from the app's webhooks. Best-effort — errors are thrown. */
+export async function unsubscribePageFromWebhook(
+  pageId: string,
+  pageAccessToken: string
+): Promise<void> {
+  const { apiVersion } = getMetaEnv();
+  const url = new URL(`https://graph.facebook.com/${apiVersion}/${pageId}/subscribed_apps`);
+  url.searchParams.set("access_token", pageAccessToken);
+
+  const response = await fetch(url.toString(), { method: "DELETE", cache: "no-store" });
+  await parseJson<{ success?: boolean }>(response);
+}

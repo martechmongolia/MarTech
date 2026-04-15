@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MetaPageSelectionForm } from "@/components/meta/page-selection-form";
+import { EnableAiForm } from "@/components/facebook-ai/enable-ai-form";
 import { Alert, Card, PageHeader } from "@/components/ui";
 import { getCurrentUser } from "@/modules/auth/session";
 import { getCurrentUserOrganization } from "@/modules/organizations/data";
@@ -87,6 +88,7 @@ export default async function PagesPage({ searchParams }: PagesPageProps) {
         {pages.length === 0 ? <p>No pages discovered yet. Connect Meta to fetch available pages.</p> : null}
         {pages.map((page) => {
           const disableSelect = !page.is_selected && limitReached;
+          const aiEnabled = page.comment_ai_enabled === true;
           return (
             <Card key={page.id} padded stack>
               <strong>{page.name}</strong>
@@ -102,6 +104,13 @@ export default async function PagesPage({ searchParams }: PagesPageProps) {
                 isSelected={page.is_selected}
                 disabled={disableSelect}
               />
+              {page.is_selected && page.status === "active" ? (
+                <EnableAiForm
+                  organizationId={organization.id}
+                  metaPageId={page.id}
+                  isEnabled={aiEnabled}
+                />
+              ) : null}
             </Card>
           );
         })}

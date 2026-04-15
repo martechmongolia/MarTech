@@ -120,15 +120,15 @@ export async function generateReply(
   }
 
   // 3. Build knowledge base context (top 3 most relevant — simple keyword match for MVP)
+  // Semantic search via pgvector embeddings is deferred to post-MVP.
   const commentLower = comment.message.toLowerCase();
   const relevantItems = knowledgeBase
     .filter((item) => item.is_active)
-    .map((item) => ({
-      item,
-      score:
-        item.question.toLowerCase().split(' ').filter((w) => commentLower.includes(w)).length +
-        (item.tags ?? []).filter((t) => commentLower.includes(t.toLowerCase())).length,
-    }))
+    .map((item) => {
+      const titleWords = item.title.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+      const titleScore = titleWords.filter((w) => commentLower.includes(w)).length;
+      return { item, score: titleScore };
+    })
     .filter(({ score }) => score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 3)
@@ -137,7 +137,9 @@ export async function generateReply(
   const kbContext =
     relevantItems.length > 0
       ? '\n\nМэдлэгийн сан (FAQ):\n' +
-        relevantItems.map((item) => `Q: ${item.question}\nA: ${item.answer}`).join('\n\n')
+        relevantItems
+          .map((item) => `Гарчиг: ${item.title}\nАгуулга: ${item.content}`)
+          .join('\n\n')
       : '';
 
   const systemPrompt = buildSystemPrompt(settings, orgName) + kbContext;

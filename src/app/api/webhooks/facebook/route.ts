@@ -103,6 +103,13 @@ export async function POST(req: Request): Promise<Response> {
             continue;
           }
 
+          // Respect per-page opt-in: if AI isn't enabled we drop the event.
+          // This keeps fb_comments free of data from pages that aren't using
+          // the feature, and avoids unnecessary OpenAI calls.
+          if (!connection.comment_ai_enabled) {
+            continue;
+          }
+
           // Insert into fb_comments
           const saved = await insertComment({
             comment_id: fbCommentId,
