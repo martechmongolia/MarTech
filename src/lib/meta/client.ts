@@ -80,7 +80,17 @@ export function buildMetaOAuthUrl(state: string): string {
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("state", state);
   url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", "pages_show_list,pages_read_engagement,read_insights");
+  url.searchParams.set(
+    "scope",
+    [
+      "pages_show_list",
+      "pages_read_engagement",
+      "read_insights",
+      // Facebook AI module needs these two:
+      "pages_manage_metadata", // subscribe pages to webhooks
+      "pages_manage_engagement" // post comment replies
+    ].join(",")
+  );
   return url.toString();
 }
 
