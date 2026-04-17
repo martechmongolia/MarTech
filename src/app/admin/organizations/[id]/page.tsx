@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { getOrganizationAdminDetail } from "@/modules/admin/data";
+import { ImpersonateUserForm } from "@/components/admin/impersonate-user-form";
 
 export const dynamic = "force-dynamic";
 
@@ -54,11 +55,23 @@ export default async function AdminOrganizationDetailPage({ params }: { params: 
             No active owner membership found.
           </p>
         ) : (
-          <ul style={{ margin: 0, paddingLeft: "1.1rem" }}>
+          <ul style={{ margin: 0, paddingLeft: "1.1rem", display: "grid", gap: "var(--space-2)" }}>
             {owners.map((m, idx) => (
-              <li key={m.profiles?.id ?? `owner-${idx}`}>
-                {m.profiles?.email ?? "—"}
-                {m.profiles?.full_name ? ` · ${m.profiles.full_name}` : null}
+              <li
+                key={m.profiles?.id ?? `owner-${idx}`}
+                style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}
+              >
+                <span>
+                  {m.profiles?.email ?? "—"}
+                  {m.profiles?.full_name ? ` · ${m.profiles.full_name}` : null}
+                </span>
+                {m.profiles?.id && m.profiles.email ? (
+                  <ImpersonateUserForm
+                    userId={m.profiles.id}
+                    email={m.profiles.email}
+                    label="Impersonate"
+                  />
+                ) : null}
               </li>
             ))}
           </ul>

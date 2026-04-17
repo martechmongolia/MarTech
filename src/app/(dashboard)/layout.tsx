@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui";
 import { SidebarNav } from "@/components/ui/sidebar-nav";
 import { MobileShell } from "@/components/ui/mobile-shell";
+import { ImpersonationBanner } from "@/components/admin/impersonation-banner";
 import { signOutAction } from "@/modules/auth/actions";
 import { getCurrentUser } from "@/modules/auth/session";
 import { hasActiveSystemAdminRecord } from "@/modules/admin/guard";
@@ -55,6 +56,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
 
   return (
     <div className="app-shell">
+      <ImpersonationBanner />
       {/* Desktop sidebar — hidden on mobile */}
       <aside className="app-shell__sidebar">
         <Link href="/dashboard" className="app-shell__logo-link">
