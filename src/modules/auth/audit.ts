@@ -22,7 +22,11 @@ export type AuthEventType =
   | "mfa_enrolled"
   | "mfa_challenge_passed"
   | "mfa_challenge_failed"
-  | "mfa_unenrolled";
+  | "mfa_unenrolled"
+  | "org_invitation_sent"
+  | "org_invitation_accepted"
+  | "org_invitation_revoked"
+  | "org_invitation_declined";
 
 export type AuthEventInput = {
   type: AuthEventType;

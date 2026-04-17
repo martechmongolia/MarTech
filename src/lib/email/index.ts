@@ -27,6 +27,39 @@ async function sendEmail(payload: EmailPayload): Promise<void> {
   console.log(`[EMAIL] HTML length: ${payload.html.length} chars`);
 }
 
+// ─── Байгууллагын урилга ──────────────────────────────────────────────────────
+
+export async function sendInvitationEmail(params: {
+  to: string;
+  organizationName: string;
+  invitedByEmail: string;
+  role: "admin" | "member";
+  acceptUrl: string;
+}) {
+  const roleLabel = params.role === "admin" ? "Админ" : "Гишүүн";
+  await sendEmail({
+    to: params.to,
+    subject: `${params.organizationName} багт урилга — MarTech`,
+    html: `
+      <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;color:#0A0A0A;line-height:1.55">
+        <h1 style="margin:0 0 1rem;font-size:22px;color:#0043FF">MarTech багт таныг урьж байна</h1>
+        <p><strong>${params.invitedByEmail}</strong> таныг <strong>${params.organizationName}</strong> багт <strong>${roleLabel}</strong> эрхтэйгээр нэмэхийг хүссэн байна.</p>
+        <p style="margin:1.5rem 0">
+          <a href="${params.acceptUrl}" style="display:inline-block;background:#0043FF;color:#fff;padding:0.75rem 1.25rem;border-radius:8px;text-decoration:none;font-weight:600">
+            Урилгыг хүлээн авах →
+          </a>
+        </p>
+        <p style="color:#64748b;font-size:13px">
+          Энэ урилга 7 хоногийн дараа хүчингүй болно. Хэрэв та энэ урилгыг хүсээгүй бол зүгээр л энэ и-мэйлийг тоохгүй өнгөрүүлээрэй.
+        </p>
+        <p style="color:#64748b;font-size:12px;margin-top:2rem">
+          MarTech · Facebook analytics & AI for your team
+        </p>
+      </div>
+    `,
+  });
+}
+
 // ─── Welcome (шинэ хэрэглэгч + org үүссэн даруйд) ─────────────────────────────
 
 export async function sendWelcomeEmail(params: {

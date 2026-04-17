@@ -14,6 +14,14 @@ export default async function SettingsPage() {
       <PageHeader title="Тохиргоо" description="Бүртгэл, аюулгүй байдал, мэдэгдлүүдийн тохиргоо." />
 
       <div style={{ display: "grid", gap: "var(--space-3)" }}>
+        <Link href="/settings/team" style={{ textDecoration: "none" }}>
+          <Card padded stack>
+            <strong style={{ fontSize: "1rem" }}>Баг</strong>
+            <p className="ui-text-muted" style={{ margin: 0 }}>
+              Гишүүд урих, эрхүүдийг удирдах
+            </p>
+          </Card>
+        </Link>
         <Link href="/settings/security" style={{ textDecoration: "none" }}>
           <Card padded stack>
             <strong style={{ fontSize: "1rem" }}>Аюулгүй байдал</strong>

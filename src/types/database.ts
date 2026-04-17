@@ -1651,6 +1651,70 @@ export type Database = {
           },
         ]
       }
+      organization_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          organization_id: string
+          role: string
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          organization_id: string
+          role: string
+          status?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          organization_id?: string
+          role?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_invitations_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -1687,7 +1751,7 @@ export type Database = {
           {
             foreignKeyName: "organization_members_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2606,6 +2670,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_organization_invitation: {
+        Args: { p_token: string }
+        Returns: {
+          organization_id: string
+          organization_name: string
+        }[]
+      }
       bootstrap_organization_subscription: {
         Args: { target_org_id: string; target_plan_code?: string }
         Returns: string
