@@ -17,7 +17,12 @@ export type AuthEventType =
   | "signup"
   | "org_created"
   | "consent_accepted"
-  | "account_deletion_requested";
+  | "account_deletion_requested"
+  | "mfa_enroll_started"
+  | "mfa_enrolled"
+  | "mfa_challenge_passed"
+  | "mfa_challenge_failed"
+  | "mfa_unenrolled";
 
 export type AuthEventInput = {
   type: AuthEventType;

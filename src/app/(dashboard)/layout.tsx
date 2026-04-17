@@ -39,6 +39,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     ...(flags["smart_post"] !== false ? [{ href: "/smart-post", label: "Smart Post" }] : []),
     ...(flags["facebook_ai"] !== false ? [{ href: "/facebook-ai", label: "Facebook AI" }] : []),
     { href: "/billing", label: "Billing" },
+    { href: "/settings", label: "Тохиргоо" },
     ...(showSystemAdminNav
       ? [{ href: "/admin", label: "System Admin", accent: true }]
       : []),

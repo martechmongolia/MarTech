@@ -68,5 +68,19 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  // MFA gate: if the user has a verified TOTP factor but the current session
+  // is still aal1, force them through /auth/mfa before reaching protected
+  // pages. `getAuthenticatorAssuranceLevel` reads the AAL claim off the JWT
+  // locally — no network hop.
+  if (user && isProtectedPath(pathname) && pathname !== "/auth/mfa") {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal?.nextLevel === "aal2" && aal?.currentLevel === "aal1") {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/auth/mfa";
+      redirectUrl.search = "";
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
   return response;
 }
