@@ -1,9 +1,12 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { sendWelcomeEmail } from "@/lib/email";
 import { getCurrentUser } from "@/modules/auth/session";
 import { getCurrentUserOrganization } from "@/modules/organizations/data";
+import { extractClientIp, extractUserAgent, logAuthEvent } from "@/modules/auth/audit";
 
 export type OrganizationActionState = {
   error?: string;
@@ -25,7 +28,7 @@ export async function createOrganizationAction(
 ): Promise<OrganizationActionState> {
   const user = await getCurrentUser();
   if (!user) {
-    return { error: "You must be logged in." };
+    return { error: "Та нэвтэрсэн байх ёстой." };
   }
 
   const existingOrg = await getCurrentUserOrganization(user.id);
@@ -35,23 +38,51 @@ export async function createOrganizationAction(
 
   const name = formData.get("name");
   if (typeof name !== "string" || !name.trim()) {
-    return { error: "Organization name is required." };
+    return { error: "Байгууллагын нэр шаардлагатай." };
   }
 
-  const slug = toSlug(name);
+  const trimmedName = name.trim();
+  const slug = toSlug(trimmedName);
   if (!slug) {
-    return { error: "Please provide a valid organization name." };
+    return { error: "Зөв нэр оруулна уу." };
   }
 
   const supabase = await getSupabaseServerClient();
   const { error } = await supabase.rpc("create_organization_with_starter", {
-    target_name: name.trim(),
+    target_name: trimmedName,
     target_slug: slug
   });
 
   if (error) {
     console.error("[organizations] create_organization_with_starter failed:", error.message);
-    return { error: "Could not create organization. Please try again." };
+    return { error: "Байгууллага үүсгэж чадсангүй. Дахин оролдоно уу." };
+  }
+
+  // Fire-and-forget: audit log + welcome email. Failures must not block the
+  // redirect — the user has successfully created an organization and should
+  // reach the dashboard regardless of side-effect hiccups.
+  const requestHeaders = await headers();
+  const ip = extractClientIp(requestHeaders);
+  const userAgent = extractUserAgent(requestHeaders);
+
+  void logAuthEvent({
+    type: "org_created",
+    userId: user.id,
+    email: user.email ?? null,
+    ip,
+    userAgent,
+    metadata: { organization_name: trimmedName, organization_slug: slug }
+  });
+
+  if (user.email) {
+    try {
+      await sendWelcomeEmail({ to: user.email, organizationName: trimmedName });
+    } catch (err) {
+      console.warn(
+        "[organizations] welcome email failed:",
+        err instanceof Error ? err.message : err
+      );
+    }
   }
 
   redirect("/dashboard");

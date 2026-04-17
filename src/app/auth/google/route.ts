@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
+import { CURRENT_TOS_VERSION } from "@/modules/auth/consent";
 
 export async function GET(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -9,6 +10,14 @@ export async function GET(request: NextRequest) {
 
   if (!url || !anonKey) {
     return NextResponse.redirect(new URL("/login?error=auth_unavailable", request.url));
+  }
+
+  // Consent gate: Google button on /login passes ?tos=<current version> only
+  // when the user has ticked the consent checkbox. Reject missing/mismatched
+  // versions — prevents programmatic Google OAuth without a consent record.
+  const tosParam = request.nextUrl.searchParams.get("tos");
+  if (tosParam !== CURRENT_TOS_VERSION) {
+    return NextResponse.redirect(new URL("/login?error=consent_required", request.url));
   }
 
   const nextRaw = request.nextUrl.searchParams.get("next") ?? "/dashboard";
@@ -40,7 +49,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}&tos=${CURRENT_TOS_VERSION}`,
       queryParams: {
         access_type: "offline",
         prompt: "consent",

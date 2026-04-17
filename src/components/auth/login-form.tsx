@@ -1,21 +1,34 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { loginWithOtpAction, type AuthActionState } from "@/modules/auth/actions";
+import { CURRENT_TOS_VERSION } from "@/modules/auth/consent";
 import { Alert, Button, Input } from "@/components/ui";
 
 const initialState: AuthActionState = {};
 
 export function LoginForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState(loginWithOtpAction, initialState);
+  const [consent, setConsent] = useState(false);
+
+  const googleHref = consent
+    ? `/auth/google?tos=${CURRENT_TOS_VERSION}${next ? `&next=${encodeURIComponent(next)}` : ""}`
+    : "#";
 
   return (
     <div className="login-form-stack">
       {/* Google OAuth */}
       <a
-        href={`/auth/google${next ? `?next=${encodeURIComponent(next)}` : ""}`}
+        href={googleHref}
         className="login-google-btn"
         aria-label="Google-ээр үргэлжлүүлэх"
+        aria-disabled={!consent}
+        onClick={(event) => {
+          if (!consent) {
+            event.preventDefault();
+          }
+        }}
+        style={consent ? undefined : { opacity: 0.55, cursor: "not-allowed" }}
       >
         <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
           <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -37,6 +50,7 @@ export function LoginForm({ next }: { next?: string }) {
       {/* Email OTP form */}
       <form action={formAction} className="login-email-form">
         {next ? <input type="hidden" name="next" value={next} /> : null}
+        <input type="hidden" name="consent" value={consent ? "true" : "false"} />
 
         <div className="login-field">
           <label className="login-label" htmlFor="email">
@@ -58,7 +72,7 @@ export function LoginForm({ next }: { next?: string }) {
           variant="primary"
           full
           size="lg"
-          disabled={pending}
+          disabled={pending || !consent}
           className="login-submit-btn"
         >
           {pending ? "Илгээж байна..." : "Нэвтрэх линк авах"}
@@ -68,10 +82,20 @@ export function LoginForm({ next }: { next?: string }) {
         {state.message ? <Alert variant="success">{state.message}</Alert> : null}
       </form>
 
-      <p className="login-terms">
-        Нэвтэрснээр та манай{" "}
-        <a href="/terms">үйлчилгээний нөхцөл</a>-ийг зөвшөөрч байна.
-      </p>
+      {/* Consent checkbox */}
+      <label className="login-consent">
+        <input
+          type="checkbox"
+          checked={consent}
+          onChange={(event) => setConsent(event.target.checked)}
+          className="login-consent__checkbox"
+        />
+        <span className="login-consent__label">
+          Би <a href="/terms" target="_blank" rel="noopener noreferrer">үйлчилгээний нөхцөл</a>{" "}
+          ба <a href="/privacy" target="_blank" rel="noopener noreferrer">нууцлалын бодлого</a>-г
+          уншиж, зөвшөөрч байна.
+        </span>
+      </label>
     </div>
   );
 }

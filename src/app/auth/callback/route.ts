@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
+import { CURRENT_TOS_VERSION, persistConsent } from "@/modules/auth/consent";
+import { extractClientIp, extractUserAgent, logAuthEvent } from "@/modules/auth/audit";
 
 export function sanitizeRedirectPath(raw: string | null): string {
   if (typeof raw !== "string" || !raw.startsWith("/") || raw.startsWith("//")) {
@@ -13,7 +15,11 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const nextRaw = requestUrl.searchParams.get("next");
+  const tosParam = requestUrl.searchParams.get("tos");
   const next = sanitizeRedirectPath(nextRaw || "/dashboard");
+
+  const ip = extractClientIp(request.headers);
+  const userAgent = extractUserAgent(request.headers);
 
   if (!code) {
     const loginUrl = new URL("/login", request.url);
@@ -45,12 +51,53 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
     console.error("[auth/callback] Code exchange failed:", error.message);
+    void logAuthEvent({
+      type: "login_failed",
+      ip,
+      userAgent,
+      metadata: { stage: "exchange", reason: error.message }
+    });
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("error", "invalid_link");
     if (next && next !== "/dashboard") {
       loginUrl.searchParams.set("next", next);
     }
     return NextResponse.redirect(loginUrl);
+  }
+
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id;
+  const email = userData.user?.email ?? null;
+  const provider = (userData.user?.app_metadata?.provider as string | undefined) ?? "email";
+
+  // Persist consent only if the caller signaled the current ToS version.
+  // This happens on magic-link (server action injects it) and Google OAuth
+  // (the /auth/google route adds it to redirectTo). If a legacy flow omits
+  // the param we skip — user will be gated by a future consent-required
+  // middleware, not here.
+  if (userId && tosParam === CURRENT_TOS_VERSION) {
+    const result = await persistConsent({ userId, version: CURRENT_TOS_VERSION, ip });
+    if (result.accepted) {
+      void logAuthEvent({
+        type: "consent_accepted",
+        userId,
+        email,
+        ip,
+        userAgent,
+        metadata: { version: CURRENT_TOS_VERSION }
+      });
+    }
+  }
+
+  if (userId) {
+    void logAuthEvent({
+      type: provider === "google" ? "login_google_success" : "login_magic_used",
+      userId,
+      email,
+      ip,
+      userAgent,
+      metadata: { provider }
+    });
   }
 
   return response;

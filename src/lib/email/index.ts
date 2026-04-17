@@ -27,6 +27,40 @@ async function sendEmail(payload: EmailPayload): Promise<void> {
   console.log(`[EMAIL] HTML length: ${payload.html.length} chars`);
 }
 
+// ─── Welcome (шинэ хэрэглэгч + org үүссэн даруйд) ─────────────────────────────
+
+export async function sendWelcomeEmail(params: {
+  to: string;
+  organizationName: string;
+  dashboardUrl?: string;
+}) {
+  const dashboard = params.dashboardUrl ?? "https://www.martech.mn/dashboard";
+  await sendEmail({
+    to: params.to,
+    subject: `MarTech-д тавтай морилно уу, ${params.organizationName}!`,
+    html: `
+      <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;color:#0A0A0A;line-height:1.55">
+        <h1 style="margin:0 0 1rem;font-size:24px;color:#0043FF">Тавтай морилно уу!</h1>
+        <p>Сайн байна уу,</p>
+        <p><strong>${params.organizationName}</strong> нэрээр MarTech дээр бүртгүүлсэнд баярлалаа. Та одооноос дараах боломжуудыг ашиглаж эхлэх боломжтой:</p>
+        <ul style="padding-left:1.2rem;margin:1rem 0">
+          <li>Facebook хуудсуудаа холбож аналитик татах</li>
+          <li>AI ашиглан зөвлөмж, тайлан авах</li>
+          <li>Коммент AI-гаар автомат хариу өгөх</li>
+        </ul>
+        <p style="margin:1.5rem 0">
+          <a href="${dashboard}" style="display:inline-block;background:#0043FF;color:#fff;padding:0.75rem 1.25rem;border-radius:8px;text-decoration:none;font-weight:600">
+            Dashboard руу орох →
+          </a>
+        </p>
+        <p style="color:#64748b;font-size:13px;margin-top:2rem">
+          Асуулт байвал <a href="mailto:support@martech.mn" style="color:#0043FF">support@martech.mn</a>-тэй холбогдоорой.
+        </p>
+      </div>
+    `,
+  });
+}
+
 // ─── Trial эхлэх ──────────────────────────────────────────────────────────────
 
 export async function sendTrialStartEmail(to: string, trialEndsAt: string) {
