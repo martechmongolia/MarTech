@@ -10,6 +10,7 @@ import { getCurrentUserOrganization } from "@/modules/organizations/data";
 import { insertInvitation } from "@/modules/organizations/invitations";
 import { sendInvitationEmail } from "@/lib/email";
 import { extractClientIp, extractUserAgent, logAuthEvent } from "@/modules/auth/audit";
+import { getDisposableDomain } from "@/lib/auth/disposable-emails";
 
 export type InvitationActionState = {
   error?: string;
@@ -39,6 +40,12 @@ export async function createInvitationAction(
   }
   const email = emailRaw.trim().toLowerCase();
   const role = roleRaw as "admin" | "member";
+
+  if (getDisposableDomain(email)) {
+    return {
+      error: "Түр и-мэйл хаяг руу урилга илгээх боломжгүй."
+    };
+  }
 
   // Prevent inviting self or an already-active member of this org.
   const admin = getSupabaseAdminClient();

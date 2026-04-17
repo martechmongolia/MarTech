@@ -6,6 +6,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { extractClientIp, extractUserAgent, logAuthEvent } from "@/modules/auth/audit";
 import { CURRENT_TOS_VERSION } from "@/modules/auth/consent";
 import { verifyTurnstileToken } from "@/lib/turnstile/verify";
+import { getDisposableDomain } from "@/lib/auth/disposable-emails";
 
 export type AuthActionState = {
   error?: string;
@@ -24,6 +25,13 @@ export async function loginWithOtpAction(
   const consent = formData.get("consent");
   if (consent !== "on" && consent !== "true") {
     return { error: "Үйлчилгээний нөхцөл ба нууцлалын бодлогыг зөвшөөрнө үү." };
+  }
+
+  const disposableDomain = getDisposableDomain(email);
+  if (disposableDomain) {
+    return {
+      error: "Түр и-мэйл хаяг зөвшөөрөгдөхгүй. Жинхэнэ ажлын эсвэл хувийн и-мэйлээр бүртгүүлнэ үү."
+    };
   }
 
   const requestHeaders = await headers();
