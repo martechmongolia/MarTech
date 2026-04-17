@@ -27,7 +27,11 @@ export type AuthEventType =
   | "org_invitation_accepted"
   | "org_invitation_revoked"
   | "org_invitation_declined"
-  | "session_revoked";
+  | "session_revoked"
+  | "passkey_registered"
+  | "passkey_login_success"
+  | "passkey_login_failed"
+  | "passkey_removed";
 
 export type AuthEventInput = {
   type: AuthEventType;

@@ -5,6 +5,7 @@ import { loginWithOtpAction, type AuthActionState } from "@/modules/auth/actions
 import { CURRENT_TOS_VERSION } from "@/modules/auth/consent";
 import { Alert, Button, Input } from "@/components/ui";
 import { TurnstileWidget } from "@/components/auth/turnstile-widget";
+import { PasskeyLoginButton } from "@/components/auth/passkey-login-button";
 
 const initialState: AuthActionState = {};
 
@@ -91,6 +92,8 @@ export function LoginForm({ next, turnstileSiteKey }: LoginFormProps) {
         {state.error ? <Alert variant="danger">{state.error}</Alert> : null}
         {state.message ? <Alert variant="success">{state.message}</Alert> : null}
       </form>
+
+      <PasskeyLoginButton disabled={!consent} next={next} />
 
       {/* Turnstile CAPTCHA widget */}
       <TurnstileWidget siteKey={turnstileSiteKey} onTokenChange={setTurnstileToken} />

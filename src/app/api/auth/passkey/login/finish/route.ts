@@ -1,0 +1,163 @@
+/**
+ * WebAuthn login — step 2: verify the authenticator response, then create a
+ * Supabase session for the user via admin.generateLink → verifyOtp. This is
+ * the same session-swap trick used for impersonation: we trust the verified
+ * WebAuthn assertion and materialise a real Supabase session for it.
+ */
+import { NextResponse, type NextRequest } from "next/server";
+import { verifyAuthenticationResponse } from "@simplewebauthn/server";
+import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getPasskeyRpConfig } from "@/modules/auth/passkey-config";
+import { CURRENT_TOS_VERSION, persistConsent } from "@/modules/auth/consent";
+import { extractClientIp, extractUserAgent, logAuthEvent } from "@/modules/auth/audit";
+
+export async function POST(request: NextRequest) {
+  const body = (await request.json()) as {
+    email: string;
+    response: AuthenticationResponseJSON;
+  };
+
+  const email = body.email?.trim().toLowerCase();
+  if (!email || !body.response) {
+    return NextResponse.json({ error: "Missing email or response" }, { status: 400 });
+  }
+
+  const admin = getSupabaseAdminClient();
+  const ip = extractClientIp(request.headers);
+  const userAgent = extractUserAgent(request.headers);
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("id,email")
+    .eq("email", email)
+    .maybeSingle();
+  if (!profile) {
+    void logAuthEvent({
+      type: "passkey_login_failed",
+      email,
+      ip,
+      userAgent,
+      metadata: { stage: "lookup" }
+    });
+    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  }
+
+  const { data: credRow } = await admin
+    .from("user_passkeys")
+    .select("id,credential_id,public_key,counter,transports")
+    .eq("user_id", profile.id)
+    .eq("credential_id", body.response.id)
+    .maybeSingle();
+
+  if (!credRow) {
+    void logAuthEvent({
+      type: "passkey_login_failed",
+      userId: profile.id,
+      email,
+      ip,
+      userAgent,
+      metadata: { stage: "credential_lookup" }
+    });
+    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  }
+
+  const { data: challengeRow } = await admin
+    .from("webauthn_challenges")
+    .select("id,challenge,expires_at")
+    .eq("purpose", "login")
+    .eq("email", email)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!challengeRow || new Date(challengeRow.expires_at).getTime() < Date.now()) {
+    return NextResponse.json({ error: "Challenge expired or missing" }, { status: 400 });
+  }
+
+  const { rpID, origin } = getPasskeyRpConfig();
+
+  const publicKeyBytes = Buffer.isBuffer(credRow.public_key)
+    ? new Uint8Array(credRow.public_key)
+    : new Uint8Array(Buffer.from(credRow.public_key as unknown as string, "base64"));
+
+  let verification;
+  try {
+    verification = await verifyAuthenticationResponse({
+      response: body.response,
+      expectedChallenge: challengeRow.challenge,
+      expectedOrigin: origin,
+      expectedRPID: rpID,
+      credential: {
+        id: credRow.credential_id,
+        publicKey: publicKeyBytes,
+        counter: Number(credRow.counter ?? 0),
+        transports: (credRow.transports ?? []) as AuthenticatorTransport[]
+      }
+    });
+  } catch (err) {
+    void logAuthEvent({
+      type: "passkey_login_failed",
+      userId: profile.id,
+      email,
+      ip,
+      userAgent,
+      metadata: { stage: "verify", reason: err instanceof Error ? err.message : "unknown" }
+    });
+    return NextResponse.json({ error: "Verification failed" }, { status: 401 });
+  }
+
+  if (!verification.verified) {
+    return NextResponse.json({ error: "Verification failed" }, { status: 401 });
+  }
+
+  // Bump counter + usage timestamp; delete the one-time challenge.
+  await Promise.all([
+    admin
+      .from("user_passkeys")
+      .update({
+        counter: verification.authenticationInfo.newCounter,
+        last_used_at: new Date().toISOString()
+      })
+      .eq("id", credRow.id),
+    admin.from("webauthn_challenges").delete().eq("id", challengeRow.id)
+  ]);
+
+  // Create a Supabase session for the user.
+  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+    type: "magiclink",
+    email: profile.email
+  });
+  if (linkErr || !linkData.properties?.hashed_token) {
+    return NextResponse.json(
+      { error: linkErr?.message ?? "Session creation failed" },
+      { status: 500 }
+    );
+  }
+
+  const supabase = await getSupabaseServerClient();
+  const { error: verifyErr } = await supabase.auth.verifyOtp({
+    token_hash: linkData.properties.hashed_token,
+    type: "magiclink"
+  });
+  if (verifyErr) {
+    return NextResponse.json({ error: verifyErr.message }, { status: 500 });
+  }
+
+  // WebAuthn is a strong factor — consider the user re-consented on every login.
+  await persistConsent({ userId: profile.id, version: CURRENT_TOS_VERSION, ip });
+
+  void logAuthEvent({
+    type: "passkey_login_success",
+    userId: profile.id,
+    email: profile.email,
+    ip,
+    userAgent,
+    metadata: { credential_id: credRow.credential_id }
+  });
+
+  return NextResponse.json({ ok: true });
+}
+
+type AuthenticatorTransport = "usb" | "nfc" | "ble" | "internal" | "hybrid";
