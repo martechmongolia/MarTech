@@ -26,7 +26,8 @@ export type AuthEventType =
   | "org_invitation_sent"
   | "org_invitation_accepted"
   | "org_invitation_revoked"
-  | "org_invitation_declined";
+  | "org_invitation_declined"
+  | "session_revoked";
 
 export type AuthEventInput = {
   type: AuthEventType;

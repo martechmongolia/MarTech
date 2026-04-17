@@ -26,7 +26,15 @@ export default async function SettingsPage() {
           <Card padded stack>
             <strong style={{ fontSize: "1rem" }}>Аюулгүй байдал</strong>
             <p className="ui-text-muted" style={{ margin: 0 }}>
-              2FA (two-factor authentication), нэвтрэх түүх
+              2FA (two-factor authentication)
+            </p>
+          </Card>
+        </Link>
+        <Link href="/settings/sessions" style={{ textDecoration: "none" }}>
+          <Card padded stack>
+            <strong style={{ fontSize: "1rem" }}>Нэвтэрсэн төхөөрөмжүүд</strong>
+            <p className="ui-text-muted" style={{ margin: 0 }}>
+              Идэвхтэй session-уудыг харах, шаардлагагүйг нь салгах
             </p>
           </Card>
         </Link>

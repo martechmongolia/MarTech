@@ -2692,6 +2692,19 @@ export type Database = {
       get_plan_max_pages: { Args: { target_org_id: string }; Returns: number }
       is_org_member: { Args: { target_org_id: string }; Returns: boolean }
       is_org_owner: { Args: { target_org_id: string }; Returns: boolean }
+      list_my_sessions: {
+        Args: never
+        Returns: {
+          created_at: string
+          factor_id: string
+          id: string
+          ip: string
+          not_after: string
+          refreshed_at: string
+          updated_at: string
+          user_agent: string
+        }[]
+      }
       recalculate_brand_manager_score: {
         Args: { p_brand_manager_id: string }
         Returns: undefined
@@ -2713,6 +2726,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      revoke_my_session: { Args: { p_session_id: string }; Returns: boolean }
       search_similar_posts: {
         Args: {
           p_embedding: string
