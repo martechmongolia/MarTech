@@ -1,5 +1,5 @@
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { LoginForm } from "@/components/auth/login-form";
 import { Alert } from "@/components/ui";
 
@@ -8,10 +8,12 @@ type LoginPageProps = {
 };
 
 const ERROR_MESSAGES: Record<string, string> = {
-  invalid_link: "The login link has expired or is invalid. Request a new link below.",
-  session_expired: "Your session has expired. Please sign in again.",
-  missing_code: "The login link is incomplete. Request a new link below.",
-  auth_unavailable: "Sign-in is temporarily unavailable. Please try again later."
+  invalid_link: "Нэвтрэх линк хүчингүй боллоо. Доороос шинэ линк авна уу.",
+  session_expired: "Таны сесс дууссан байна. Дахин нэвтэрнэ үү.",
+  missing_code: "Нэвтрэх линк бүрэн биш байна. Шинэ линк авна уу.",
+  auth_unavailable: "Нэвтрэх үйлчилгээ түр боломжгүй байна. Дараа дахин оролдоно уу.",
+  consent_required: "Үйлчилгээний нөхцөлийг зөвшөөрсний дараа үргэлжлүүлнэ үү.",
+  oauth_failed: "Google-р нэвтрэх амжилтгүй боллоо. Дахин оролдоно уу."
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
@@ -19,92 +21,35 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <div className="login-layout">
-      {/* ── Left: brand panel ── */}
-      <aside className="login-brand">
-        {/* Abstract line decorations */}
-        <svg
-          className="login-brand__deco"
-          viewBox="0 0 400 600"
-          fill="none"
-          aria-hidden="true"
-          preserveAspectRatio="xMidYMid slice"
-        >
-          <path
-            d="M-50 200 Q100 100 200 300 Q300 500 450 400"
-            stroke="white"
-            strokeWidth="1.5"
-            opacity="0.25"
+      <svg
+        className="login-layout__deco"
+        viewBox="0 0 1200 800"
+        fill="none"
+        aria-hidden="true"
+        preserveAspectRatio="xMidYMid slice"
+      >
+        <path d="M-50 200 Q300 100 600 300 Q900 500 1250 400" stroke="white" strokeWidth="1.5" opacity="0.18" />
+        <path d="M100 50 Q400 200 200 600" stroke="white" strokeWidth="1" opacity="0.15" />
+        <ellipse cx="950" cy="200" rx="200" ry="200" stroke="white" strokeWidth="1.5" fill="none" opacity="0.15" />
+        <path d="M-30 650 Q300 500 600 700 Q900 850 1250 650" stroke="white" strokeWidth="1" opacity="0.12" />
+      </svg>
+
+      <main className="login-layout__content">
+        <Link href="/" className="login-layout__logo-link" aria-label="MarTech нүүр">
+          <Image
+            src="/brand/logo.svg"
+            alt="MarTech"
+            width={240}
+            height={60}
+            className="login-layout__logo"
+            priority
           />
-          <path
-            d="M50 50 Q150 200 100 400"
-            stroke="white"
-            strokeWidth="1"
-            opacity="0.2"
-          />
-          <ellipse
-            cx="320"
-            cy="150"
-            rx="120"
-            ry="120"
-            stroke="white"
-            strokeWidth="1.5"
-            fill="none"
-            opacity="0.2"
-          />
-          <path
-            d="M-30 450 Q120 350 250 500 Q380 650 500 520"
-            stroke="white"
-            strokeWidth="1"
-            opacity="0.15"
-          />
-        </svg>
+        </Link>
 
-        <div className="login-brand__content">
-          {/* Logo */}
-          <Link href="/" className="login-brand__logo-link" aria-label="MarTech нүүр">
-            <Image
-              src="/brand/logo.svg"
-              alt="MarTech"
-              width={280}
-              height={70}
-              className="login-brand__logo"
-              priority
-            />
-          </Link>
-
-          <div className="login-brand__copy">
-            <h1 className="login-brand__headline">
-              Маркетингийн<br />эрх чөлөө.
-            </h1>
-            <p className="login-brand__tagline">
-              Facebook Page-ийн гүйцэтгэлийг нэг дор харж,
-              AI-аас ойлгомжтой зөвлөмж аваарай.
-            </p>
-          </div>
-
-          <p className="login-brand__footer">
-            © {new Date().getFullYear()} MarTech
-          </p>
-        </div>
-      </aside>
-
-      {/* ── Mobile: logo header (shown only on small screens) ── */}
-      <div className="login-mobile-header">
-        <Image
-          src="/brand/logo.svg"
-          alt="MarTech"
-          width={120}
-          height={32}
-          priority
-        />
-      </div>
-
-      {/* ── Right: form panel ── */}
-      <main className="login-form-panel">
-        <div className="login-form-wrap">
-          <div className="login-form-header">
-            <h2 className="login-form-title">Нэвтрэх</h2>
-            <p className="login-form-subtitle">
+        <div className="login-card">
+          <div className="login-card__header">
+            <h1 className="login-card__title">Нэвтрэх</h1>
+            <p className="login-card__subtitle">
               И-мэйл хаягаар нэг удаагийн линк авч нэвтэрнэ үү.
             </p>
           </div>
@@ -121,6 +66,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
           <LoginForm next={params.next} />
         </div>
+
+        <p className="login-layout__footer">© {new Date().getFullYear()} MarTech</p>
       </main>
     </div>
   );

@@ -26,8 +26,8 @@ export function MetaPageSelectionForm({
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="metaPageId" value={metaPageId} />
       <input type="hidden" name="selected" value={isSelected ? "false" : "true"} />
-      <Button type="submit" variant={isSelected ? "secondary" : "primary"} disabled={pending || disabled}>
-        {isSelected ? "Deselect" : "Select"}
+      <Button type="submit" size="sm" variant={isSelected ? "secondary" : "primary"} disabled={pending || disabled}>
+        {pending ? (isSelected ? "Цуцалж байна…" : "Сонгож байна…") : isSelected ? "Сонголт цуцлах" : "Сонгох"}
       </Button>
       {state.error ? <p className="ui-inline-feedback ui-inline-feedback--error" style={{ margin: 0 }}>{state.error}</p> : null}
     </form>

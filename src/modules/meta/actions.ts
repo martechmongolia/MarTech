@@ -3,7 +3,10 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "crypto";
-import { buildMetaOAuthUrl } from "@/lib/meta/client";
+import { buildMetaOAuthUrl, revokeMetaUserPermissions } from "@/lib/meta/client";
+import { decryptSecret } from "@/lib/meta/crypto";
+import { getMetaEnv } from "@/lib/env/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { applyMetaPageSelection } from "@/modules/meta/selection";
 import { onMetaPageSelectionChanged } from "@/modules/jobs/meta-sync-placeholder";
 
@@ -103,5 +106,93 @@ export async function setMetaPageSelectionAction(
     return {};
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Failed to update page selection." };
+  }
+}
+
+export type MetaDisconnectState = {
+  error?: string;
+  ok?: boolean;
+};
+
+/**
+ * Disconnect the org's Meta connection:
+ *   1. Best-effort: revoke the grant on Meta via DELETE /me/permissions.
+ *   2. Soft-revoke all of the org's meta_pages (status='revoked', token cleared).
+ *   3. Soft-revoke the meta_connections row and clear encrypted tokens.
+ *
+ * Order matters: we revoke on Meta FIRST (while the token is still decryptable),
+ * then clear local state. If the Meta revoke fails, proceed anyway — the user's
+ * intent is to cut ties, and local state must reflect that regardless.
+ */
+export async function disconnectMetaAction(
+  _prev: MetaDisconnectState,
+  formData: FormData
+): Promise<MetaDisconnectState> {
+  const organizationId = formData.get("organizationId");
+  if (typeof organizationId !== "string" || organizationId.length === 0) {
+    return { error: "Байгууллагын ID дутуу байна." };
+  }
+
+  const admin = getSupabaseAdminClient();
+
+  try {
+    const { data: connection, error: fetchErr } = await admin
+      .from("meta_connections")
+      .select("id,access_token_encrypted,status")
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+
+    if (fetchErr) throw fetchErr;
+
+    if (connection?.access_token_encrypted && connection.status !== "revoked") {
+      try {
+        const { tokenEncryptionKey } = getMetaEnv();
+        const token = decryptSecret(connection.access_token_encrypted, tokenEncryptionKey);
+        await revokeMetaUserPermissions(token);
+      } catch (err) {
+        console.warn(
+          "[meta/disconnect] graph revoke failed; continuing with local soft-revoke:",
+          err instanceof Error ? err.message : err
+        );
+      }
+    }
+
+    const nowIso = new Date().toISOString();
+
+    const { error: pagesErr } = await admin
+      .from("meta_pages")
+      .update({
+        status: "revoked",
+        is_selected: false,
+        is_selectable: false,
+        page_access_token_encrypted: null,
+        updated_at: nowIso
+      })
+      .eq("organization_id", organizationId);
+
+    if (pagesErr) throw pagesErr;
+
+    if (connection) {
+      const { error: connErr } = await admin
+        .from("meta_connections")
+        .update({
+          status: "revoked",
+          access_token_encrypted: null,
+          refresh_token_encrypted: null,
+          last_validated_at: nowIso,
+          last_error: "disconnected_by_user"
+        })
+        .eq("id", connection.id);
+
+      if (connErr) throw connErr;
+    }
+
+    revalidatePath("/pages");
+    revalidatePath("/dashboard");
+    return { ok: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Холболтыг салгаж чадсангүй."
+    };
   }
 }

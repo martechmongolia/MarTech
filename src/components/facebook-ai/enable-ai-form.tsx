@@ -34,6 +34,7 @@ export function EnableAiForm({
       <input type="hidden" name="enabled" value={isEnabled ? "false" : "true"} />
       <Button
         type="submit"
+        size="sm"
         variant={isEnabled ? "secondary" : "primary"}
         disabled={pending || disabled}
       >

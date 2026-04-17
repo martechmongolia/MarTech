@@ -11,12 +11,12 @@
  */
 import { exchangeCodeForAccessToken, exchangeForLongLivedToken } from "@/lib/meta/client";
 import { upsertMetaConnection } from "@/modules/meta/connection";
-import { discoverAndPersistMetaPages } from "@/modules/meta/discovery";
+import { discoverAndPersistMetaPages, type DiscoverySummary } from "@/modules/meta/discovery";
 
 export async function completeMetaOAuthCallback(params: {
   code: string;
   organizationId: string;
-}): Promise<void> {
+}): Promise<DiscoverySummary> {
   const shortLived = await exchangeCodeForAccessToken(params.code);
 
   // Best-effort upgrade to a long-lived token. If the exchange itself fails
@@ -41,7 +41,7 @@ export async function completeMetaOAuthCallback(params: {
     expiresInSeconds
   });
 
-  await discoverAndPersistMetaPages({
+  return discoverAndPersistMetaPages({
     organizationId: params.organizationId,
     connectionId: connection.connectionId,
     encryptedAccessToken: connection.accessTokenEncrypted

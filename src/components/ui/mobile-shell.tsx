@@ -95,17 +95,9 @@ export function MobileShell({
       <nav className="mobile-bottom-nav">
         {bottomItems.map(item => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-          // Map hrefs to icons
-          const iconMap: Record<string, string> = {
-            "/dashboard": "📊",
-            "/pages": "📄",
-            "/brand-managers": "🤖",
-            "/brainstorm": "🧠",
-            "/billing": "💳",
-          };
           const labelMap: Record<string, string> = {
             "/dashboard": "Нүүр",
-            "/pages": "Pages",
+            "/pages": "Хуудас",
             "/brand-managers": "Brand",
             "/brainstorm": "Brainstorm",
             "/billing": "Billing",
@@ -116,7 +108,6 @@ export function MobileShell({
               href={item.href}
               className={`mobile-bottom-nav__item ${isActive ? "mobile-bottom-nav__item--active" : ""}`}
             >
-              <span className="mobile-bottom-nav__icon">{iconMap[item.href] ?? "•"}</span>
               <span className="mobile-bottom-nav__label">{labelMap[item.href] ?? item.label}</span>
             </Link>
           );

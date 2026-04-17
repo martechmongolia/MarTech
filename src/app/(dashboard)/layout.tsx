@@ -30,14 +30,14 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard" },
-    ...(flags["pages"] !== false ? [{ href: "/pages", label: "Pages" }] : []),
+    { href: "/pages", label: "Холбогдсон хуудаснууд" },
     ...(flags["brand_managers"] !== false ? [{ href: "/brand-managers", label: "AI Brand Managers" }] : []),
     ...(flags["social_listening"] !== false ? [{ href: "/social-listening", label: "Social Listening" }] : []),
     ...(flags["creator_search"] !== false ? [{ href: "/creator-search", label: "Creator Search" }] : []),
     ...(flags["morning_digest"] !== false ? [{ href: "/morning-digest", label: "Өглөөний Мэдээлэл" }] : []),
-    ...(flags["brainstorm"] === true ? [{ href: "/brainstorm", label: "🧠 AI Brainstorming" }] : []),
-    ...(flags["smart_post"] !== false ? [{ href: "/smart-post", label: "✍️ Smart Post" }] : []),
-    ...(flags["facebook_ai"] !== false ? [{ href: "/facebook-ai", label: "Facebook AI 🤖" }] : []),
+    ...(flags["brainstorm"] === true ? [{ href: "/brainstorm", label: "AI Brainstorming" }] : []),
+    ...(flags["smart_post"] !== false ? [{ href: "/smart-post", label: "Smart Post" }] : []),
+    ...(flags["facebook_ai"] !== false ? [{ href: "/facebook-ai", label: "Facebook AI" }] : []),
     { href: "/billing", label: "Billing" },
     ...(showSystemAdminNav
       ? [{ href: "/admin", label: "System Admin", accent: true }]

@@ -117,7 +117,8 @@ export async function refreshConnectionToken(connectionId: string): Promise<Fres
     await discoverAndPersistMetaPages({
       organizationId: connection.organization_id,
       connectionId,
-      encryptedAccessToken: newEncrypted
+      encryptedAccessToken: newEncrypted,
+      reconcileMissing: false
     });
   } catch (err) {
     console.warn(

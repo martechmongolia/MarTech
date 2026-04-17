@@ -185,3 +185,20 @@ export async function unsubscribePageFromWebhook(
   const response = await fetch(url.toString(), { method: "DELETE", cache: "no-store" });
   await parseJson<{ success?: boolean }>(response);
 }
+
+/**
+ * Revoke the user's OAuth grant entirely on Meta's side via
+ * DELETE /me/permissions. After this call, the token is invalidated and the
+ * app no longer appears in the user's Business Settings. Best-effort: the
+ * caller should still clear local DB state regardless of success.
+ *
+ * Docs: https://developers.facebook.com/docs/facebook-login/guides/permissions/request-revoke
+ */
+export async function revokeMetaUserPermissions(userAccessToken: string): Promise<void> {
+  const { apiVersion } = getMetaEnv();
+  const url = new URL(`https://graph.facebook.com/${apiVersion}/me/permissions`);
+  url.searchParams.set("access_token", userAccessToken);
+
+  const response = await fetch(url.toString(), { method: "DELETE", cache: "no-store" });
+  await parseJson<{ success?: boolean }>(response);
+}
