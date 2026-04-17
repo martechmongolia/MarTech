@@ -98,6 +98,16 @@ export function LoginForm({ next, turnstileSiteKey }: LoginFormProps) {
       {/* Turnstile CAPTCHA widget */}
       <TurnstileWidget siteKey={turnstileSiteKey} onTokenChange={setTurnstileToken} />
 
+      {/* SSO link — enterprise customers */}
+      <p style={{ margin: 0, fontSize: "0.8125rem", textAlign: "center" }}>
+        <a
+          href={`/auth/sso${next ? `?next=${encodeURIComponent(next)}` : ""}`}
+          className="ui-table__link"
+        >
+          SAML SSO-р нэвтрэх
+        </a>
+      </p>
+
       {/* Consent checkbox */}
       <label className="login-consent">
         <input
