@@ -31,14 +31,13 @@ export type AuthEventInput = {
 export async function logAuthEvent(event: AuthEventInput): Promise<void> {
   try {
     const admin = getSupabaseAdminClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (admin as any).from("auth_events").insert({
+    const { error } = await admin.from("auth_events").insert({
       user_id: event.userId ?? null,
       email: event.email?.toLowerCase() ?? null,
       event_type: event.type,
       ip_address: event.ip ?? null,
       user_agent: event.userAgent ?? null,
-      metadata: event.metadata ?? {}
+      metadata: (event.metadata ?? {}) as never
     });
     if (error) {
       console.warn(`[auth-audit] ${event.type} insert failed:`, error.message);

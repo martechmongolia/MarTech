@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
 import { CURRENT_TOS_VERSION } from "@/modules/auth/consent";
+import { verifyTurnstileToken } from "@/lib/turnstile/verify";
+import { extractClientIp } from "@/modules/auth/audit";
 
 export async function GET(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -18,6 +20,17 @@ export async function GET(request: NextRequest) {
   const tosParam = request.nextUrl.searchParams.get("tos");
   if (tosParam !== CURRENT_TOS_VERSION) {
     return NextResponse.redirect(new URL("/login?error=consent_required", request.url));
+  }
+
+  // CAPTCHA gate: the client widget writes the token into `cf=<token>` before
+  // enabling the Google button. Verify it so a programmatic GET on this route
+  // cannot bypass bot protection.
+  const captchaResult = await verifyTurnstileToken({
+    token: request.nextUrl.searchParams.get("cf") ?? "",
+    ip: extractClientIp(request.headers)
+  });
+  if (!captchaResult.ok) {
+    return NextResponse.redirect(new URL("/login?error=captcha_failed", request.url));
   }
 
   const nextRaw = request.nextUrl.searchParams.get("next") ?? "/dashboard";

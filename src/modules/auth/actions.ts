@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { extractClientIp, extractUserAgent, logAuthEvent } from "@/modules/auth/audit";
 import { CURRENT_TOS_VERSION } from "@/modules/auth/consent";
+import { verifyTurnstileToken } from "@/lib/turnstile/verify";
 
 export type AuthActionState = {
   error?: string;
@@ -25,6 +26,26 @@ export async function loginWithOtpAction(
     return { error: "Үйлчилгээний нөхцөл ба нууцлалын бодлогыг зөвшөөрнө үү." };
   }
 
+  const requestHeaders = await headers();
+  const ip = extractClientIp(requestHeaders);
+  const userAgent = extractUserAgent(requestHeaders);
+
+  const turnstileToken = formData.get("cf-turnstile-response");
+  const captchaResult = await verifyTurnstileToken({
+    token: typeof turnstileToken === "string" ? turnstileToken : "",
+    ip
+  });
+  if (!captchaResult.ok) {
+    void logAuthEvent({
+      type: "login_failed",
+      email: email.trim().toLowerCase(),
+      ip,
+      userAgent,
+      metadata: { method: "magic_link", stage: "captcha", reason: captchaResult.reason }
+    });
+    return { error: "Хүний шалгалт амжилтгүй боллоо. Хуудсаа refresh хийгээд дахин оролдоно уу." };
+  }
+
   const nextPath = formData.get("next");
   const next =
     typeof nextPath === "string" && nextPath.startsWith("/") && !nextPath.startsWith("//")
@@ -34,10 +55,6 @@ export async function loginWithOtpAction(
   const supabase = await getSupabaseServerClient();
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const normalizedEmail = email.trim().toLowerCase();
-
-  const requestHeaders = await headers();
-  const ip = extractClientIp(requestHeaders);
-  const userAgent = extractUserAgent(requestHeaders);
 
   const { error } = await supabase.auth.signInWithOtp({
     email: normalizedEmail,

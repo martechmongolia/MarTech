@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/login-form";
 import { Alert } from "@/components/ui";
+import { getTurnstileSiteKey } from "@/lib/turnstile/verify";
 
 type LoginPageProps = {
   searchParams: Promise<{ next?: string; error?: string }>;
@@ -13,7 +14,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   missing_code: "Нэвтрэх линк бүрэн биш байна. Шинэ линк авна уу.",
   auth_unavailable: "Нэвтрэх үйлчилгээ түр боломжгүй байна. Дараа дахин оролдоно уу.",
   consent_required: "Үйлчилгээний нөхцөлийг зөвшөөрсний дараа үргэлжлүүлнэ үү.",
-  oauth_failed: "Google-р нэвтрэх амжилтгүй боллоо. Дахин оролдоно уу."
+  oauth_failed: "Google-р нэвтрэх амжилтгүй боллоо. Дахин оролдоно уу.",
+  captcha_failed: "Хүний шалгалт амжилтгүй боллоо. Хуудсаа refresh хийгээд дахин оролдоно уу."
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
@@ -64,7 +66,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </p>
           ) : null}
 
-          <LoginForm next={params.next} />
+          <LoginForm next={params.next} turnstileSiteKey={getTurnstileSiteKey()} />
         </div>
 
         <p className="login-layout__footer">© {new Date().getFullYear()} MarTech</p>

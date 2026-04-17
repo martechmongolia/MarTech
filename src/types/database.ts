@@ -173,6 +173,47 @@ export type Database = {
           },
         ]
       }
+      auth_events: {
+        Row: {
+          created_at: string
+          email: string | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auth_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_events: {
         Row: {
           created_at: string
@@ -2342,6 +2383,9 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          tos_accepted_at: string | null
+          tos_accepted_ip: string | null
+          tos_version: string | null
           updated_at: string
         }
         Insert: {
@@ -2350,6 +2394,9 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          tos_accepted_at?: string | null
+          tos_accepted_ip?: string | null
+          tos_version?: string | null
           updated_at?: string
         }
         Update: {
@@ -2358,6 +2405,9 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          tos_accepted_at?: string | null
+          tos_accepted_ip?: string | null
+          tos_version?: string | null
           updated_at?: string
         }
         Relationships: []
