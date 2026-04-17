@@ -34,10 +34,14 @@ export async function verifyTurnstileToken(params: {
     return { ok: false, reason: "missing_token" };
   }
 
-  const secret = process.env.TURNSTILE_SECRET_KEY || DEV_TEST_SECRET;
-  if (secret === DEV_TEST_SECRET && process.env.NODE_ENV === "production") {
+  const envSecret = process.env.TURNSTILE_SECRET_KEY;
+  if (!envSecret && process.env.NODE_ENV === "production") {
     console.error("[turnstile] TURNSTILE_SECRET_KEY missing in production — refusing to verify");
     return { ok: false, reason: "secret_missing" };
+  }
+  const secret = envSecret || DEV_TEST_SECRET;
+  if (envSecret && envSecret.startsWith("1x") && process.env.NODE_ENV === "production") {
+    console.warn("[turnstile] production is using the Cloudflare test secret — rotate to a real key before launch");
   }
 
   const body = new URLSearchParams();
