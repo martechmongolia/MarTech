@@ -57,7 +57,16 @@ test.describe("Passkey login", () => {
     await page.locator("#email").fill(user.email);
     await page.getByRole("button", { name: "Passkey-ээр нэвтрэх" }).click();
 
-    await page.waitForURL("**/dashboard", { timeout: 30_000 });
+    // Login button navigates to /dashboard, which in turn redirects this
+    // org-less test user to /setup-organization. Either landing proves the
+    // passkey-issued session is valid.
+    await page.waitForURL(
+      (url) => {
+        const p = url.pathname;
+        return p === "/dashboard" || p === "/setup-organization";
+      },
+      { timeout: 30_000 }
+    );
 
     const successEvents = await countAuthEvents(user.userId, "passkey_login_success");
     expect(successEvents).toBeGreaterThanOrEqual(1);
