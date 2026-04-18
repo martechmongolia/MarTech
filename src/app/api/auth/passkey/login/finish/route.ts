@@ -101,11 +101,16 @@ export async function POST(request: NextRequest) {
     ? new Uint8Array(credRow.public_key)
     : new Uint8Array(Buffer.from(credRow.public_key as unknown as string, "base64"));
 
-  console.log("[passkey-login] verifying", {
+  const rawKey = credRow.public_key as unknown;
+  console.error("[passkey-login] verifying", {
     credential_id_len: credRow.credential_id.length,
     response_id_len: body.response.id.length,
     id_match: credRow.credential_id === body.response.id,
-    public_key_bytes: publicKeyBytes.length,
+    raw_key_type: typeof rawKey,
+    raw_key_is_buffer: Buffer.isBuffer(rawKey),
+    raw_key_prefix: typeof rawKey === "string" ? rawKey.slice(0, 20) : "(non-string)",
+    raw_key_len: typeof rawKey === "string" ? rawKey.length : (rawKey as { length?: number })?.length,
+    decoded_bytes: publicKeyBytes.length,
     stored_counter: Number(credRow.counter ?? 0),
     rpID,
     origin,
