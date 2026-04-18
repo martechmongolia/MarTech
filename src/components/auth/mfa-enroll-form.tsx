@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Alert, Button, Input } from "@/components/ui";
 import {
   startMfaEnrollAction,
@@ -8,19 +9,32 @@ import {
   type MfaEnrollState,
   type MfaVerifyState
 } from "@/modules/auth/mfa-actions";
+import { MfaRecoveryCodesDisplay } from "./mfa-recovery-codes-display";
 
 const startInitial: MfaEnrollState = {};
 const verifyInitial: MfaVerifyState = {};
 
 /**
- * Two-step enrollment:
+ * Three-step enrollment:
  *   1. User clicks "Enable 2FA" → server generates factor + QR + secret.
  *   2. User scans QR in authenticator app → types 6-digit code → server verifies.
+ *   3. Server returns 10 freshly-generated recovery codes → user must
+ *      confirm they've saved them before the modal closes.
  */
 export function MfaEnrollForm() {
+  const router = useRouter();
   const [startState, startAction, startPending] = useActionState(startMfaEnrollAction, startInitial);
   const [verifyState, verifyAction, verifyPending] = useActionState(verifyMfaEnrollAction, verifyInitial);
   const [showSecret, setShowSecret] = useState(false);
+
+  if (verifyState.recoveryCodes && verifyState.recoveryCodes.length > 0) {
+    return (
+      <MfaRecoveryCodesDisplay
+        codes={verifyState.recoveryCodes}
+        onConfirm={() => router.refresh()}
+      />
+    );
+  }
 
   if (!startState.factorId) {
     return (

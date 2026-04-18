@@ -3,10 +3,12 @@ import { redirect } from "next/navigation";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { MfaEnrollForm } from "@/components/auth/mfa-enroll-form";
 import { MfaUnenrollForm } from "@/components/auth/mfa-unenroll-form";
+import { MfaRecoveryRegenerateForm } from "@/components/auth/mfa-recovery-regenerate-form";
 import { PasskeyEnrollButton } from "@/components/auth/passkey-enroll-button";
 import { PasskeyRemoveButton } from "@/components/auth/passkey-remove-button";
 import { getCurrentUser } from "@/modules/auth/session";
 import { listMfaFactors } from "@/modules/auth/mfa";
+import { countActiveRecoveryCodes } from "@/modules/auth/mfa-recovery";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { formatRelativeTime } from "@/lib/utils/time";
 
@@ -25,7 +27,11 @@ export default async function SecuritySettingsPage() {
     redirect("/login");
   }
 
-  const [factors, supabase] = await Promise.all([listMfaFactors(), getSupabaseServerClient()]);
+  const [factors, supabase, activeRecoveryCount] = await Promise.all([
+    listMfaFactors(),
+    getSupabaseServerClient(),
+    countActiveRecoveryCodes(user.id)
+  ]);
   const verifiedTotp = factors.find((f) => f.factorType === "totp" && f.status === "verified");
   const unverifiedTotp = factors.find((f) => f.factorType === "totp" && f.status === "unverified");
 
@@ -122,6 +128,25 @@ export default async function SecuritySettingsPage() {
           </>
         )}
       </Card>
+
+      {verifiedTotp ? (
+        <Card padded stack id="recovery-codes">
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
+            <strong style={{ fontSize: "1rem" }}>Нөөц кодууд</strong>
+            {activeRecoveryCount > 0 ? (
+              <Badge variant="success">{activeRecoveryCount} идэвхтэй</Badge>
+            ) : (
+              <Badge variant="warning">Идэвхгүй</Badge>
+            )}
+          </div>
+          <p className="ui-text-muted" style={{ margin: 0, fontSize: "0.875rem" }}>
+            Authenticator апп-таа хандаж чадахгүй болсон үед нөөц кодын аль нэгийг
+            ашиглан нэвтэрч болно. Код бүрийг зөвхөн нэг удаа хэрэглэнэ. Шинэ код
+            үүсгэхэд хуучин бүх код хүчингүй болно.
+          </p>
+          <MfaRecoveryRegenerateForm />
+        </Card>
+      ) : null}
     </section>
   );
 }

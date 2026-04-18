@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MfaChallengeForm } from "@/components/auth/mfa-challenge-form";
 import { getCurrentUser } from "@/modules/auth/session";
 import { getAalState, listMfaFactors } from "@/modules/auth/mfa";
+import { countActiveRecoveryCodes } from "@/modules/auth/mfa-recovery";
 
 /**
  * MFA challenge page shown after a user successfully completes primary auth
@@ -17,7 +19,11 @@ export default async function MfaChallengePage() {
     redirect("/login");
   }
 
-  const [aal, factors] = await Promise.all([getAalState(), listMfaFactors()]);
+  const [aal, factors, recoveryCount] = await Promise.all([
+    getAalState(),
+    listMfaFactors(),
+    countActiveRecoveryCodes(user.id)
+  ]);
   const verifiedTotp = factors.find((f) => f.factorType === "totp" && f.status === "verified");
 
   if (!verifiedTotp) {
@@ -53,6 +59,13 @@ export default async function MfaChallengePage() {
             </p>
           </div>
           <MfaChallengeForm factorId={verifiedTotp.id} />
+          {recoveryCount > 0 ? (
+            <p style={{ textAlign: "center", fontSize: "0.875rem", margin: 0 }}>
+              <Link href="/auth/mfa/recovery" className="ui-table__link">
+                Authenticator-даа хандаж чадахгүй байна уу? Нөөц код ашиглах
+              </Link>
+            </p>
+          ) : null}
         </div>
       </main>
     </div>

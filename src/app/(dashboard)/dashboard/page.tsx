@@ -30,9 +30,15 @@ import {
   getRecentPostMetricsForPage,
   getRecentSyncJobsForOrganization,
 } from "@/modules/sync/data";
+import { Alert } from "@/components/ui";
 import { formatRelativeTime } from "@/lib/utils/time";
 
-export default async function DashboardPage() {
+type DashboardPageProps = {
+  searchParams: Promise<{ mfa_reset?: string }>;
+};
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const { mfa_reset: mfaReset } = await searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");
@@ -92,6 +98,15 @@ export default async function DashboardPage() {
 
   return (
     <div className="dash-container">
+      {mfaReset === "1" ? (
+        <Alert variant="warning" style={{ marginBottom: "1rem" }}>
+          Нөөц код ашиглан нэвтэрсэн тул 2FA автоматаар унтарсан.{" "}
+          <a href="/settings/security" style={{ textDecoration: "underline" }}>
+            Аюулгүй байдлын тохиргоо
+          </a>
+          -нд шинэ төхөөрөмж дээрээ 2FA-г дахин идэвхжүүлнэ үү.
+        </Alert>
+      ) : null}
       {/* Header */}
       <header className="dash-top-header">
         <div>

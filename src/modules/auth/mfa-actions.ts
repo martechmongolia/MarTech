@@ -9,6 +9,7 @@ import {
   unenrollMfaFactor,
   verifyTotpEnrollment
 } from "@/modules/auth/mfa";
+import { generateRecoveryCodesForUser } from "@/modules/auth/mfa-recovery";
 import { extractClientIp, extractUserAgent, logAuthEvent } from "@/modules/auth/audit";
 import { getCurrentUser } from "@/modules/auth/session";
 
@@ -22,6 +23,10 @@ export type MfaEnrollState = {
 
 export type MfaVerifyState = {
   error?: string;
+  /** Plaintext recovery codes generated on a fresh TOTP enrolment. Populated
+   * once by verifyMfaEnrollAction; the client must render these and require
+   * the user to confirm they've saved them before hiding the modal. */
+  recoveryCodes?: string[];
 };
 
 /** Start enrollment — returns QR + secret so the client can show them. */
@@ -83,8 +88,30 @@ export async function verifyMfaEnrollAction(
       userAgent,
       metadata: { factor_id: factorId }
     });
+
+    // Generate recovery codes for the newly-enrolled user. Failures here
+    // are non-fatal: the TOTP factor is already active, and the user can
+    // regenerate codes from /settings/security after the fact.
+    let recoveryCodes: string[] | undefined;
+    try {
+      recoveryCodes = await generateRecoveryCodesForUser(user.id);
+      void logAuthEvent({
+        type: "mfa_recovery_codes_generated",
+        userId: user.id,
+        email: user.email ?? null,
+        ip,
+        userAgent,
+        metadata: { count: recoveryCodes.length, source: "enroll" }
+      });
+    } catch (genErr) {
+      console.warn(
+        "[mfa-enroll] recovery code generation failed:",
+        genErr instanceof Error ? genErr.message : genErr
+      );
+    }
+
     revalidatePath("/settings/security");
-    return {};
+    return recoveryCodes ? { recoveryCodes } : {};
   } catch (err) {
     void logAuthEvent({
       type: "mfa_challenge_failed",
