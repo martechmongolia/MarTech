@@ -97,25 +97,7 @@ export async function POST(request: NextRequest) {
 
   const { rpID, origin } = getPasskeyRpConfig();
 
-  const publicKeyBytes = Buffer.isBuffer(credRow.public_key)
-    ? new Uint8Array(credRow.public_key)
-    : new Uint8Array(Buffer.from(credRow.public_key as unknown as string, "base64"));
-
-  const rawKey = credRow.public_key as unknown;
-  console.error("[passkey-login] verifying", {
-    credential_id_len: credRow.credential_id.length,
-    response_id_len: body.response.id.length,
-    id_match: credRow.credential_id === body.response.id,
-    raw_key_type: typeof rawKey,
-    raw_key_is_buffer: Buffer.isBuffer(rawKey),
-    raw_key_prefix: typeof rawKey === "string" ? rawKey.slice(0, 20) : "(non-string)",
-    raw_key_len: typeof rawKey === "string" ? rawKey.length : (rawKey as { length?: number })?.length,
-    decoded_bytes: publicKeyBytes.length,
-    stored_counter: Number(credRow.counter ?? 0),
-    rpID,
-    origin,
-    challenge_prefix: challengeRow.challenge.slice(0, 16)
-  });
+  const publicKeyBytes = decodeStoredPublicKey(credRow.public_key as unknown);
 
   let verification;
   try {
@@ -210,3 +192,38 @@ export async function POST(request: NextRequest) {
 }
 
 type AuthenticatorTransport = "usb" | "nfc" | "ble" | "internal" | "hybrid";
+
+/**
+ * Decode a public_key cell read back from Supabase. Historical writes went
+ * through `Buffer.from(pk).toString("base64")` → bytea column, and the way
+ * PostgREST serialises bytea in JSON depends on the client / Postgres
+ * config:
+ *   - Buffer / Uint8Array (rare, direct binary column) — already bytes
+ *   - base64 string (happy path) — standard alphabet, no prefix
+ *   - `\x...` hex string — Postgres bytea "escape" text format, containing
+ *     the ASCII bytes of the base64 string we originally wrote
+ *
+ * We normalise all three into the raw COSE key that SimpleWebAuthn expects.
+ */
+function decodeStoredPublicKey(raw: unknown): Uint8Array<ArrayBuffer> {
+  // Always copy into a fresh ArrayBuffer-backed Uint8Array so
+  // SimpleWebAuthn's strict Uint8Array<ArrayBuffer> type is satisfied
+  // (Node's Buffer exposes Uint8Array<ArrayBufferLike> which TS rejects).
+  const copy = (src: Uint8Array): Uint8Array<ArrayBuffer> => {
+    const ab = new ArrayBuffer(src.byteLength);
+    const out = new Uint8Array(ab);
+    out.set(src);
+    return out;
+  };
+  if (Buffer.isBuffer(raw)) return copy(raw);
+  if (raw instanceof Uint8Array) return copy(raw);
+  if (typeof raw !== "string") {
+    throw new Error(`Unexpected public_key type: ${typeof raw}`);
+  }
+  if (raw.startsWith("\\x")) {
+    // `\x...` = hex of the ASCII bytes of the original base64 string.
+    const ascii = Buffer.from(raw.slice(2), "hex").toString("utf8");
+    return copy(Buffer.from(ascii, "base64"));
+  }
+  return copy(Buffer.from(raw, "base64"));
+}
