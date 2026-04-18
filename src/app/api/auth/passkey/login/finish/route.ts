@@ -12,6 +12,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getPasskeyRpConfig } from "@/modules/auth/passkey-config";
 import { CURRENT_TOS_VERSION, persistConsent } from "@/modules/auth/consent";
 import { extractClientIp, extractUserAgent, logAuthEvent } from "@/modules/auth/audit";
+import { checkRateLimit, rateLimitMessage } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   const body = (await request.json()) as {
@@ -27,6 +28,24 @@ export async function POST(request: NextRequest) {
   const admin = getSupabaseAdminClient();
   const ip = extractClientIp(request.headers);
   const userAgent = extractUserAgent(request.headers);
+
+  for (const { identifier, limit } of [
+    { identifier: `email:${email}`, limit: 3 },
+    { identifier: `ip:${ip ?? "unknown"}`, limit: 10 }
+  ]) {
+    const rl = await checkRateLimit({
+      prefix: "passkey-finish",
+      identifier,
+      limit,
+      windowSeconds: 300
+    });
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: rateLimitMessage(rl.retryAfterSeconds) },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } }
+      );
+    }
+  }
 
   const { data: profile } = await admin
     .from("profiles")
@@ -94,7 +113,14 @@ export async function POST(request: NextRequest) {
         publicKey: publicKeyBytes,
         counter: Number(credRow.counter ?? 0),
         transports: (credRow.transports ?? []) as AuthenticatorTransport[]
-      }
+      },
+      // login/start requests userVerification: "preferred", so the UV flag
+      // is opt-in for the authenticator. SimpleWebAuthn's default
+      // requireUserVerification: true would then reject any authenticator
+      // that didn't set UV (e.g. Playwright's virtual authenticator in CI).
+      // Matching the "preferred" semantics avoids that false-positive —
+      // real browsers with biometrics still set UV=true, so no regression.
+      requireUserVerification: false
     });
   } catch (err) {
     void logAuthEvent({

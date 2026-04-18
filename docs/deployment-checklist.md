@@ -23,6 +23,8 @@ Compare against `.env.example` for descriptions.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJ...` | Public anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...` | **Secret.** Service role key for admin operations |
 | `CRON_SECRET` | `<random 32+ char>` | **Secret.** Protects `/api/cron/*` and `/api/digest/*` from unauthorized invocation. Vercel Cron sends it as `x-cron-secret` header (digest route uses `authorization: Bearer`). |
+| `UPSTASH_REDIS_REST_URL` | `https://xxx.upstash.io` | Upstash REST URL for app-level rate limiting. Auto-filled by Vercel → Storage → Upstash. |
+| `UPSTASH_REDIS_REST_TOKEN` | `AXX...` | **Secret.** Upstash REST token. If either Upstash var is missing, rate limits fail open (logged + allowed). |
 
 ### Required for Meta integration
 

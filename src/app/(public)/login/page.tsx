@@ -18,7 +18,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   captcha_failed: "Хүний шалгалт амжилтгүй боллоо. Хуудсаа refresh хийгээд дахин оролдоно уу.",
   account_deleted:
     "Таны account устгагдсан. 30 хоногийн дотор сэргээхийг хүсвэл support@martech.mn руу бичнэ үү.",
-  account_suspended: "Таны account түр хориглогдсон байна. Админтай холбогдоно уу."
+  account_suspended: "Таны account түр хориглогдсон байна. Админтай холбогдоно уу.",
+  rate_limited: "Хэт олон хүсэлт илгээсэн байна. Удахгүй дахин оролдоно уу."
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {

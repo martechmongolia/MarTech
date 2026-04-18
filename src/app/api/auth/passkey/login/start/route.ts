@@ -11,6 +11,8 @@ import { generateAuthenticationOptions } from "@simplewebauthn/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getPasskeyRpConfig } from "@/modules/auth/passkey-config";
 import { getDisposableDomain } from "@/lib/auth/disposable-emails";
+import { checkRateLimit, rateLimitMessage } from "@/lib/rate-limit";
+import { extractClientIp } from "@/modules/auth/audit";
 
 export async function POST(request: NextRequest) {
   const body = (await request.json()) as { email?: string };
@@ -20,6 +22,25 @@ export async function POST(request: NextRequest) {
   }
   if (getDisposableDomain(email)) {
     return NextResponse.json({ error: "Disposable emails are not allowed" }, { status: 400 });
+  }
+
+  const ip = extractClientIp(request.headers);
+  for (const { identifier, limit } of [
+    { identifier: `email:${email}`, limit: 5 },
+    { identifier: `ip:${ip ?? "unknown"}`, limit: 15 }
+  ]) {
+    const rl = await checkRateLimit({
+      prefix: "passkey-start",
+      identifier,
+      limit,
+      windowSeconds: 600
+    });
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: rateLimitMessage(rl.retryAfterSeconds) },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } }
+      );
+    }
   }
 
   const { rpID } = getPasskeyRpConfig();

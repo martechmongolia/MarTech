@@ -12,6 +12,7 @@ import {
 import { generateRecoveryCodesForUser } from "@/modules/auth/mfa-recovery";
 import { extractClientIp, extractUserAgent, logAuthEvent } from "@/modules/auth/audit";
 import { getCurrentUser } from "@/modules/auth/session";
+import { checkRateLimit, rateLimitMessage } from "@/lib/rate-limit";
 
 export type MfaEnrollState = {
   error?: string;
@@ -145,6 +146,28 @@ export async function verifyMfaChallengeAction(
   const requestHeaders = await headers();
   const ip = extractClientIp(requestHeaders);
   const userAgent = extractUserAgent(requestHeaders);
+
+  const rl = await checkRateLimit({
+    prefix: "mfa-challenge",
+    identifier: `user:${user.id}`,
+    limit: 5,
+    windowSeconds: 300
+  });
+  if (!rl.ok) {
+    void logAuthEvent({
+      type: "mfa_challenge_failed",
+      userId: user.id,
+      email: user.email ?? null,
+      ip,
+      userAgent,
+      metadata: {
+        factor_id: factorId,
+        stage: "rate_limit",
+        retry_after_s: rl.retryAfterSeconds
+      }
+    });
+    return { error: rateLimitMessage(rl.retryAfterSeconds) };
+  }
 
   try {
     await elevateSessionWithTotp({ factorId, code });

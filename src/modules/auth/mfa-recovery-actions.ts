@@ -10,6 +10,7 @@ import {
 import { listMfaFactors, unenrollMfaFactor } from "@/modules/auth/mfa";
 import { extractClientIp, extractUserAgent, logAuthEvent } from "@/modules/auth/audit";
 import { getCurrentUser } from "@/modules/auth/session";
+import { checkRateLimit, rateLimitMessage } from "@/lib/rate-limit";
 
 export type RecoveryCodesState = {
   error?: string;
@@ -80,6 +81,24 @@ export async function verifyRecoveryCodeAction(
   const requestHeaders = await headers();
   const ip = extractClientIp(requestHeaders);
   const userAgent = extractUserAgent(requestHeaders);
+
+  const rl = await checkRateLimit({
+    prefix: "recovery-verify",
+    identifier: `user:${user.id}`,
+    limit: 3,
+    windowSeconds: 900
+  });
+  if (!rl.ok) {
+    void logAuthEvent({
+      type: "mfa_challenge_failed",
+      userId: user.id,
+      email: user.email ?? null,
+      ip,
+      userAgent,
+      metadata: { stage: "rate_limit", source: "recovery_code", retry_after_s: rl.retryAfterSeconds }
+    });
+    return { error: rateLimitMessage(rl.retryAfterSeconds) };
+  }
 
   const result = await consumeRecoveryCode(user.id, code);
   if (!result.ok) {

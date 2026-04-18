@@ -7,6 +7,7 @@ import { extractClientIp, extractUserAgent, logAuthEvent } from "@/modules/auth/
 import { CURRENT_TOS_VERSION } from "@/modules/auth/consent";
 import { verifyTurnstileToken } from "@/lib/turnstile/verify";
 import { getDisposableDomain } from "@/lib/auth/disposable-emails";
+import { checkRateLimit, rateLimitMessage } from "@/lib/rate-limit";
 
 export type AuthActionState = {
   error?: string;
@@ -54,6 +55,35 @@ export async function loginWithOtpAction(
     return { error: "Хүний шалгалт амжилтгүй боллоо. Хуудсаа refresh хийгээд дахин оролдоно уу." };
   }
 
+  // App-level rate limit (per email + per IP). Fail-open if Upstash env missing.
+  const normalizedEmail = email.trim().toLowerCase();
+  for (const { identifier, limit } of [
+    { identifier: `email:${normalizedEmail}`, limit: 5 },
+    { identifier: `ip:${ip ?? "unknown"}`, limit: 10 }
+  ]) {
+    const rl = await checkRateLimit({
+      prefix: "login-otp",
+      identifier,
+      limit,
+      windowSeconds: 900
+    });
+    if (!rl.ok) {
+      void logAuthEvent({
+        type: "login_failed",
+        email: normalizedEmail,
+        ip,
+        userAgent,
+        metadata: {
+          method: "magic_link",
+          stage: "rate_limit",
+          dimension: identifier,
+          retry_after_s: rl.retryAfterSeconds
+        }
+      });
+      return { error: rateLimitMessage(rl.retryAfterSeconds) };
+    }
+  }
+
   const nextPath = formData.get("next");
   const next =
     typeof nextPath === "string" && nextPath.startsWith("/") && !nextPath.startsWith("//")
@@ -62,7 +92,6 @@ export async function loginWithOtpAction(
 
   const supabase = await getSupabaseServerClient();
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const normalizedEmail = email.trim().toLowerCase();
 
   const { error } = await supabase.auth.signInWithOtp({
     email: normalizedEmail,
@@ -98,6 +127,30 @@ export async function loginWithOtpAction(
 }
 
 export async function loginWithGoogleAction(): Promise<never> {
+  const requestHeaders = await headers();
+  const ip = extractClientIp(requestHeaders);
+  const userAgent = extractUserAgent(requestHeaders);
+
+  const rl = await checkRateLimit({
+    prefix: "login-google",
+    identifier: `ip:${ip ?? "unknown"}`,
+    limit: 10,
+    windowSeconds: 900
+  });
+  if (!rl.ok) {
+    void logAuthEvent({
+      type: "login_failed",
+      ip,
+      userAgent,
+      metadata: {
+        method: "google",
+        stage: "rate_limit",
+        retry_after_s: rl.retryAfterSeconds
+      }
+    });
+    redirect("/login?error=rate_limited");
+  }
+
   const supabase = await getSupabaseServerClient();
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -114,11 +167,10 @@ export async function loginWithGoogleAction(): Promise<never> {
 
   if (error || !data.url) {
     console.error("[auth] Google OAuth failed:", error?.message);
-    const requestHeaders = await headers();
     void logAuthEvent({
       type: "login_failed",
-      ip: extractClientIp(requestHeaders),
-      userAgent: extractUserAgent(requestHeaders),
+      ip,
+      userAgent,
       metadata: { method: "google", reason: error?.message ?? "no_url" }
     });
     redirect("/login?error=oauth_failed");

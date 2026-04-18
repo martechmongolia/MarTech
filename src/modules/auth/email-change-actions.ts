@@ -5,6 +5,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getDisposableDomain } from "@/lib/auth/disposable-emails";
 import { extractClientIp, extractUserAgent, logAuthEvent } from "@/modules/auth/audit";
 import { getCurrentUser } from "@/modules/auth/session";
+import { checkRateLimit, rateLimitMessage } from "@/lib/rate-limit";
 
 export type EmailChangeState = {
   error?: string;
@@ -53,6 +54,16 @@ export async function requestEmailChangeAction(
   const requestHeaders = await headers();
   const ip = extractClientIp(requestHeaders);
   const userAgent = extractUserAgent(requestHeaders);
+
+  const rl = await checkRateLimit({
+    prefix: "email-change",
+    identifier: `user:${user.id}`,
+    limit: 3,
+    windowSeconds: 3600
+  });
+  if (!rl.ok) {
+    return { error: rateLimitMessage(rl.retryAfterSeconds) };
+  }
 
   const supabase = await getSupabaseServerClient();
   const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/auth/callback`;

@@ -20,6 +20,8 @@
     "@simplewebauthn/server": "^13.3.0",
     "@supabase/ssr": "0.9.0",
     "@supabase/supabase-js": "2.99.3",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
     "ai": "^6.0.146",
     "framer-motion": "^12.38.0",
     "mammoth": "^1.12.0",

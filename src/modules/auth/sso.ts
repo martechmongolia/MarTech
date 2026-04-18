@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { extractClientIp, extractUserAgent, logAuthEvent } from "@/modules/auth/audit";
+import { checkRateLimit, rateLimitMessage } from "@/lib/rate-limit";
 
 export type SsoActionState = {
   error?: string;
@@ -42,6 +43,37 @@ export async function startSsoLoginAction(
       ? nextRaw
       : "/dashboard";
 
+  const requestHeaders = await headers();
+  const ip = extractClientIp(requestHeaders);
+  const userAgent = extractUserAgent(requestHeaders);
+
+  for (const { identifier, limit } of [
+    { identifier: `email:${email}`, limit: 5 },
+    { identifier: `ip:${ip ?? "unknown"}`, limit: 10 }
+  ]) {
+    const rl = await checkRateLimit({
+      prefix: "login-sso",
+      identifier,
+      limit,
+      windowSeconds: 900
+    });
+    if (!rl.ok) {
+      void logAuthEvent({
+        type: "login_failed",
+        email,
+        ip,
+        userAgent,
+        metadata: {
+          method: "sso",
+          stage: "rate_limit",
+          dimension: identifier,
+          retry_after_s: rl.retryAfterSeconds
+        }
+      });
+      return { error: rateLimitMessage(rl.retryAfterSeconds) };
+    }
+  }
+
   const supabase = await getSupabaseServerClient();
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -52,13 +84,12 @@ export async function startSsoLoginAction(
     }
   });
 
-  const requestHeaders = await headers();
   if (error || !data?.url) {
     void logAuthEvent({
       type: "login_failed",
       email,
-      ip: extractClientIp(requestHeaders),
-      userAgent: extractUserAgent(requestHeaders),
+      ip,
+      userAgent,
       metadata: { method: "sso", domain, reason: error?.message ?? "no_url" }
     });
     if (error?.message?.toLowerCase().includes("no sso provider")) {
