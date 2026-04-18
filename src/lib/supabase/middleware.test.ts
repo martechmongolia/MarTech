@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isProtectedPath, isPublicAuthPath } from "./middleware";
+import { isConsentExempt, isProtectedPath, isPublicAuthPath } from "./middleware";
 
 describe("isProtectedPath", () => {
   it.each([
@@ -45,5 +45,36 @@ describe("isPublicAuthPath", () => {
 
   it.each(["/", "/dashboard", "/pricing", "/api/meta/callback"])("returns false for %s", (path) => {
     expect(isPublicAuthPath(path)).toBe(false);
+  });
+});
+
+describe("isConsentExempt", () => {
+  it.each([
+    "/auth/consent",
+    "/auth/consent?next=/dashboard",
+    "/auth/callback",
+    "/auth/mfa",
+    "/auth/google",
+    "/auth/sso",
+    "/api/auth/passkey/login/start",
+    "/api/auth/passkey/register/finish",
+    "/login",
+    "/terms",
+    "/privacy",
+    "/data-deletion",
+    "/pricing"
+  ])("returns true for %s", (path) => {
+    expect(isConsentExempt(path)).toBe(true);
+  });
+
+  it.each([
+    "/dashboard",
+    "/settings",
+    "/settings/security",
+    "/billing",
+    "/admin",
+    "/pages"
+  ])("returns false for %s", (path) => {
+    expect(isConsentExempt(path)).toBe(false);
   });
 });

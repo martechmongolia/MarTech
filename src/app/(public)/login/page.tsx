@@ -15,7 +15,10 @@ const ERROR_MESSAGES: Record<string, string> = {
   auth_unavailable: "Нэвтрэх үйлчилгээ түр боломжгүй байна. Дараа дахин оролдоно уу.",
   consent_required: "Үйлчилгээний нөхцөлийг зөвшөөрсний дараа үргэлжлүүлнэ үү.",
   oauth_failed: "Google-р нэвтрэх амжилтгүй боллоо. Дахин оролдоно уу.",
-  captcha_failed: "Хүний шалгалт амжилтгүй боллоо. Хуудсаа refresh хийгээд дахин оролдоно уу."
+  captcha_failed: "Хүний шалгалт амжилтгүй боллоо. Хуудсаа refresh хийгээд дахин оролдоно уу.",
+  account_deleted:
+    "Таны account устгагдсан. 30 хоногийн дотор сэргээхийг хүсвэл support@martech.mn руу бичнэ үү.",
+  account_suspended: "Таны account түр хориглогдсон байна. Админтай холбогдоно уу."
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {

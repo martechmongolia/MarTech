@@ -2444,9 +2444,11 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          deleted_at: string | null
           email: string
           full_name: string | null
           id: string
+          status: string
           tos_accepted_at: string | null
           tos_accepted_ip: string | null
           tos_version: string | null
@@ -2455,9 +2457,11 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           email: string
           full_name?: string | null
           id: string
+          status?: string
           tos_accepted_at?: string | null
           tos_accepted_ip?: string | null
           tos_version?: string | null
@@ -2466,9 +2470,11 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           email?: string
           full_name?: string | null
           id?: string
+          status?: string
           tos_accepted_at?: string | null
           tos_accepted_ip?: string | null
           tos_version?: string | null
