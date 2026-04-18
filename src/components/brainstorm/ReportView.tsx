@@ -29,7 +29,7 @@ export function ReportView({ report, topic, isPro = false }: ReportViewProps) {
       const badge = item.agent ? `<span style="font-size:11px;color:#4f46e5;margin-left:8px">${item.agent_emoji ?? ""} ${item.agent}</span>` : "";
       return `<li style="margin-bottom:6px"><b>${i + 1}.</b> ${item.text}${badge}</li>`;
     }).join("");
-    const actionsHtml = report.next_actions.map((raw, i) => {
+    const actionsHtml = report.next_actions.map((raw) => {
       const item = toAttributed(raw);
       const badge = item.agent ? `<span style="font-size:11px;color:#059669;margin-left:8px">${item.agent_emoji ?? ""} ${item.agent}</span>` : "";
       return `<li style="margin-bottom:6px">☑ ${item.text}${badge}</li>`;

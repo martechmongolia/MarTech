@@ -3,6 +3,7 @@
 // PublicReportView — Auth шаардахгүй public shareable report
 // ============================================================
 
+import Link from "next/link";
 import type { AttributedItem, BrainstormReport, BrainstormSession } from "@/lib/brainstorm/types";
 import { ReportView } from "./ReportView";
 
@@ -56,12 +57,12 @@ export function PublicReportView({ session, report }: Props) {
         <div style={{ marginTop: "2rem", textAlign: "center", padding: "1.5rem", background: "linear-gradient(135deg,#4f46e5,#7c3aed)", borderRadius: "1rem", color: "#fff" }}>
           <p style={{ fontWeight: 700, fontSize: "1rem", margin: "0 0 0.25rem" }}>🧠 MarTech AI Brainstorming</p>
           <p style={{ fontSize: "0.8rem", opacity: 0.85, margin: "0 0 1rem" }}>6 AI агенттай, нотлогдсон арга зүйгээр бизнесийн асуудлаа шийд</p>
-          <a
+          <Link
             href="/brainstorm/new"
             style={{ display: "inline-block", background: "#fff", color: "#4f46e5", fontWeight: 700, padding: "0.6rem 1.5rem", borderRadius: "0.75rem", textDecoration: "none", fontSize: "0.875rem" }}
           >
             Өөрийн хэлэлцүүлэг эхлүүлэх →
-          </a>
+          </Link>
         </div>
       </div>
     </div>

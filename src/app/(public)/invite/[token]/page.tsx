@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Alert } from "@/components/ui";
 import { getInvitationByToken } from "@/modules/organizations/invitations";
 import { acceptInvitationFormAction } from "@/modules/organizations/invitation-actions";

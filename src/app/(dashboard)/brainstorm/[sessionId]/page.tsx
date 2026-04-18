@@ -65,7 +65,6 @@ export default function BrainstormSessionPage() {
     if (!sessionId) return;
     sessionStartRef.current = Date.now();
     loadSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
   // Load existing report when session loads

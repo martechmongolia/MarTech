@@ -2,6 +2,7 @@
 // Brainstorm — SSE Streaming Endpoint (BE-04)
 // POST /api/brainstorm/stream
 // ============================================================
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
@@ -125,7 +126,6 @@ export async function POST(req: NextRequest) {
         if (userMessage) {
           conversationHistory.push({ role: "user", content: userMessage });
           // Save user message to DB
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await (supabase as any).from("brainstorm_messages").insert({
             session_id: sessionId,
             role: "user",
@@ -154,7 +154,6 @@ export async function POST(req: NextRequest) {
         // advance the turn state to move to the next agent/round.
         if (currentTurnState.phase === "waiting_user") {
           currentTurnState = advanceTurn(currentTurnState);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await (supabase as any).from("brainstorm_sessions").update({
             current_agent_index: currentTurnState.currentAgentIndex,
             current_phase: currentTurnState.phase,
@@ -175,7 +174,6 @@ export async function POST(req: NextRequest) {
               phase: "agent_speaking",
             };
           }
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await (supabase as any).from("brainstorm_sessions").update({
             current_agent_index: currentTurnState.currentAgentIndex,
             current_phase: currentTurnState.phase,
