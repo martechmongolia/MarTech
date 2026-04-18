@@ -38,6 +38,14 @@ export default async function SettingsPage() {
             </p>
           </Card>
         </Link>
+        <Link href="/settings/account" style={{ textDecoration: "none" }}>
+          <Card padded stack>
+            <strong style={{ fontSize: "1rem" }}>Account</strong>
+            <p className="ui-text-muted" style={{ margin: 0 }}>
+              Account-ын мэдээлэл, устгах
+            </p>
+          </Card>
+        </Link>
       </div>
     </section>
   );
