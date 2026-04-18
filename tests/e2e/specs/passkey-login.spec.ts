@@ -51,23 +51,46 @@ test.describe("Passkey login", () => {
     await context.clearCookies({ name: /^sb-/ });
     expect(cookies.some((c) => c.name.startsWith("sb-"))).toBe(true);
 
-    // Step 3 — exercise the /login → passkey path.
+    // Step 3 — exercise the /login → passkey path. Capture any network
+    // failure on the passkey endpoints so a silent finish-API error is
+    // visible in the test output instead of timing out blindly.
+    const apiFailures: Array<{ url: string; status: number; body: string }> = [];
+    page.on("response", async (res) => {
+      const u = res.url();
+      if (u.includes("/api/auth/passkey/") && !res.ok()) {
+        apiFailures.push({
+          url: u,
+          status: res.status(),
+          body: await res.text().catch(() => "<no body>")
+        });
+      }
+    });
+    const consoleErrors: string[] = [];
+    page.on("pageerror", (err) => consoleErrors.push(err.message));
+    page.on("console", (msg) => {
+      if (msg.type() === "error") consoleErrors.push(msg.text());
+    });
+
     await page.goto("/login");
     await page.getByLabel(/үйлчилгээний нөхцөл/i).check();
     await page.locator("#email").fill(user.email);
     await page.getByRole("button", { name: "Passkey-ээр нэвтрэх" }).click();
 
-    // Use the authoritative DB signal instead of waiting on client-side
-    // navigation: the passkey_login_success event is logged inside
-    // /api/auth/passkey/login/finish the moment verifyOtp succeeds, which
-    // is the real "user is authenticated" moment. Polling this avoids
-    // flakiness from client router race conditions (cookies landing after
-    // router.push, middleware redirect chains to /setup-organization, etc).
-    await expect
-      .poll(() => countAuthEvents(user.userId, "passkey_login_success"), {
-        timeout: 30_000,
-        intervals: [500, 1_000, 2_000]
-      })
-      .toBeGreaterThanOrEqual(1);
+    try {
+      await expect
+        .poll(() => countAuthEvents(user.userId, "passkey_login_success"), {
+          timeout: 30_000,
+          intervals: [500, 1_000, 2_000]
+        })
+        .toBeGreaterThanOrEqual(1);
+    } catch (err) {
+      // Surface diagnostics before rethrowing so CI logs pinpoint the cause.
+      console.error("[passkey-login] auth event never appeared.");
+      console.error("[passkey-login] api failures:", JSON.stringify(apiFailures, null, 2));
+      console.error("[passkey-login] console errors:", consoleErrors);
+      console.error("[passkey-login] final URL:", page.url());
+      console.error("[passkey-login] visible body:", (await page.textContent("body"))?.slice(0, 500));
+      throw err;
+    }
   });
 });
