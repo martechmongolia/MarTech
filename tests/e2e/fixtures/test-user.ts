@@ -1,20 +1,27 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Page } from "@playwright/test";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import type { BrowserContext, Page } from "@playwright/test";
 import { CURRENT_TOS_VERSION } from "@/modules/auth/consent";
 
-type Env = { supabaseUrl: string; serviceRoleKey: string; baseUrl: string };
+type Env = {
+  supabaseUrl: string;
+  anonKey: string;
+  serviceRoleKey: string;
+  baseUrl: string;
+};
 
 function getEnv(): Env {
   const supabaseUrl = process.env.E2E_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.E2E_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const serviceRoleKey =
     process.env.E2E_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
   const baseUrl = process.env.E2E_BASE_URL ?? "https://localhost:3000";
-  if (!supabaseUrl || !serviceRoleKey) {
+  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
     throw new Error(
-      "E2E_SUPABASE_URL / E2E_SUPABASE_SERVICE_ROLE_KEY env vars are required for e2e tests"
+      "E2E_SUPABASE_URL / E2E_SUPABASE_ANON_KEY / E2E_SUPABASE_SERVICE_ROLE_KEY env vars are required for e2e tests"
     );
   }
-  return { supabaseUrl, serviceRoleKey, baseUrl };
+  return { supabaseUrl, anonKey, serviceRoleKey, baseUrl };
 }
 
 function adminClient(): SupabaseClient {
@@ -24,15 +31,16 @@ function adminClient(): SupabaseClient {
   });
 }
 
-export type TestUser = { userId: string; email: string };
+export type TestUser = { userId: string; email: string; password: string };
 
 export async function createTestUser(): Promise<TestUser> {
   const admin = adminClient();
   const email = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@martech.test`;
+  const password = `Test!${crypto.randomUUID()}`;
   const { data, error } = await admin.auth.admin.createUser({
     email,
-    email_confirm: true,
-    password: crypto.randomUUID()
+    password,
+    email_confirm: true
   });
   if (error || !data.user) {
     throw new Error(error?.message ?? "createUser returned no user");
@@ -51,7 +59,7 @@ export async function createTestUser(): Promise<TestUser> {
     throw new Error(`profile update failed: ${profileErr.message}`);
   }
 
-  return { userId: data.user.id, email };
+  return { userId: data.user.id, email, password };
 }
 
 export async function deleteTestUser(userId: string): Promise<void> {
@@ -63,23 +71,55 @@ export async function deleteTestUser(userId: string): Promise<void> {
   }
 }
 
+type CapturedCookie = { name: string; value: string; options?: CookieOptions };
+
 /**
- * Establish a Supabase session cookie in the browser by walking through the
- * same magic-link exchange the passkey-login-finish route uses. This avoids
- * needing a real email and sidesteps OTP rate limits.
+ * Sign the test user in via password grant using the same `@supabase/ssr`
+ * `createServerClient` pipeline the app uses at runtime. This avoids the
+ * magic-link action_link flow entirely (that flow returns tokens in a URL
+ * fragment, which the app's PKCE `/auth/callback` route does not handle —
+ * resulting in `?error=missing_code`).
+ *
+ * The captured cookies are injected directly into the Playwright context so
+ * both middleware and server components see a valid session on subsequent
+ * navigations.
  */
-export async function loginTestUser(page: Page, email: string): Promise<void> {
+export async function loginTestUser(
+  context: BrowserContext,
+  page: Page,
+  user: TestUser
+): Promise<void> {
   const env = getEnv();
-  const admin = adminClient();
-  const { data, error } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email,
-    options: { redirectTo: `${env.baseUrl}/auth/callback` }
+  const captured: CapturedCookie[] = [];
+  const ssr = createServerClient(env.supabaseUrl, env.anonKey, {
+    cookies: {
+      getAll: () => [],
+      setAll: (cookies) => {
+        for (const c of cookies) captured.push({ name: c.name, value: c.value, options: c.options });
+      }
+    }
   });
-  if (error || !data.properties?.action_link) {
-    throw new Error(`generateLink failed: ${error?.message ?? "no action_link"}`);
-  }
-  await page.goto(data.properties.action_link);
+
+  const { error } = await ssr.auth.signInWithPassword({
+    email: user.email,
+    password: user.password
+  });
+  if (error) throw new Error(`signInWithPassword failed: ${error.message}`);
+
+  const { protocol, hostname } = new URL(env.baseUrl);
+  await context.addCookies(
+    captured.map((c) => ({
+      name: c.name,
+      value: c.value,
+      domain: hostname,
+      path: "/",
+      httpOnly: true,
+      secure: protocol === "https:",
+      sameSite: "Lax"
+    }))
+  );
+
+  await page.goto(`${env.baseUrl}/dashboard`);
   await page.waitForURL("**/dashboard", { timeout: 30_000 });
 }
 

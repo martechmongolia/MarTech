@@ -38,7 +38,7 @@ test.describe("Passkey login", () => {
   test("logs in with a registered passkey", async ({ page, context }) => {
     // Step 1 — register a passkey (same browser context → authenticator holds
     // the credential for step 2).
-    await loginTestUser(page, user.email);
+    await loginTestUser(context, page, user);
     await page.goto("/settings/security");
     await page.getByRole("button", { name: "Passkey нэмэх" }).click();
     await expect(page.getByText("Passkey амжилттай нэмэгдлээ.")).toBeVisible({

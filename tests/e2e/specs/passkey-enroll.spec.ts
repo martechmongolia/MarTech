@@ -18,7 +18,7 @@ test.describe("Passkey enrollment", () => {
   test.beforeEach(async ({ context, page }) => {
     authenticator = await installVirtualAuthenticator(context, page);
     user = await createTestUser();
-    await loginTestUser(page, user.email);
+    await loginTestUser(context, page, user);
   });
 
   test.afterEach(async () => {
