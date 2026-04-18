@@ -120,7 +120,17 @@ export async function loginTestUser(
   );
 
   await page.goto(`${env.baseUrl}/dashboard`);
-  await page.waitForURL("**/dashboard", { timeout: 30_000 });
+  // Freshly-provisioned users have no org yet, so middleware + dashboard
+  // bounce them to /setup-organization. Either landing means the cookies
+  // were accepted and the user is authenticated; what we must NOT see is
+  // /login (auth rejected) or /auth/consent (ToS gate didn't match).
+  await page.waitForURL(
+    (url) => {
+      const p = url.pathname;
+      return p === "/dashboard" || p === "/setup-organization";
+    },
+    { timeout: 30_000 }
+  );
 }
 
 export async function countPasskeys(userId: string): Promise<number> {
