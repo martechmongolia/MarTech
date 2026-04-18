@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createHmac } from 'crypto';
 import { getFacebookAiEnv } from '@/lib/env/server';
-import { getPageConnectionByPageId, insertComment } from '@/modules/facebook-ai/data';
+import { getPageConnectionsByPageId, insertComment } from '@/modules/facebook-ai/data';
 import { processComment } from '@/modules/facebook-ai/processor';
+import { captureError } from '@/lib/monitoring';
 
 export const dynamic = 'force-dynamic';
 
@@ -96,44 +97,72 @@ export async function POST(req: Request): Promise<Response> {
         if (!fbCommentId || !postId || !message) continue;
 
         try {
-          // Find connection by page_id
-          const connection = await getPageConnectionByPageId(pageId);
-          if (!connection) {
-            console.warn(`[fb-webhook] No connection found for page ${pageId}`);
+          // Fan out: a single FB page can be connected by multiple orgs, each
+          // with their own AI settings + knowledge base. Insert one fb_comment
+          // per org that has this page connected AND has AI enabled.
+          const connections = await getPageConnectionsByPageId(pageId);
+          if (connections.length === 0) {
+            console.warn(`[fb-webhook] No active connection for page ${pageId}`);
             continue;
           }
 
-          // Respect per-page opt-in: if AI isn't enabled we drop the event.
-          // This keeps fb_comments free of data from pages that aren't using
-          // the feature, and avoids unnecessary OpenAI calls.
-          if (!connection.comment_ai_enabled) {
-            continue;
+          const aiEnabled = connections.filter((c) => c.comment_ai_enabled);
+          if (aiEnabled.length === 0) continue;
+
+          for (const connection of aiEnabled) {
+            try {
+              const { row: saved, inserted } = await insertComment({
+                comment_id: fbCommentId,
+                connection_id: connection.id,
+                org_id: connection.org_id,
+                post_id: postId,
+                commenter_name: val.from?.name ?? null,
+                commenter_id: val.from?.id ?? null,
+                message,
+                comment_type: 'unknown',
+                sentiment: null,
+                language: 'mn',
+                status: 'pending',
+                created_at_facebook: val.created_time
+                  ? new Date(val.created_time * 1000).toISOString()
+                  : null,
+              });
+
+              // Only process fresh inserts. Webhook re-delivery of an already
+              // ingested event shouldn't re-trigger AI for a comment we're
+              // halfway through (or already finished) handling.
+              if (!inserted) continue;
+
+              void processComment(saved.id).catch((err: unknown) => {
+                console.error('[fb-webhook] processComment error:', err);
+                captureError(err, {
+                  module: 'facebook-ai',
+                  op: 'webhook.processComment',
+                  orgId: connection.org_id,
+                  tags: { comment_id: saved.id, page_id: pageId },
+                });
+              });
+            } catch (perOrgErr) {
+              // One org failing to ingest shouldn't block the rest.
+              console.error(
+                `[fb-webhook] ingest failed for org ${connection.org_id}:`,
+                perOrgErr,
+              );
+              captureError(perOrgErr, {
+                module: 'facebook-ai',
+                op: 'webhook.ingest',
+                orgId: connection.org_id,
+                tags: { page_id: pageId, fb_comment_id: fbCommentId },
+              });
+            }
           }
-
-          // Insert into fb_comments
-          const saved = await insertComment({
-            comment_id: fbCommentId,
-            connection_id: connection.id,
-            org_id: connection.org_id,
-            post_id: postId,
-            commenter_name: val.from?.name ?? null,
-            commenter_id: val.from?.id ?? null,
-            message,
-            comment_type: 'unknown',
-            sentiment: null,
-            language: 'mn',
-            status: 'pending',
-            created_at_facebook: val.created_time
-              ? new Date(val.created_time * 1000).toISOString()
-              : null,
-          });
-
-          // Trigger AI processing (fire-and-forget)
-          void processComment(saved.id).catch((err: unknown) => {
-            console.error('[fb-webhook] processComment error:', err);
-          });
         } catch (err) {
           console.error('[fb-webhook] Error handling comment entry:', err);
+          captureError(err, {
+            module: 'facebook-ai',
+            op: 'webhook.handleEntry',
+            tags: { page_id: pageId, fb_comment_id: fbCommentId },
+          });
         }
       }
     }

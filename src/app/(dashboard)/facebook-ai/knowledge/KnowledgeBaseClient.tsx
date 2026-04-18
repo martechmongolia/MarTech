@@ -16,14 +16,6 @@ const CATEGORY_LABELS: Record<Category, string> = {
   general: "Ерөнхий",
 };
 
-const CATEGORY_COLORS: Record<Category, { bg: string; color: string }> = {
-  faq: { bg: "#EEF2FF", color: "#4F46E5" },
-  product: { bg: "#ECFDF5", color: "#065F46" },
-  policy: { bg: "#FFFBEB", color: "#92400E" },
-  contact: { bg: "#FEF2F2", color: "#B91C1C" },
-  general: { bg: "#F3F4F6", color: "#374151" },
-};
-
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -68,102 +60,32 @@ function ItemModal({
 
   return (
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.4)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-        padding: "1rem",
-      }}
+      className="fb-kb-modal-backdrop"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div
-        style={{
-          background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
-          borderRadius: "1rem",
-          padding: "1.75rem",
-          width: "100%",
-          maxWidth: "36rem",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)",
-        }}
-      >
-        <h3
-          style={{
-            margin: "0 0 1.25rem",
-            fontSize: "1.0625rem",
-            fontWeight: 700,
-            color: "#111827",
-          }}
-        >
+      <div className="fb-kb-modal">
+        <h3 className="fb-kb-modal__title">
           {mode === "add" ? "Шинэ мэдлэг нэмэх" : "Засах"}
         </h3>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
-          {/* Title */}
+        <div className="fb-kb-modal__body">
           <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                color: "#6B7280",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                marginBottom: "0.375rem",
-              }}
-            >
-              Гарчиг
-            </label>
+            <label className="fb-field-label">Гарчиг</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Жишээ: Хүргэлт хэрхэн ажилладаг вэ?"
-              style={{
-                width: "100%",
-                padding: "0.5rem 0.75rem",
-                background: "#F9FAFB",
-                border: "1px solid #E5E7EB",
-                borderRadius: "0.5rem",
-                color: "#111827",
-                fontSize: "0.875rem",
-                boxSizing: "border-box",
-              }}
+              className="fb-field-input"
             />
           </div>
 
-          {/* Category */}
           <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                color: "#6B7280",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                marginBottom: "0.375rem",
-              }}
-            >
-              Ангилал
-            </label>
+            <label className="fb-field-label">Ангилал</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as Category)}
-              style={{
-                width: "100%",
-                padding: "0.5rem 0.75rem",
-                background: "#F9FAFB",
-                border: "1px solid #E5E7EB",
-                borderRadius: "0.5rem",
-                color: "#111827",
-                fontSize: "0.875rem",
-                boxSizing: "border-box",
-              }}
+              className="fb-field-input"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
@@ -173,84 +95,24 @@ function ItemModal({
             </select>
           </div>
 
-          {/* Content */}
           <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                color: "#6B7280",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                marginBottom: "0.375rem",
-              }}
-            >
-              Агуулга
-            </label>
+            <label className="fb-field-label">Агуулга</label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Тайлбар, хариулт, мэдээлэл..."
               rows={5}
-              style={{
-                width: "100%",
-                padding: "0.5rem 0.75rem",
-                background: "#F9FAFB",
-                border: "1px solid #E5E7EB",
-                borderRadius: "0.5rem",
-                color: "#111827",
-                fontSize: "0.875rem",
-                lineHeight: 1.6,
-                resize: "vertical",
-                boxSizing: "border-box",
-              }}
+              className="fb-field-textarea"
             />
           </div>
 
-          {error && (
-            <p style={{ color: "#B91C1C", fontSize: "0.8125rem", margin: 0 }}>{error}</p>
-          )}
+          {error && <p className="fb-kb-modal__error">{error}</p>}
 
-          <div
-            style={{
-              display: "flex",
-              gap: "0.625rem",
-              justifyContent: "flex-end",
-              marginTop: "0.25rem",
-            }}
-          >
-            <button
-              onClick={onClose}
-              disabled={saving}
-              style={{
-                padding: "0.5rem 1rem",
-                background: "#F9FAFB",
-                color: "#6B7280",
-                border: "1px solid #E5E7EB",
-                borderRadius: "0.5rem",
-                fontSize: "0.875rem",
-                cursor: saving ? "not-allowed" : "pointer",
-                opacity: saving ? 0.6 : 1,
-              }}
-            >
+          <div className="fb-kb-modal__actions">
+            <button onClick={onClose} disabled={saving} className="fb-btn fb-btn--ghost">
               Цуцлах
             </button>
-            <button
-              onClick={handleSubmit}
-              disabled={saving}
-              style={{
-                padding: "0.5rem 1.25rem",
-                background: "#4F46E5",
-                color: "#FFFFFF",
-                border: "none",
-                borderRadius: "0.5rem",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                cursor: saving ? "not-allowed" : "pointer",
-                opacity: saving ? 0.6 : 1,
-              }}
-            >
+            <button onClick={handleSubmit} disabled={saving} className="fb-save-btn">
               {saving ? "Хадгалж байна…" : mode === "add" ? "Нэмэх" : "Хадгалах"}
             </button>
           </div>
@@ -273,93 +135,28 @@ function KnowledgeCard({
   onDelete: () => void;
   busy: boolean;
 }) {
-  const catStyle = CATEGORY_COLORS[item.category];
-
   return (
-    <div
-      style={{
-        background: "#FFFFFF",
-        border: "1px solid #E5E7EB",
-        borderRadius: "0.75rem",
-        padding: "1.125rem 1.375rem",
-        marginBottom: "0.625rem",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: "1rem",
-        }}
-      >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.625rem",
-              marginBottom: "0.375rem",
-              flexWrap: "wrap",
-            }}
-          >
-            <span
-              style={{
-                padding: "0.125rem 0.5rem",
-                borderRadius: "999px",
-                fontSize: "0.6875rem",
-                fontWeight: 700,
-                background: catStyle.bg,
-                color: catStyle.color,
-              }}
-            >
+    <div className="fb-kb-card">
+      <div className="fb-kb-card__row">
+        <div className="fb-kb-card__body">
+          <div className="fb-kb-card__head-row">
+            <span className={`fb-category-badge fb-category-badge--${item.category}`}>
               {CATEGORY_LABELS[item.category]}
             </span>
-            <span style={{ fontSize: "0.75rem", color: "#9CA3AF" }}>
+            <span className="fb-kb-card__timestamp">
               {timeAgo(item.updated_at ?? item.created_at)}
             </span>
           </div>
-          <h4
-            style={{
-              margin: "0 0 0.375rem",
-              fontSize: "0.9375rem",
-              fontWeight: 600,
-              color: "#111827",
-            }}
-          >
-            {item.title}
-          </h4>
-          <p
-            style={{
-              margin: 0,
-              fontSize: "0.8125rem",
-              color: "#6B7280",
-              lineHeight: 1.5,
-              overflow: "hidden",
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-            }}
-          >
-            {item.content}
-          </p>
+          <h4 className="fb-kb-card__title">{item.title}</h4>
+          <p className="fb-kb-card__preview">{item.content}</p>
         </div>
 
-        <div style={{ display: "flex", gap: "0.375rem", flexShrink: 0 }}>
+        <div className="fb-kb-card__actions">
           <button
             onClick={onEdit}
             title="Засах"
             disabled={busy}
-            style={{
-              padding: "0.375rem 0.625rem",
-              background: "#F9FAFB",
-              color: "#6B7280",
-              border: "1px solid #E5E7EB",
-              borderRadius: "0.375rem",
-              fontSize: "0.8125rem",
-              cursor: busy ? "not-allowed" : "pointer",
-              opacity: busy ? 0.6 : 1,
-            }}
+            className="fb-kb-card__btn"
           >
             ✏️
           </button>
@@ -367,16 +164,7 @@ function KnowledgeCard({
             onClick={onDelete}
             title="Устгах"
             disabled={busy}
-            style={{
-              padding: "0.375rem 0.625rem",
-              background: "#FEF2F2",
-              color: "#B91C1C",
-              border: "1px solid #FECACA",
-              borderRadius: "0.375rem",
-              fontSize: "0.8125rem",
-              cursor: busy ? "not-allowed" : "pointer",
-              opacity: busy ? 0.6 : 1,
-            }}
+            className="fb-kb-card__btn fb-kb-card__btn--delete"
           >
             🗑️
           </button>
@@ -477,98 +265,39 @@ export function KnowledgeBaseClient({ orgId, initialItems }: Props) {
     <div className="page-content">
       <FacebookAiTabs />
 
-      {/* Header */}
       <div className="page-header-row">
         <div>
           <h1 className="page-title">📚 Мэдлэгийн сан</h1>
           <p className="page-subtitle">FAQ & Бүтээгдэхүүний мэдээлэл</p>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div className="fb-kb-header-actions">
           <button
             title="Ирээдүйд CSV, Notion-оос импортлох боломжтой"
-            style={{
-              padding: "0.5rem 0.875rem",
-              background: "#F9FAFB",
-              color: "#9CA3AF",
-              border: "1px solid #E5E7EB",
-              borderRadius: "0.5rem",
-              fontSize: "0.8125rem",
-              cursor: "not-allowed",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.375rem",
-            }}
+            className="fb-icon-btn fb-icon-btn--muted"
             disabled
           >
             📥 Импортлох (coming soon)
           </button>
-          <button
-            onClick={() => reload()}
-            style={{
-              padding: "0.5rem 0.875rem",
-              background: "#F9FAFB",
-              color: "#6B7280",
-              border: "1px solid #E5E7EB",
-              borderRadius: "0.5rem",
-              fontSize: "0.8125rem",
-              cursor: "pointer",
-            }}
-          >
+          <button onClick={() => reload()} className="fb-icon-btn">
             🔄 Шинэчлэх
           </button>
           <button
             onClick={() => setShowModal(true)}
             disabled={isPending}
-            style={{
-              padding: "0.5rem 1rem",
-              background: "#4F46E5",
-              color: "#FFFFFF",
-              border: "none",
-              borderRadius: "0.5rem",
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              cursor: isPending ? "not-allowed" : "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.375rem",
-              opacity: isPending ? 0.6 : 1,
-            }}
+            className="fb-icon-btn fb-icon-btn--primary"
           >
             + Нэмэх
           </button>
         </div>
       </div>
 
-      {error ? (
-        <div
-          style={{
-            marginBottom: "1rem",
-            padding: "0.75rem 1rem",
-            background: "#FEF2F2",
-            border: "1px solid #FECACA",
-            borderRadius: "0.5rem",
-            color: "#B91C1C",
-            fontSize: "0.875rem",
-          }}
-        >
-          {error}
-        </div>
-      ) : null}
+      {error ? <div className="fb-error-banner">{error}</div> : null}
 
       {items.length === 0 ? (
-        <div
-          style={{
-            padding: "3rem 2rem",
-            textAlign: "center",
-            color: "#6B7280",
-            background: "#FFFFFF",
-            border: "1px solid #E5E7EB",
-            borderRadius: "0.75rem",
-          }}
-        >
-          <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>📭</div>
+        <div className="fb-kb-empty">
+          <div className="fb-kb-empty__icon">📭</div>
           <p style={{ fontSize: "0.9375rem", margin: 0 }}>
-            Мэдлэгийн сан хоосон байна. "+ Нэмэх" товчийг дарна уу.
+            Мэдлэгийн сан хоосон байна. &quot;+ Нэмэх&quot; товчийг дарна уу.
           </p>
         </div>
       ) : (

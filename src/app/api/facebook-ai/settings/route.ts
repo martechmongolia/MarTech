@@ -7,6 +7,12 @@ import {
   getReplySettings,
   updateReplySettings,
 } from '@/modules/facebook-ai/data';
+import {
+  MAX_REPLIES_PER_DAY_CEILING,
+  isValidHHMM,
+  validateCustomSystemPrompt,
+  validateFallbackMessage,
+} from '@/modules/facebook-ai/settings-validators';
 import type { FbReplySettings } from '@/modules/facebook-ai/types';
 
 export const dynamic = 'force-dynamic';
@@ -83,19 +89,56 @@ export async function PUT(req: Request): Promise<Response> {
     }
     patch.reply_tone = body.reply_tone as FbReplySettings['reply_tone'];
   }
-  if (typeof body.reply_language === 'string') patch.reply_language = body.reply_language;
-  if (typeof body.reply_delay_seconds === 'number' && body.reply_delay_seconds >= 0) {
-    patch.reply_delay_seconds = Math.floor(body.reply_delay_seconds);
+  if (typeof body.reply_language === 'string') {
+    const lang = body.reply_language.trim();
+    if (lang.length > 8) {
+      return NextResponse.json({ error: 'invalid_reply_language' }, { status: 400 });
+    }
+    patch.reply_language = lang;
   }
-  if (typeof body.working_hours_start === 'string') patch.working_hours_start = body.working_hours_start;
-  if (typeof body.working_hours_end === 'string') patch.working_hours_end = body.working_hours_end;
+  if (typeof body.reply_delay_seconds === 'number' && body.reply_delay_seconds >= 0) {
+    patch.reply_delay_seconds = Math.min(3600, Math.floor(body.reply_delay_seconds));
+  }
+  if (typeof body.working_hours_start === 'string') {
+    if (!isValidHHMM(body.working_hours_start)) {
+      return NextResponse.json({ error: 'invalid_working_hours_start' }, { status: 400 });
+    }
+    patch.working_hours_start = body.working_hours_start;
+  }
+  if (typeof body.working_hours_end === 'string') {
+    if (!isValidHHMM(body.working_hours_end)) {
+      return NextResponse.json({ error: 'invalid_working_hours_end' }, { status: 400 });
+    }
+    patch.working_hours_end = body.working_hours_end;
+  }
   if (typeof body.max_replies_per_day === 'number' && body.max_replies_per_day > 0) {
-    patch.max_replies_per_day = Math.floor(body.max_replies_per_day);
+    patch.max_replies_per_day = Math.min(
+      MAX_REPLIES_PER_DAY_CEILING,
+      Math.floor(body.max_replies_per_day),
+    );
   }
   if (typeof body.custom_system_prompt === 'string' || body.custom_system_prompt === null) {
-    patch.custom_system_prompt = body.custom_system_prompt ?? null;
+    const result = validateCustomSystemPrompt(body.custom_system_prompt ?? null);
+    if (!result.ok) {
+      const payload =
+        result.code === 'custom_system_prompt_too_long'
+          ? { error: result.code, maxLength: result.maxLength }
+          : { error: result.code, matched: result.matched };
+      return NextResponse.json(payload, { status: 400 });
+    }
+    patch.custom_system_prompt = result.value;
   }
-  if (typeof body.fallback_message === 'string') patch.fallback_message = body.fallback_message;
+  if (typeof body.fallback_message === 'string') {
+    const result = validateFallbackMessage(body.fallback_message);
+    if (!result.ok) {
+      const payload =
+        result.code === 'fallback_message_too_long'
+          ? { error: result.code, maxLength: result.maxLength }
+          : { error: result.code };
+      return NextResponse.json(payload, { status: 400 });
+    }
+    patch.fallback_message = result.value;
+  }
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: 'no_changes' }, { status: 400 });

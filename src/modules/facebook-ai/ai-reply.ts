@@ -1,6 +1,11 @@
 'use server';
 
 import { getOpenAiKey } from '@/lib/env/server';
+import {
+  coerceClassification,
+  coerceReplyPayload,
+  type ClassificationResult,
+} from './response-coercion';
 import type { FbComment, FbReplySettings, FbKnowledgeBaseItem, AiReplyResult } from './types';
 
 const AI_MODEL = 'gpt-4o-mini';
@@ -25,56 +30,121 @@ ${settings.custom_system_prompt ?? ''}`.trim();
 }
 
 // ---------------------------------------------------------------------------
-// Helpers: call OpenAI with JSON response format
+// Helpers: call OpenAI with JSON response format + retry on transient errors
 // ---------------------------------------------------------------------------
-async function callOpenAiJson<T>(
+
+const OPENAI_TIMEOUT_MS = 20_000;
+const OPENAI_MAX_RETRIES = 2;
+
+type OpenAiError = Error & { status?: number; retryable?: boolean };
+
+function openAiError(message: string, status?: number): OpenAiError {
+  const err = new Error(message) as OpenAiError;
+  err.status = status;
+  err.retryable = status === 429 || (status !== undefined && status >= 500);
+  return err;
+}
+
+async function callOpenAiJsonOnce<T>(
   systemPrompt: string,
   userPrompt: string,
-): Promise<T> {
+  temperature: number,
+): Promise<{ data: T; tokensUsed: number }> {
   const apiKey = getOpenAiKey();
   if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: AI_MODEL,
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`OpenAI error (${res.status}): ${errText.slice(0, 500)}`);
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        temperature,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw openAiError(`OpenAI error (${res.status}): ${errText.slice(0, 500)}`, res.status);
+    }
+
+    const body = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+      usage?: { total_tokens?: number };
+    };
+
+    const content = body.choices?.[0]?.message?.content;
+    if (!content) throw openAiError('OpenAI returned empty content');
+
+    return {
+      data: JSON.parse(content) as T,
+      tokensUsed: body.usage?.total_tokens ?? 0,
+    };
+  } catch (err) {
+    // AbortError (timeout) is worth retrying — treat as transient.
+    if (err instanceof Error && err.name === 'AbortError') {
+      const e = openAiError(`OpenAI timed out after ${OPENAI_TIMEOUT_MS}ms`);
+      e.retryable = true;
+      throw e;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
   }
+}
 
-  const body = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-    usage?: { total_tokens?: number };
-  };
+async function callOpenAiJsonWithRetry<T>(
+  systemPrompt: string,
+  userPrompt: string,
+  temperature: number,
+): Promise<{ data: T; tokensUsed: number }> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= OPENAI_MAX_RETRIES; attempt++) {
+    try {
+      return await callOpenAiJsonOnce<T>(systemPrompt, userPrompt, temperature);
+    } catch (err) {
+      lastErr = err;
+      const retryable = (err as OpenAiError).retryable === true;
+      if (!retryable || attempt === OPENAI_MAX_RETRIES) break;
 
-  const content = body.choices?.[0]?.message?.content;
-  if (!content) throw new Error('OpenAI returned empty content');
+      // Exponential backoff with jitter: 1s, 2s, 4s (+0-250ms).
+      const delayMs = 1_000 * Math.pow(2, attempt) + Math.floor(Math.random() * 250);
+      console.warn(
+        `[fb-ai] OpenAI attempt ${attempt + 1}/${OPENAI_MAX_RETRIES + 1} failed (${
+          err instanceof Error ? err.message : String(err)
+        }); retrying in ${delayMs}ms`,
+      );
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  throw lastErr;
+}
 
-  return JSON.parse(content) as T;
+/** Back-compat: parses JSON content only, ignores token count. */
+async function callOpenAiJson<T>(
+  systemPrompt: string,
+  userPrompt: string,
+  temperature = 0.3,
+): Promise<T> {
+  const { data } = await callOpenAiJsonWithRetry<T>(systemPrompt, userPrompt, temperature);
+  return data;
 }
 
 // ---------------------------------------------------------------------------
-// Comment classifier
+// Comment classifier (coercion helpers live in ./response-coercion)
 // ---------------------------------------------------------------------------
-interface ClassificationResult {
-  type: FbComment['comment_type'];
-  sentiment: FbComment['sentiment'];
-  language: string;
-}
 
 export async function classifyComment(message: string): Promise<ClassificationResult> {
   const systemPrompt = `You are a comment classifier for a Mongolian business's Facebook page.
@@ -96,7 +166,8 @@ Rules:
   const userPrompt = `Comment: """${message}"""`;
 
   try {
-    return await callOpenAiJson<ClassificationResult>(systemPrompt, userPrompt);
+    const raw = await callOpenAiJson<unknown>(systemPrompt, userPrompt);
+    return coerceClassification(raw);
   } catch {
     return { type: 'unknown', sentiment: 'neutral', language: 'mn' };
   }
@@ -157,49 +228,18 @@ JSON хариу (энэ хэлбэрээр):
   "confidence": 0.0-1.0
 }`;
 
-  let totalTokens = 0;
+  const { data: raw, tokensUsed } = await callOpenAiJsonWithRetry<unknown>(
+    systemPrompt,
+    userPrompt,
+    0.7,
+  );
 
-  const apiKey = getOpenAiKey();
-  if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
-
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: AI_MODEL,
-      temperature: 0.7,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`OpenAI error (${res.status}): ${errText.slice(0, 500)}`);
-  }
-
-  const body = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-    usage?: { total_tokens?: number };
-  };
-
-  totalTokens = body.usage?.total_tokens ?? 0;
-
-  const content = body.choices?.[0]?.message?.content;
-  if (!content) throw new Error('OpenAI returned empty content');
-
-  const parsed = JSON.parse(content) as { reply?: string; confidence?: number };
+  const { reply, confidence } = coerceReplyPayload(raw, settings.fallback_message);
 
   return {
-    reply: parsed.reply ?? settings.fallback_message,
-    confidence: parsed.confidence ?? 0.5,
-    tokensUsed: totalTokens,
+    reply,
+    confidence,
+    tokensUsed,
     commentType: classification.type,
     sentiment: classification.sentiment,
     language: classification.language,

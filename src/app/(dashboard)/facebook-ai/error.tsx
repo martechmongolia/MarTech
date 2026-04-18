@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { captureError } from "@/lib/monitoring";
+
 export default function FacebookAIError({
   error,
   reset,
@@ -7,55 +10,38 @@ export default function FacebookAIError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    console.error("[facebook-ai] page error:", error);
+    captureError(error, {
+      module: "facebook-ai",
+      op: "page.error",
+      tags: { digest: error.digest ?? "none" },
+    });
+  }, [error]);
+
+  const isDev = process.env.NODE_ENV !== "production";
+
   return (
-    <div
-      style={{
-        padding: "4rem 2rem",
-        textAlign: "center",
-        fontFamily: "system-ui, sans-serif",
-      }}
-    >
-      <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>⚠️</div>
-      <h2
-        style={{
-          fontSize: "1.25rem",
-          fontWeight: 700,
-          color: "#111827",
-          marginBottom: "0.5rem",
-        }}
-      >
-        Алдаа гарлаа
-      </h2>
-      <p
-        style={{
-          color: "#6B7280",
-          marginBottom: "1.5rem",
-          maxWidth: "480px",
-          margin: "0 auto 1.5rem",
-        }}
-      >
+    <div className="fb-error-shell">
+      <div className="fb-error-icon">⚠️</div>
+      <h2 className="fb-error-title">Алдаа гарлаа</h2>
+      <p className="fb-error-body">
         Facebook Comment AI хуудсыг ачааллах үед алдаа гарлаа. Дахин оролдоно уу.
-        {error.digest && (
-          <span style={{ display: "block", fontSize: "0.75rem", marginTop: "0.5rem", opacity: 0.5 }}>
-            Алдааны код: {error.digest}
-          </span>
-        )}
       </p>
-      <button
-        onClick={reset}
-        style={{
-          padding: "0.625rem 1.25rem",
-          background: "#4f46e5",
-          color: "#FFFFFF",
-          border: "none",
-          borderRadius: "0.5rem",
-          cursor: "pointer",
-          fontSize: "0.875rem",
-          fontWeight: 600,
-        }}
-      >
-        Дахин оролдох
-      </button>
+      {error.digest ? (
+        <p className="fb-error-code">Алдааны код: {error.digest}</p>
+      ) : null}
+      {isDev && error.message ? (
+        <pre className="fb-error-stack">{error.stack ?? error.message}</pre>
+      ) : null}
+      <div className="fb-error-actions">
+        <button onClick={reset} className="fb-error-btn fb-error-btn-primary">
+          Дахин оролдох
+        </button>
+        <a href="/facebook-ai" className="fb-error-btn fb-error-btn-secondary">
+          Хуудас сэргээх
+        </a>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { memo, useCallback, useMemo, useState, useTransition } from "react";
 import { FacebookAiTabs } from "./FacebookAiTabs";
 import type { FbCommentWithReply } from "@/modules/facebook-ai/data";
 import type { FbComment } from "@/modules/facebook-ai/types";
@@ -48,16 +48,6 @@ const TYPE_COLORS: Record<FbComment["comment_type"], { bg: string; color: string
   unknown: { bg: "#F3F4F6", color: "#374151" },
 };
 
-// A comment belongs to a tab depending on the combined comment+reply state.
-// - pending: has a draft reply awaiting approval (or awaiting draft generation)
-// - replied: either reply posted or comment status==replied
-// - skipped: spam/hidden/failed/skipped
-function classifyTab(c: FbCommentWithReply): TabKey {
-  if (c.status === "replied" || c.reply?.status === "posted") return "replied";
-  if (c.status === "pending" || c.status === "processing") return "pending";
-  return "skipped";
-}
-
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function StatCard({
@@ -67,40 +57,15 @@ function StatCard({
 }: {
   label: string;
   value: string | number;
-  accent?: string;
+  accent?: "success" | "warn" | "primary";
 }) {
+  const valueClass = accent
+    ? `fb-stat-card__value fb-stat-card__value--${accent}`
+    : "fb-stat-card__value";
   return (
-    <div
-      style={{
-        background: "#FFFFFF",
-        border: "1px solid #E5E7EB",
-        borderRadius: "0.75rem",
-        padding: "1.25rem 1.5rem",
-      }}
-    >
-      <p
-        style={{
-          margin: 0,
-          fontSize: "0.75rem",
-          color: "#9CA3AF",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          fontWeight: 600,
-        }}
-      >
-        {label}
-      </p>
-      <p
-        style={{
-          margin: "0.375rem 0 0",
-          fontSize: "1.875rem",
-          fontWeight: 700,
-          color: accent ?? "#111827",
-          lineHeight: 1,
-        }}
-      >
-        {value}
-      </p>
+    <div className="fb-stat-card">
+      <p className="fb-stat-card__label">{label}</p>
+      <p className={valueClass}>{value}</p>
     </div>
   );
 }
@@ -289,13 +254,13 @@ function CommentCard({
 
           {/* Action buttons */}
           {reply && replyStatus === "draft" && (
-            <div className="comment-action-btns" style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem", flexWrap: "wrap" }}>
+            <div className="comment-action-btns">
               {editing ? (
                 <>
                   <button
                     disabled={busy}
                     onClick={() => onApprove(reply.id, editText)}
-                    style={btnStyle("#10b981", "rgba(16, 185, 129, 0.15)", "rgba(16, 185, 129, 0.3)")}
+                    className="fb-btn fb-btn--success"
                   >
                     Хадгалах & зөвшөөрөх
                   </button>
@@ -305,7 +270,7 @@ function CommentCard({
                       setEditing(false);
                       setEditText(reply.draft_message);
                     }}
-                    style={btnStyle("#6B7280", "#F3F4F6", "#E5E7EB")}
+                    className="fb-btn fb-btn--ghost"
                   >
                     Цуцлах
                   </button>
@@ -315,7 +280,7 @@ function CommentCard({
                   <button
                     disabled={busy}
                     onClick={() => onApprove(reply.id)}
-                    style={btnStyle("#10b981", "rgba(16, 185, 129, 0.15)", "rgba(16, 185, 129, 0.3)")}
+                    className="fb-btn fb-btn--success"
                   >
                     Зөвшөөрөх ✅
                   </button>
@@ -326,14 +291,14 @@ function CommentCard({
                       setEditing(true);
                       setExpanded(true);
                     }}
-                    style={btnStyle("#d97706", "rgba(245, 158, 11, 0.12)", "rgba(245, 158, 11, 0.25)")}
+                    className="fb-btn fb-btn--warning"
                   >
                     Засах ✏️
                   </button>
                   <button
                     disabled={busy}
                     onClick={() => onReject(reply.id)}
-                    style={btnStyle("#f43f5e", "rgba(244, 63, 94, 0.12)", "rgba(244, 63, 94, 0.25)")}
+                    className="fb-btn fb-btn--danger"
                   >
                     Татгалзах ❌
                   </button>
@@ -343,11 +308,11 @@ function CommentCard({
           )}
 
           {reply && replyStatus === "approved" && (
-            <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
+            <div className="comment-action-btns">
               <button
                 disabled={busy}
                 onClick={() => onPost(reply.id)}
-                style={btnStyle("#4F46E5", "#EEF2FF", "#C7D2FE")}
+                className="fb-btn fb-btn--primary"
               >
                 Илгээх 📤
               </button>
@@ -359,29 +324,61 @@ function CommentCard({
   );
 }
 
-function btnStyle(color: string, bg: string, border: string): React.CSSProperties {
-  return {
-    padding: "0.375rem 0.75rem",
-    background: bg,
-    color,
-    border: `1px solid ${border}`,
-    borderRadius: "0.375rem",
-    fontSize: "0.75rem",
-    fontWeight: 600,
-    cursor: "pointer",
-  };
-}
+// Comment rows re-render whenever the parent (re)runs — with 100+ rows that's
+// a real cost. Memo skips the render when the row's own data hasn't changed.
+// Assumes the action callbacks are stable (see useCallback in dashboard).
+const CommentCardMemo = memo(CommentCard, (prev, next) => {
+  return (
+    prev.busy === next.busy &&
+    prev.comment === next.comment &&
+    prev.onApprove === next.onApprove &&
+    prev.onReject === next.onReject &&
+    prev.onPost === next.onPost
+  );
+});
 
 // ─── Main Component ───────────────────────────────────────────────────────────
+
+export interface CommentCountsProp {
+  total: number;
+  pending: number;
+  replied: number;
+  skipped: number;
+  failed: number;
+  hidden: number;
+  processing: number;
+}
 
 interface Props {
   orgId: string;
   initialComments: FbCommentWithReply[];
+  initialCounts: CommentCountsProp;
+  initialCursor: string | null;
+  initialTab: TabKey;
+  pageSize: number;
 }
 
-export function CommentsDashboard({ orgId, initialComments }: Props) {
+function tabToStatusParam(tab: TabKey): string {
+  // The API's status filter is 1:1 with comment status. Skipped/failed/hidden
+  // are merged into the "skipped" badge count only — if the org needs those
+  // split, expose them as separate tabs later.
+  if (tab === "all") return "all";
+  return tab;
+}
+
+export function CommentsDashboard({
+  orgId,
+  initialComments,
+  initialCounts,
+  initialCursor,
+  initialTab,
+  pageSize,
+}: Props) {
   const [comments, setComments] = useState<FbCommentWithReply[]>(initialComments);
-  const [activeTab, setActiveTab] = useState<TabKey>("pending");
+  const [counts, setCounts] = useState<CommentCountsProp>(initialCounts);
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
+  const [cursor, setCursor] = useState<string | null>(initialCursor);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -389,83 +386,164 @@ export function CommentsDashboard({ orgId, initialComments }: Props) {
   void orgId;
 
   const stats = useMemo(() => {
-    const total = comments.length;
-    const replied = comments.filter((c) => classifyTab(c) === "replied").length;
-    const pending = comments.filter((c) => classifyTab(c) === "pending").length;
-    const skipped = comments.filter((c) => classifyTab(c) === "skipped").length;
-    const successPct = total > 0 ? Math.round((replied / total) * 100) : 0;
-    return { total, replied, pending, skipped, successPct };
-  }, [comments]);
+    // Defensive: during HMR-state mismatches or a transient fetch failure the
+    // counts prop can briefly be undefined — fall back to zeroes rather than
+    // trigger a render-time crash that blows up the whole dashboard.
+    const c = counts ?? {
+      total: 0,
+      pending: 0,
+      replied: 0,
+      skipped: 0,
+      failed: 0,
+      hidden: 0,
+      processing: 0,
+    };
+    const successPct = c.total > 0 ? Math.round((c.replied / c.total) * 100) : 0;
+    const skippedBucket = c.skipped + c.failed + c.hidden;
+    return {
+      total: c.total,
+      replied: c.replied,
+      pending: c.pending + c.processing,
+      skipped: skippedBucket,
+      successPct,
+    };
+  }, [counts]);
 
-  const filtered = useMemo(() => {
-    if (activeTab === "all") return comments;
-    return comments.filter((c) => classifyTab(c) === activeTab);
-  }, [comments, activeTab]);
+  // Server paginates. No client-side status filter — what came in is what shows.
+  const filtered = comments;
 
-  async function reload() {
-    try {
-      const res = await fetch("/api/facebook-ai/comments?status=all", { cache: "no-store" });
-      const data = (await res.json()) as { comments?: FbCommentWithReply[]; error?: string };
+  const fetchPage = useCallback(
+    async (tab: TabKey, before?: string, includeCounts = false) => {
+      const params = new URLSearchParams({
+        status: tabToStatusParam(tab),
+        limit: String(pageSize),
+      });
+      if (before) params.set("before", before);
+      if (includeCounts) params.set("includeCounts", "1");
+
+      const res = await fetch(`/api/facebook-ai/comments?${params.toString()}`, {
+        cache: "no-store",
+      });
+      const data = (await res.json()) as {
+        comments?: FbCommentWithReply[];
+        nextCursor?: string | null;
+        counts?: CommentCountsProp | null;
+        error?: string;
+      };
       if (!res.ok) throw new Error(data.error ?? "Татаж чадсангүй");
-      setComments(data.comments ?? []);
+      return {
+        comments: data.comments ?? [],
+        nextCursor: data.nextCursor ?? null,
+        counts: data.counts ?? null,
+      };
+    },
+    [pageSize],
+  );
+
+  const reload = useCallback(async () => {
+    try {
+      const page = await fetchPage(activeTab, undefined, true);
+      setComments(page.comments);
+      setCursor(page.nextCursor);
+      if (page.counts) setCounts(page.counts);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Алдаа гарлаа");
     }
-  }
+  }, [activeTab, fetchPage]);
 
-  function handleApprove(replyId: string, finalMessage?: string) {
-    setError(null);
-    startTransition(async () => {
-      try {
-        const res = await fetch(`/api/facebook-ai/replies/${replyId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "approve", final_message: finalMessage }),
-        });
-        const data = (await res.json()) as { error?: string };
-        if (!res.ok) throw new Error(data.error ?? "Зөвшөөрч чадсангүй");
-        await reload();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Алдаа гарлаа");
-      }
-    });
-  }
+  const switchTab = useCallback(
+    (tab: TabKey) => {
+      if (tab === activeTab) return;
+      setActiveTab(tab);
+      startTransition(async () => {
+        try {
+          const page = await fetchPage(tab);
+          setComments(page.comments);
+          setCursor(page.nextCursor);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Алдаа гарлаа");
+        }
+      });
+    },
+    [activeTab, fetchPage],
+  );
 
-  function handleReject(replyId: string) {
-    setError(null);
-    startTransition(async () => {
-      try {
-        const res = await fetch(`/api/facebook-ai/replies/${replyId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "reject" }),
-        });
-        const data = (await res.json()) as { error?: string };
-        if (!res.ok) throw new Error(data.error ?? "Татгалзаж чадсангүй");
-        await reload();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Алдаа гарлаа");
-      }
-    });
-  }
+  const loadMore = useCallback(async () => {
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const page = await fetchPage(activeTab, cursor);
+      setComments((prev) => [...prev, ...page.comments]);
+      setCursor(page.nextCursor);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Алдаа гарлаа");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [activeTab, cursor, fetchPage, loadingMore]);
 
-  function handlePost(replyId: string) {
-    setError(null);
-    startTransition(async () => {
-      try {
-        const res = await fetch(`/api/facebook-ai/replies/${replyId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "post" }),
-        });
-        const data = (await res.json()) as { error?: string };
-        if (!res.ok) throw new Error(data.error ?? "Илгээж чадсангүй");
-        await reload();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Алдаа гарлаа");
-      }
-    });
-  }
+  const handleApprove = useCallback(
+    (replyId: string, finalMessage?: string) => {
+      setError(null);
+      startTransition(async () => {
+        try {
+          const res = await fetch(`/api/facebook-ai/replies/${replyId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "approve", final_message: finalMessage }),
+          });
+          const data = (await res.json()) as { error?: string };
+          if (!res.ok) throw new Error(data.error ?? "Зөвшөөрч чадсангүй");
+          await reload();
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Алдаа гарлаа");
+        }
+      });
+    },
+    [reload],
+  );
+
+  const handleReject = useCallback(
+    (replyId: string) => {
+      setError(null);
+      startTransition(async () => {
+        try {
+          const res = await fetch(`/api/facebook-ai/replies/${replyId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "reject" }),
+          });
+          const data = (await res.json()) as { error?: string };
+          if (!res.ok) throw new Error(data.error ?? "Татгалзаж чадсангүй");
+          await reload();
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Алдаа гарлаа");
+        }
+      });
+    },
+    [reload],
+  );
+
+  const handlePost = useCallback(
+    (replyId: string) => {
+      setError(null);
+      startTransition(async () => {
+        try {
+          const res = await fetch(`/api/facebook-ai/replies/${replyId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "post" }),
+          });
+          const data = (await res.json()) as { error?: string };
+          if (!res.ok) throw new Error(data.error ?? "Илгээж чадсангүй");
+          await reload();
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Алдаа гарлаа");
+        }
+      });
+    },
+    [reload],
+  );
 
   const tabs: { key: TabKey; label: string; count?: number }[] = [
     { key: "all", label: "Бүгд", count: stats.total },
@@ -494,46 +572,20 @@ export function CommentsDashboard({ orgId, initialComments }: Props) {
         <button
           onClick={() => reload()}
           disabled={isPending}
-          style={{
-            padding: "0.5rem 1rem",
-            background: "#F9FAFB",
-            color: "#6B7280",
-            border: "1px solid #E5E7EB",
-            borderRadius: "0.5rem",
-            fontSize: "0.875rem",
-            cursor: isPending ? "not-allowed" : "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.375rem",
-            opacity: isPending ? 0.6 : 1,
-          }}
+          className="fb-refresh-btn"
         >
           🔄 Шинэчлэх
         </button>
       </div>
 
-      {error ? (
-        <div
-          style={{
-            marginBottom: "1rem",
-            padding: "0.75rem 1rem",
-            background: "#FEF2F2",
-            border: "1px solid #FECACA",
-            borderRadius: "0.5rem",
-            color: "#B91C1C",
-            fontSize: "0.875rem",
-          }}
-        >
-          {error}
-        </div>
-      ) : null}
+      {error ? <div className="fb-error-banner">{error}</div> : null}
 
       {/* Stats */}
       <div className="fb-stats-grid">
         <StatCard label="Нийт" value={stats.total} />
-        <StatCard label="Хариулсан" value={stats.replied} accent="#10b981" />
-        <StatCard label="Хүлээгдэж байна" value={stats.pending} accent="#f59e0b" />
-        <StatCard label="Амжилтын хувь" value={`${stats.successPct}%`} accent="#4F46E5" />
+        <StatCard label="Хариулсан" value={stats.replied} accent="success" />
+        <StatCard label="Хүлээгдэж байна" value={stats.pending} accent="warn" />
+        <StatCard label="Амжилтын хувь" value={`${stats.successPct}%`} accent="primary" />
       </div>
 
       {/* Tab bar */}
@@ -541,7 +593,8 @@ export function CommentsDashboard({ orgId, initialComments }: Props) {
         {tabs.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => switchTab(tab.key)}
+            disabled={isPending}
             style={{
               padding: "0.625rem 1rem",
               background: "none",
@@ -551,9 +604,10 @@ export function CommentsDashboard({ orgId, initialComments }: Props) {
               color: activeTab === tab.key ? "#4F46E5" : "#6B7280",
               fontSize: "0.875rem",
               fontWeight: activeTab === tab.key ? 600 : 400,
-              cursor: "pointer",
+              cursor: isPending ? "not-allowed" : "pointer",
               transition: "color 0.15s",
               marginBottom: "-1px",
+              opacity: isPending && tab.key !== activeTab ? 0.5 : 1,
             }}
           >
             {tab.label}
@@ -576,36 +630,36 @@ export function CommentsDashboard({ orgId, initialComments }: Props) {
       </div>
 
       {/* Comments list */}
-      <div
-        style={{
-          background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
-          borderRadius: "0.75rem",
-          overflow: "hidden",
-        }}
-      >
+      <div className="fb-comment-list">
         {filtered.length === 0 ? (
-          <div
-            style={{
-              padding: "4rem 2rem",
-              textAlign: "center",
-              color: "#6B7280",
-            }}
-          >
-            <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>💬</div>
-            <p style={{ fontSize: "0.9375rem" }}>{emptyMessages[activeTab]}</p>
+          <div className="fb-empty">
+            <div className="fb-empty__icon">💬</div>
+            <p className="fb-empty__msg">{emptyMessages[activeTab]}</p>
           </div>
         ) : (
-          filtered.map((comment) => (
-            <CommentCard
-              key={comment.id}
-              comment={comment}
-              busy={isPending}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              onPost={handlePost}
-            />
-          ))
+          <>
+            {filtered.map((comment) => (
+              <CommentCardMemo
+                key={comment.id}
+                comment={comment}
+                busy={isPending}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                onPost={handlePost}
+              />
+            ))}
+            {cursor ? (
+              <div className="fb-load-more">
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore || isPending}
+                  className="fb-load-more__btn"
+                >
+                  {loadingMore ? "Ачааллаж байна…" : "Илүүг ачаалах"}
+                </button>
+              </div>
+            ) : null}
+          </>
         )}
       </div>
     </div>

@@ -13,6 +13,11 @@ export interface FbComment {
   status: 'pending' | 'processing' | 'replied' | 'skipped' | 'failed' | 'hidden';
   created_at_facebook: string | null;
   received_at: string;
+  // Retry bookkeeping — populated by processComment on failure and by the
+  // retry cron. See migration 20260418008_fb_comment_retry.sql.
+  retry_count?: number;
+  next_retry_at?: string | null;
+  last_error?: string | null;
 }
 
 export interface FbReply {

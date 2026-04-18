@@ -68,18 +68,24 @@ export async function getActiveAiPageConnections(orgId: string): Promise<FbPageC
   return (data ?? []).map(mapMetaPageToConnection);
 }
 
-export async function getPageConnectionByPageId(pageId: string): Promise<FbPageConnection | null> {
+/**
+ * Fetch every active connection for a Facebook page id. A single Facebook
+ * page can be connected by multiple orgs (different tenants subscribing to
+ * the same shared page), so the webhook handler fans out to all of them.
+ * See migration 20260418009_fb_comments_multi_org.sql for context.
+ */
+export async function getPageConnectionsByPageId(
+  pageId: string,
+): Promise<FbPageConnection[]> {
   const supabase = await getClient();
   const { data, error } = await supabase
     .from('meta_pages')
     .select(META_PAGE_CONNECTION_COLUMNS)
     .eq('meta_page_id', pageId)
-    .eq('status', 'active')
-    .maybeSingle();
+    .eq('status', 'active');
 
   if (error) throw error;
-  if (!data) return null;
-  return mapMetaPageToConnection(data);
+  return (data ?? []).map(mapMetaPageToConnection);
 }
 
 /** Look up a connection by its meta_pages.id UUID (used by processor + replies API). */
@@ -177,6 +183,7 @@ export async function getComments(
   orgId: string,
   status?: FbComment['status'],
   limit = 50,
+  beforeReceivedAt?: string,
 ): Promise<FbComment[]> {
   const supabase = await getClient();
   let query = fromTable(supabase, 'fb_comments')
@@ -188,10 +195,54 @@ export async function getComments(
   if (status) {
     query = query.eq('status', status);
   }
+  if (beforeReceivedAt) {
+    query = query.lt('received_at', beforeReceivedAt);
+  }
 
   const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as FbComment[];
+}
+
+/**
+ * Per-status count aggregation. Run as a set of parallel HEAD/COUNT queries
+ * rather than GROUP BY so we stay inside the Supabase typed query builder and
+ * each count returns 0 gracefully when the org has no rows yet.
+ */
+export type FbCommentCounts = {
+  total: number;
+  pending: number;
+  replied: number;
+  skipped: number;
+  failed: number;
+  hidden: number;
+  processing: number;
+};
+
+export async function getCommentCounts(orgId: string): Promise<FbCommentCounts> {
+  const supabase = await getClient();
+
+  async function countFor(status?: FbComment['status']): Promise<number> {
+    let q = fromTable(supabase, 'fb_comments')
+      .select('id', { count: 'exact', head: true })
+      .eq('org_id', orgId);
+    if (status) q = q.eq('status', status);
+    const { count, error } = await q;
+    if (error) throw error;
+    return (count as number | null) ?? 0;
+  }
+
+  const [total, pending, replied, skipped, failed, hidden, processing] = await Promise.all([
+    countFor(),
+    countFor('pending'),
+    countFor('replied'),
+    countFor('skipped'),
+    countFor('failed'),
+    countFor('hidden'),
+    countFor('processing'),
+  ]);
+
+  return { total, pending, replied, skipped, failed, hidden, processing };
 }
 
 export async function getCommentById(commentId: string): Promise<FbComment | null> {
@@ -218,17 +269,102 @@ export async function updateCommentStatus(
   if (error) throw error;
 }
 
-export async function insertComment(
-  comment: Omit<FbComment, 'id' | 'received_at'>,
-): Promise<FbComment> {
+/**
+ * Record a transient failure and schedule a retry. Used by the cron retry
+ * processor so that ops can see which comments keep failing (last_error) and
+ * how many attempts they've had (retry_count).
+ */
+export async function markCommentFailedWithRetry(
+  commentId: string,
+  retryCount: number,
+  nextRetryAt: string | null,
+  lastError: string,
+): Promise<void> {
   const supabase = await getClient();
-  const { data, error } = await fromTable(supabase, 'fb_comments')
-    .insert({ ...comment, received_at: new Date().toISOString() })
-    .select()
-    .single();
+  const { error } = await fromTable(supabase, 'fb_comments')
+    .update({
+      status: 'failed',
+      retry_count: retryCount,
+      next_retry_at: nextRetryAt,
+      last_error: lastError.slice(0, 2000),
+    })
+    .eq('id', commentId);
 
   if (error) throw error;
-  return data as FbComment;
+}
+
+/**
+ * Fetch failed comments that are due for retry. Uses the service role client
+ * because the cron job runs without a user session. Limit is enforced so a
+ * single run can't exhaust the AI quota.
+ */
+export async function getCommentsDueForRetry(limit: number, maxRetries: number): Promise<FbComment[]> {
+  const admin = getSupabaseAdminClient();
+  const nowIso = new Date().toISOString();
+  const { data, error } = await (admin as any)
+    .from('fb_comments')
+    .select('*')
+    .eq('status', 'failed')
+    .lt('retry_count', maxRetries)
+    .not('next_retry_at', 'is', null)
+    .lte('next_retry_at', nowIso)
+    .order('next_retry_at', { ascending: true })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data ?? []) as FbComment[];
+}
+
+/**
+ * Reset a comment back to `pending` so processComment will pick it up again.
+ * Uses the admin client — the cron runs as system, not as a user.
+ */
+export async function requeueCommentForProcessing(commentId: string): Promise<void> {
+  const admin = getSupabaseAdminClient();
+  const { error } = await (admin as any)
+    .from('fb_comments')
+    .update({
+      status: 'pending',
+      next_retry_at: null,
+    })
+    .eq('id', commentId);
+
+  if (error) throw error;
+}
+
+/**
+ * Idempotent comment insert. Facebook occasionally redelivers webhook events,
+ * so we use `ignoreDuplicates: true` against the (org_id, comment_id) composite
+ * key (migration 20260418009). On conflict we return the existing row instead
+ * of overwriting — critical so a late duplicate doesn't reset an already
+ * 'replied' or 'processing' row back to 'pending'.
+ */
+export async function insertComment(
+  comment: Omit<FbComment, 'id' | 'received_at'>,
+): Promise<{ row: FbComment; inserted: boolean }> {
+  const supabase = await getClient();
+  const { data: upserted, error: upsertError } = await fromTable(supabase, 'fb_comments')
+    .upsert(
+      { ...comment, received_at: new Date().toISOString() },
+      { onConflict: 'org_id,comment_id', ignoreDuplicates: true },
+    )
+    .select();
+
+  if (upsertError) throw upsertError;
+
+  if (Array.isArray(upserted) && upserted.length > 0) {
+    return { row: upserted[0] as FbComment, inserted: true };
+  }
+
+  // Duplicate: fetch the existing row so callers always have the canonical state.
+  const { data: existing, error: fetchError } = await fromTable(supabase, 'fb_comments')
+    .select('*')
+    .eq('org_id', comment.org_id)
+    .eq('comment_id', comment.comment_id)
+    .single();
+
+  if (fetchError) throw fetchError;
+  return { row: existing as FbComment, inserted: false };
 }
 
 // ---------------------------------------------------------------------------
@@ -288,14 +424,16 @@ export type FbCommentWithReply = FbComment & { reply: FbReply | null };
 
 /**
  * Load comments for the dashboard and attach the latest reply (if any). Uses a
- * single IN query on fb_replies to avoid the N+1 pattern.
+ * single IN query on fb_replies to avoid the N+1 pattern. Accepts an optional
+ * `beforeReceivedAt` cursor for load-more pagination.
  */
 export async function getCommentsWithReplies(
   orgId: string,
   status?: FbComment['status'],
-  limit = 100,
+  limit = 50,
+  beforeReceivedAt?: string,
 ): Promise<FbCommentWithReply[]> {
-  const comments = await getComments(orgId, status, limit);
+  const comments = await getComments(orgId, status, limit, beforeReceivedAt);
   if (comments.length === 0) return [];
 
   const supabase = await getClient();
@@ -331,48 +469,69 @@ export async function insertReply(
   return data as FbReply;
 }
 
+/**
+ * State-machine transitions on fb_replies. Each mutator scopes the UPDATE to
+ * the expected current status so a second concurrent caller (double-click, bot,
+ * retry) becomes a no-op instead of overwriting already-finalised state.
+ * Return { updated: false } lets the caller translate this into a 409 Conflict.
+ */
 export async function approveReply(
   replyId: string,
   finalMessage?: string,
-): Promise<void> {
+  reviewedByUserId?: string | null,
+): Promise<{ updated: boolean }> {
   const supabase = await getClient();
-  const { error } = await fromTable(supabase, 'fb_replies')
+  const { data, error } = await fromTable(supabase, 'fb_replies')
     .update({
       status: 'approved',
       final_message: finalMessage ?? null,
+      reviewed_by: reviewedByUserId ?? null,
       reviewed_at: new Date().toISOString(),
     })
-    .eq('id', replyId);
+    .eq('id', replyId)
+    .eq('status', 'draft')
+    .select('id');
 
   if (error) throw error;
+  return { updated: (data as unknown[] | null)?.length ? true : false };
 }
 
-export async function rejectReply(replyId: string): Promise<void> {
+export async function rejectReply(
+  replyId: string,
+  reviewedByUserId?: string | null,
+): Promise<{ updated: boolean }> {
   const supabase = await getClient();
-  const { error } = await fromTable(supabase, 'fb_replies')
+  const { data, error } = await fromTable(supabase, 'fb_replies')
     .update({
       status: 'rejected',
+      reviewed_by: reviewedByUserId ?? null,
       reviewed_at: new Date().toISOString(),
     })
-    .eq('id', replyId);
+    .eq('id', replyId)
+    .eq('status', 'draft')
+    .select('id');
 
   if (error) throw error;
+  return { updated: (data as unknown[] | null)?.length ? true : false };
 }
 
 export async function markReplyPosted(
   replyId: string,
   facebookReplyId: string,
-): Promise<void> {
+): Promise<{ updated: boolean }> {
   const supabase = await getClient();
-  const { error } = await fromTable(supabase, 'fb_replies')
+  const { data, error } = await fromTable(supabase, 'fb_replies')
     .update({
       status: 'posted',
       facebook_reply_id: facebookReplyId,
       posted_at: new Date().toISOString(),
     })
-    .eq('id', replyId);
+    .eq('id', replyId)
+    .eq('status', 'approved')
+    .select('id');
 
   if (error) throw error;
+  return { updated: (data as unknown[] | null)?.length ? true : false };
 }
 
 // ---------------------------------------------------------------------------
@@ -442,20 +601,78 @@ export async function softDeleteKnowledgeItem(itemId: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Audit log
+// ---------------------------------------------------------------------------
+
+export type FbAuditEventType =
+  | 'comment.status_changed'
+  | 'reply.approved'
+  | 'reply.rejected'
+  | 'reply.posted'
+  | 'reply.post_failed'
+  | 'comment.rate_limited';
+
+export interface FbAuditEventInput {
+  orgId: string;
+  eventType: FbAuditEventType;
+  commentId?: string | null;
+  replyId?: string | null;
+  actorUserId?: string | null;
+  previousStatus?: string | null;
+  newStatus?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Best-effort audit log. Uses the admin client so webhook-triggered events
+ * (no user session) can still be written. Never throws — a logging outage
+ * should not break comment processing or the approve/reject UX.
+ */
+export async function logFbAuditEvent(evt: FbAuditEventInput): Promise<void> {
+  try {
+    const admin = getSupabaseAdminClient();
+    const { error } = await (admin as any).from('fb_audit_events').insert({
+      org_id: evt.orgId,
+      event_type: evt.eventType,
+      comment_id: evt.commentId ?? null,
+      reply_id: evt.replyId ?? null,
+      actor_user_id: evt.actorUserId ?? null,
+      previous_status: evt.previousStatus ?? null,
+      new_status: evt.newStatus ?? null,
+      metadata: evt.metadata ?? {},
+    });
+    if (error) {
+      console.warn(`[fb-ai/audit] insert failed (${evt.eventType}): ${error.message}`);
+    }
+  } catch (err) {
+    console.warn(
+      `[fb-ai/audit] unexpected error (${evt.eventType}):`,
+      err instanceof Error ? err.message : err,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Daily usage counter
 // ---------------------------------------------------------------------------
+/**
+ * Count replies sent today for a specific page connection. fb_replies has no
+ * connection_id column, so we join via fb_comments.connection_id using an
+ * inner join filter (comments!inner...eq). Only rows whose parent comment
+ * belongs to `connectionId` are counted, matching the per-page
+ * `max_replies_per_day` setting in the UI.
+ */
 export async function getDailyReplyCount(orgId: string, connectionId: string): Promise<number> {
   const supabase = await getClient();
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
   const { count, error } = await fromTable(supabase, 'fb_replies')
-    .select('id', { count: 'exact', head: true })
+    .select('id, fb_comments!inner(connection_id)', { count: 'exact', head: true })
     .eq('org_id', orgId)
+    .eq('fb_comments.connection_id', connectionId)
     .gte('created_at', `${today}T00:00:00Z`)
     .lte('created_at', `${today}T23:59:59Z`);
 
   if (error) throw error;
-  // Reserved for future per-connection limits
-  void connectionId;
   return (count as number | null) ?? 0;
 }

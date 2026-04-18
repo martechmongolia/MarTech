@@ -84,89 +84,37 @@ function SettingsCard({ bundle }: { bundle: PageSettingsBundle }) {
     });
   }
 
-  const labelStyle: React.CSSProperties = {
-    display: "block",
-    fontSize: "0.75rem",
-    fontWeight: 600,
-    color: "#6B7280",
-    textTransform: "uppercase",
-    letterSpacing: "0.05em",
-    marginBottom: "0.375rem",
-  };
-
-  const fieldStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "0.5rem 0.75rem",
-    background: "#F9FAFB",
-    border: "1px solid #E5E7EB",
-    borderRadius: "0.5rem",
-    color: "#111827",
-    fontSize: "0.875rem",
-    boxSizing: "border-box",
-  };
+  const toggleClass = `fb-auto-reply-toggle${form.auto_reply ? " fb-auto-reply-toggle--on" : ""}`;
 
   return (
-    <div
-      style={{
-        background: "#FFFFFF",
-        border: "1px solid #E5E7EB",
-        borderRadius: "0.75rem",
-        padding: "1.5rem",
-        marginBottom: "1.25rem",
-      }}
-    >
-      <div style={{ marginBottom: "1.25rem" }}>
-        <h3 style={{ margin: 0, fontSize: "1.0625rem", fontWeight: 700, color: "#111827" }}>
-          {bundle.connection.page_name}
-        </h3>
-        <p style={{ margin: "0.25rem 0 0", fontSize: "0.8125rem", color: "#6B7280" }}>
-          Page ID: {bundle.connection.page_id}
-        </p>
+    <div className="fb-settings-card">
+      <div className="fb-settings-card__head">
+        <h3 className="fb-settings-card__title">{bundle.connection.page_name}</h3>
+        <p className="fb-settings-card__subtitle">Page ID: {bundle.connection.page_id}</p>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: "1rem",
-        }}
-      >
-        {/* auto_reply */}
-        <label
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.625rem",
-            padding: "0.75rem 1rem",
-            background: form.auto_reply ? "#EEF2FF" : "#F9FAFB",
-            border: `1px solid ${form.auto_reply ? "#C7D2FE" : "#E5E7EB"}`,
-            borderRadius: "0.5rem",
-            cursor: "pointer",
-            gridColumn: "1 / -1",
-          }}
-        >
+      <div className="fb-settings-grid">
+        <label className={toggleClass}>
           <input
             type="checkbox"
             checked={form.auto_reply}
             onChange={(e) => update("auto_reply", e.target.checked)}
-            style={{ width: "1rem", height: "1rem" }}
+            className="fb-auto-reply-toggle__checkbox"
           />
           <div>
-            <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "#111827" }}>
-              Автомат хариу
-            </div>
-            <div style={{ fontSize: "0.75rem", color: "#6B7280", marginTop: "0.125rem" }}>
+            <div className="fb-auto-reply-toggle__title">Автомат хариу</div>
+            <div className="fb-auto-reply-toggle__desc">
               Асаалттай үед AI нь draft-аа шууд Facebook-д нийтэлнэ.
             </div>
           </div>
         </label>
 
         <div>
-          <label style={labelStyle}>Тон</label>
+          <label className="fb-field-label">Тон</label>
           <select
             value={form.reply_tone}
             onChange={(e) => update("reply_tone", e.target.value as FbReplySettings["reply_tone"])}
-            style={fieldStyle}
+            className="fb-field-input"
           >
             {(Object.keys(TONE_LABELS) as Array<FbReplySettings["reply_tone"]>).map((t) => (
               <option key={t} value={t}>
@@ -177,11 +125,11 @@ function SettingsCard({ bundle }: { bundle: PageSettingsBundle }) {
         </div>
 
         <div>
-          <label style={labelStyle}>Хэл</label>
+          <label className="fb-field-label">Хэл</label>
           <select
             value={form.reply_language}
             onChange={(e) => update("reply_language", e.target.value)}
-            style={fieldStyle}
+            className="fb-field-input"
           >
             {LANGUAGE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -192,103 +140,74 @@ function SettingsCard({ bundle }: { bundle: PageSettingsBundle }) {
         </div>
 
         <div>
-          <label style={labelStyle}>Хариулахын өмнө (сек)</label>
+          <label className="fb-field-label">Хариулахын өмнө (сек)</label>
           <input
             type="number"
             min={0}
             value={form.reply_delay_seconds}
             onChange={(e) => update("reply_delay_seconds", Number(e.target.value) || 0)}
-            style={fieldStyle}
+            className="fb-field-input"
           />
         </div>
 
         <div>
-          <label style={labelStyle}>Өдөрт дээд тал</label>
+          <label className="fb-field-label">Өдөрт дээд тал</label>
           <input
             type="number"
             min={1}
             value={form.max_replies_per_day}
             onChange={(e) => update("max_replies_per_day", Number(e.target.value) || 1)}
-            style={fieldStyle}
+            className="fb-field-input"
           />
         </div>
 
         <div>
-          <label style={labelStyle}>Ажлын цаг эхлэх</label>
+          <label className="fb-field-label">Ажлын цаг эхлэх</label>
           <input
             type="time"
             value={form.working_hours_start}
             onChange={(e) => update("working_hours_start", e.target.value)}
-            style={fieldStyle}
+            className="fb-field-input"
           />
         </div>
 
         <div>
-          <label style={labelStyle}>Ажлын цаг дуусах</label>
+          <label className="fb-field-label">Ажлын цаг дуусах</label>
           <input
             type="time"
             value={form.working_hours_end}
             onChange={(e) => update("working_hours_end", e.target.value)}
-            style={fieldStyle}
+            className="fb-field-input"
           />
         </div>
 
-        <div style={{ gridColumn: "1 / -1" }}>
-          <label style={labelStyle}>Нэмэлт зааварчилгаа (AI prompt)</label>
+        <div className="fb-settings-grid--full">
+          <label className="fb-field-label">Нэмэлт зааварчилгаа (AI prompt)</label>
           <textarea
             rows={3}
             value={form.custom_system_prompt ?? ""}
             onChange={(e) => update("custom_system_prompt", e.target.value || null)}
             placeholder="Жишээ: Манай дэлгүүрийг үргэлж 'MarTech Shop' гэж нэрлэх"
-            style={{ ...fieldStyle, lineHeight: 1.5, resize: "vertical" }}
+            className="fb-field-textarea"
           />
         </div>
 
-        <div style={{ gridColumn: "1 / -1" }}>
-          <label style={labelStyle}>Fallback хариу (мэдэхгүй асуултад)</label>
+        <div className="fb-settings-grid--full">
+          <label className="fb-field-label">Fallback хариу (мэдэхгүй асуултад)</label>
           <textarea
             rows={2}
             value={form.fallback_message}
             onChange={(e) => update("fallback_message", e.target.value)}
-            style={{ ...fieldStyle, lineHeight: 1.5, resize: "vertical" }}
+            className="fb-field-textarea"
           />
         </div>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          alignItems: "center",
-          gap: "1rem",
-          marginTop: "1.25rem",
-        }}
-      >
+      <div className="fb-settings-actions">
         {message ? (
-          <span
-            style={{
-              fontSize: "0.8125rem",
-              color: message.kind === "success" ? "#065F46" : "#B91C1C",
-            }}
-          >
-            {message.text}
-          </span>
+          <span className={`fb-settings-message--${message.kind}`}>{message.text}</span>
         ) : null}
-        <button
-          onClick={handleSave}
-          disabled={isPending}
-          style={{
-            padding: "0.5rem 1.25rem",
-            background: "#4F46E5",
-            color: "#FFFFFF",
-            border: "none",
-            borderRadius: "0.5rem",
-            fontSize: "0.875rem",
-            fontWeight: 600,
-            cursor: isPending ? "not-allowed" : "pointer",
-            opacity: isPending ? 0.6 : 1,
-          }}
-        >
+        <button onClick={handleSave} disabled={isPending} className="fb-save-btn">
           {isPending ? "Хадгалж байна…" : "Хадгалах"}
         </button>
       </div>
@@ -314,41 +233,14 @@ export function FacebookSettingsClient({ orgId, bundles }: Props) {
       </div>
 
       {bundles.length === 0 ? (
-        <div
-          style={{
-            padding: "2.5rem 2rem",
-            textAlign: "center",
-            background: "#FFFFFF",
-            border: "1px solid #E5E7EB",
-            borderRadius: "0.75rem",
-          }}
-        >
-          <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>🔌</div>
-          <p
-            style={{
-              fontSize: "0.9375rem",
-              color: "#6B7280",
-              margin: "0 0 1rem",
-              lineHeight: 1.5,
-            }}
-          >
+        <div className="fb-setup-prompt">
+          <div className="fb-setup-prompt__icon">🔌</div>
+          <p className="fb-setup-prompt__body">
             AI идэвхжсэн Facebook page байхгүй байна.
             <br />
             Эхлээд /pages хуудас руу очоод Facebook AI-г идэвхжүүлнэ үү.
           </p>
-          <Link
-            href="/pages"
-            style={{
-              display: "inline-block",
-              padding: "0.5rem 1.25rem",
-              background: "#4F46E5",
-              color: "#FFFFFF",
-              borderRadius: "0.5rem",
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
+          <Link href="/pages" className="fb-setup-prompt__cta">
             Pages руу очих →
           </Link>
         </div>
