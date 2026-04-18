@@ -11,10 +11,6 @@
     {
       "path": "/api/cron/account-hard-delete",
       "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/facebook-ai-retry",
-      "schedule": "*/5 * * * *"
     }
   ]
 }
