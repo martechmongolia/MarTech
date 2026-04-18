@@ -101,6 +101,17 @@ export async function POST(request: NextRequest) {
     ? new Uint8Array(credRow.public_key)
     : new Uint8Array(Buffer.from(credRow.public_key as unknown as string, "base64"));
 
+  console.log("[passkey-login] verifying", {
+    credential_id_len: credRow.credential_id.length,
+    response_id_len: body.response.id.length,
+    id_match: credRow.credential_id === body.response.id,
+    public_key_bytes: publicKeyBytes.length,
+    stored_counter: Number(credRow.counter ?? 0),
+    rpID,
+    origin,
+    challenge_prefix: challengeRow.challenge.slice(0, 16)
+  });
+
   let verification;
   try {
     verification = await verifyAuthenticationResponse({
@@ -122,16 +133,23 @@ export async function POST(request: NextRequest) {
       // real browsers with biometrics still set UV=true, so no regression.
       requireUserVerification: false
     });
+    console.log("[passkey-login] verification result", {
+      verified: verification.verified,
+      new_counter: verification.authenticationInfo?.newCounter,
+      user_verified: verification.authenticationInfo?.userVerified
+    });
   } catch (err) {
+    const reason = err instanceof Error ? err.message : "unknown";
+    console.error("[passkey-login] verify threw:", reason);
     void logAuthEvent({
       type: "passkey_login_failed",
       userId: profile.id,
       email,
       ip,
       userAgent,
-      metadata: { stage: "verify", reason: err instanceof Error ? err.message : "unknown" }
+      metadata: { stage: "verify", reason }
     });
-    return NextResponse.json({ error: "Verification failed" }, { status: 401 });
+    return NextResponse.json({ error: `Verification failed: ${reason}` }, { status: 401 });
   }
 
   if (!verification.verified) {
