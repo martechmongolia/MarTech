@@ -2,13 +2,22 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Alert, Card, PageHeader } from "@/components/ui";
 import { AccountDeletionForm } from "@/components/auth/account-deletion-form";
+import { EmailChangeForm } from "@/components/auth/email-change-form";
 import { getCurrentUser } from "@/modules/auth/session";
 
-export default async function AccountSettingsPage() {
+type AccountSettingsPageProps = {
+  searchParams: Promise<{ email_changed?: string }>;
+};
+
+export default async function AccountSettingsPage({
+  searchParams
+}: AccountSettingsPageProps) {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");
   }
+
+  const { email_changed: emailChanged } = await searchParams;
 
   return (
     <section className="ui-customer-stack">
@@ -22,11 +31,24 @@ export default async function AccountSettingsPage() {
         </Link>
       </p>
 
+      {emailChanged === "1" ? (
+        <Alert variant="success">И-мэйл хаяг амжилттай өөрчлөгдлөө.</Alert>
+      ) : null}
+
       <Card padded stack>
         <strong style={{ fontSize: "1rem" }}>И-мэйл</strong>
         <p className="ui-text-muted" style={{ margin: 0, fontSize: "0.875rem" }}>
           {user.email ?? "(тодорхойгүй)"}
         </p>
+      </Card>
+
+      <Card padded stack>
+        <strong style={{ fontSize: "1rem" }}>И-мэйл хаяг өөрчлөх</strong>
+        <p className="ui-text-muted" style={{ margin: 0, fontSize: "0.875rem" }}>
+          Шинэ и-мэйл хаяг руу болон одоогийн хаягт хоёулан дээр баталгаажуулах
+          линк илгээгдэнэ. Хоёулан дээр линкээ нээсний дараа хаяг шинэчлэгдэнэ.
+        </p>
+        <EmailChangeForm currentEmail={user.email ?? ""} />
       </Card>
 
       <Card padded stack>

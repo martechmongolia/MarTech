@@ -19,6 +19,8 @@ export type AuthEventType =
   | "consent_accepted"
   | "account_deletion_requested"
   | "account_deletion_completed"
+  | "email_change_requested"
+  | "email_change_completed"
   | "mfa_enroll_started"
   | "mfa_enrolled"
   | "mfa_challenge_passed"

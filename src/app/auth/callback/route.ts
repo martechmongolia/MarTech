@@ -14,20 +14,14 @@ export function sanitizeRedirectPath(raw: string | null): string {
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const tokenHash = requestUrl.searchParams.get("token_hash");
+  const tokenType = requestUrl.searchParams.get("type");
   const nextRaw = requestUrl.searchParams.get("next");
   const tosParam = requestUrl.searchParams.get("tos");
   const next = sanitizeRedirectPath(nextRaw || "/dashboard");
 
   const ip = extractClientIp(request.headers);
   const userAgent = extractUserAgent(request.headers);
-
-  if (!code) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("error", "missing_code");
-    return NextResponse.redirect(loginUrl);
-  }
-
-  let response = NextResponse.redirect(new URL(next, request.url));
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -36,6 +30,58 @@ export async function GET(request: NextRequest) {
     loginUrl.searchParams.set("error", "auth_unavailable");
     return NextResponse.redirect(loginUrl);
   }
+
+  // Email-change verification flow. Supabase sends a confirmation link to
+  // both the old and the new address (double_confirm_changes=true in
+  // config.toml); each link has ?token_hash=<...>&type=email_change. Only
+  // after BOTH links have been clicked does Supabase actually swap the
+  // email on auth.users; the profiles trigger (migration 20260418004)
+  // mirrors the change into public.profiles.email.
+  if (tokenHash && tokenType === "email_change") {
+    let emailChangeResponse = NextResponse.redirect(new URL("/settings/account?email_changed=1", request.url));
+    const emailChangeSupabase = createServerClient<Database>(url, anonKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => emailChangeResponse.cookies.set(name, value, options));
+        }
+      }
+    });
+    const { data: verifyData, error: verifyErr } = await emailChangeSupabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: "email_change"
+    });
+    if (verifyErr) {
+      console.error("[auth/callback] email_change verifyOtp failed:", verifyErr.message);
+      void logAuthEvent({
+        type: "login_failed",
+        ip,
+        userAgent,
+        metadata: { stage: "email_change_verify", reason: verifyErr.message }
+      });
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("error", "invalid_link");
+      return NextResponse.redirect(loginUrl);
+    }
+    void logAuthEvent({
+      type: "email_change_completed",
+      userId: verifyData.user?.id ?? null,
+      email: verifyData.user?.email ?? null,
+      ip,
+      userAgent
+    });
+    return emailChangeResponse;
+  }
+
+  if (!code) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("error", "missing_code");
+    return NextResponse.redirect(loginUrl);
+  }
+
+  let response = NextResponse.redirect(new URL(next, request.url));
 
   const supabase = createServerClient<Database>(url, anonKey, {
     cookies: {
