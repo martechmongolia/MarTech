@@ -57,18 +57,17 @@ test.describe("Passkey login", () => {
     await page.locator("#email").fill(user.email);
     await page.getByRole("button", { name: "Passkey-ээр нэвтрэх" }).click();
 
-    // Login button navigates to /dashboard, which in turn redirects this
-    // org-less test user to /setup-organization. Either landing proves the
-    // passkey-issued session is valid.
-    await page.waitForURL(
-      (url) => {
-        const p = url.pathname;
-        return p === "/dashboard" || p === "/setup-organization";
-      },
-      { timeout: 30_000 }
-    );
-
-    const successEvents = await countAuthEvents(user.userId, "passkey_login_success");
-    expect(successEvents).toBeGreaterThanOrEqual(1);
+    // Use the authoritative DB signal instead of waiting on client-side
+    // navigation: the passkey_login_success event is logged inside
+    // /api/auth/passkey/login/finish the moment verifyOtp succeeds, which
+    // is the real "user is authenticated" moment. Polling this avoids
+    // flakiness from client router race conditions (cookies landing after
+    // router.push, middleware redirect chains to /setup-organization, etc).
+    await expect
+      .poll(() => countAuthEvents(user.userId, "passkey_login_success"), {
+        timeout: 30_000,
+        intervals: [500, 1_000, 2_000]
+      })
+      .toBeGreaterThanOrEqual(1);
   });
 });
