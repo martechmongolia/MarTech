@@ -95,6 +95,21 @@ describe('PUT /api/facebook-ai/settings', () => {
     expect(res.status).toBe(400);
   });
 
+  it('accepts HH:MM:SS working hours echoed back from Postgres', async () => {
+    signedInAsOrgMember();
+    const res = await PUT(
+      buildRequest({ working_hours_start: '08:00:00', working_hours_end: '22:00:00' }),
+    );
+    expect(res.status).toBe(200);
+    expect(updateReplySettings).toHaveBeenCalledWith(
+      'page-1',
+      expect.objectContaining({
+        working_hours_start: '08:00:00',
+        working_hours_end: '22:00:00',
+      }),
+    );
+  });
+
   it('rejects prompt-injection in custom_system_prompt', async () => {
     signedInAsOrgMember();
     const res = await PUT(

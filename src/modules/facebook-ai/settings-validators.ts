@@ -8,7 +8,16 @@
 export const CUSTOM_PROMPT_MAX_LEN = 2000;
 export const FALLBACK_MESSAGE_MAX_LEN = 500;
 export const MAX_REPLIES_PER_DAY_CEILING = 5000;
-export const HHMM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+// Postgres `time` returns "HH:MM:SS" (and `<input type="time">` preserves
+// seconds when the prefilled value had them), but our storage + logic only
+// care about HH:MM. Accept both forms here and normalise in normalizeHHMM().
+export const HHMM_RE = /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
+
+/** Strip an optional ":SS" suffix so all downstream logic sees HH:MM. */
+export function normalizeHHMM(input: string): string {
+  return input.length >= 5 ? input.slice(0, 5) : input;
+}
 
 // Adversarial patterns refused outright. This isn't a silver bullet against
 // prompt injection (defense-in-depth at prompt-assembly time matters more),
