@@ -22,6 +22,7 @@ Compare against `.env.example` for descriptions.
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://xxx.supabase.co` | From Supabase dashboard → Settings → API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJ...` | Public anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...` | **Secret.** Service role key for admin operations |
+| `CRON_SECRET` | `<random 32+ char>` | **Secret.** Protects `/api/cron/*` and `/api/digest/*` from unauthorized invocation. Vercel Cron sends it as `x-cron-secret` header (digest route uses `authorization: Bearer`). |
 
 ### Required for Meta integration
 
