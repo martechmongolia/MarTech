@@ -81,95 +81,111 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ ok: true });
   }
 
-  // Process in background — return 200 immediately (FB requires <5s response).
-  // `after()` keeps the serverless function alive past the response so the
-  // DB writes actually complete; `void (async () => {})()` would freeze with
-  // the lambda the moment the response is sent.
-  after(async () => {
-    for (const entry of event.entry ?? []) {
-      for (const change of entry.changes ?? []) {
-        const val = change.value;
+  // Ingest synchronously so comments always land in fb_comments before we
+  // return — Vercel can freeze the lambda the moment the response is sent,
+  // which would silently drop background work. Then schedule the slow AI
+  // pipeline via `after()` so it survives past the response.
+  const freshlyInsertedCommentIds: Array<{ id: string; orgId: string; pageId: string }> = [];
 
-        if (!val || val.item !== 'comment' || val.verb !== 'add') continue;
+  for (const entry of event.entry ?? []) {
+    for (const change of entry.changes ?? []) {
+      const val = change.value;
 
-        const fbCommentId = val.comment_id;
-        const postId = val.post_id;
-        const message = val.message;
-        const pageId = val.page_id ?? entry.id ?? '';
+      if (!val || val.item !== 'comment' || val.verb !== 'add') continue;
 
-        if (!fbCommentId || !postId || !message) continue;
+      const fbCommentId = val.comment_id;
+      const postId = val.post_id;
+      const message = val.message;
+      const pageId = val.page_id ?? entry.id ?? '';
 
-        try {
-          // Fan out: a single FB page can be connected by multiple orgs, each
-          // with their own AI settings + knowledge base. Insert one fb_comment
-          // per org that has this page connected AND has AI enabled.
-          const connections = await getPageConnectionsByPageId(pageId);
-          if (connections.length === 0) {
-            console.warn(`[fb-webhook] No active connection for page ${pageId}`);
-            continue;
-          }
+      if (!fbCommentId || !postId || !message) continue;
 
-          const aiEnabled = connections.filter((c) => c.comment_ai_enabled);
-          if (aiEnabled.length === 0) continue;
+      try {
+        // Fan out: a single FB page can be connected by multiple orgs, each
+        // with their own AI settings + knowledge base. Insert one fb_comment
+        // per org that has this page connected AND has AI enabled.
+        const connections = await getPageConnectionsByPageId(pageId);
+        if (connections.length === 0) {
+          console.warn(`[fb-webhook] No active connection for page ${pageId}`);
+          continue;
+        }
 
-          for (const connection of aiEnabled) {
-            try {
-              const { row: saved, inserted } = await insertComment({
-                comment_id: fbCommentId,
-                connection_id: connection.id,
-                org_id: connection.org_id,
-                post_id: postId,
-                commenter_name: val.from?.name ?? null,
-                commenter_id: val.from?.id ?? null,
-                message,
-                comment_type: 'unknown',
-                sentiment: null,
-                language: 'mn',
-                status: 'pending',
-                created_at_facebook: val.created_time
-                  ? new Date(val.created_time * 1000).toISOString()
-                  : null,
-              });
+        const aiEnabled = connections.filter((c) => c.comment_ai_enabled);
+        if (aiEnabled.length === 0) continue;
 
-              // Only process fresh inserts. Webhook re-delivery of an already
-              // ingested event shouldn't re-trigger AI for a comment we're
-              // halfway through (or already finished) handling.
-              if (!inserted) continue;
+        for (const connection of aiEnabled) {
+          try {
+            const { row: saved, inserted } = await insertComment({
+              comment_id: fbCommentId,
+              connection_id: connection.id,
+              org_id: connection.org_id,
+              post_id: postId,
+              commenter_name: val.from?.name ?? null,
+              commenter_id: val.from?.id ?? null,
+              message,
+              comment_type: 'unknown',
+              sentiment: null,
+              language: 'mn',
+              status: 'pending',
+              created_at_facebook: val.created_time
+                ? new Date(val.created_time * 1000).toISOString()
+                : null,
+            });
 
-              void processComment(saved.id).catch((err: unknown) => {
-                console.error('[fb-webhook] processComment error:', err);
-                captureError(err, {
-                  module: 'facebook-ai',
-                  op: 'webhook.processComment',
-                  orgId: connection.org_id,
-                  tags: { comment_id: saved.id, page_id: pageId },
-                });
-              });
-            } catch (perOrgErr) {
-              // One org failing to ingest shouldn't block the rest.
-              console.error(
-                `[fb-webhook] ingest failed for org ${connection.org_id}:`,
-                perOrgErr,
-              );
-              captureError(perOrgErr, {
-                module: 'facebook-ai',
-                op: 'webhook.ingest',
+            // Only process fresh inserts. Webhook re-delivery of an already
+            // ingested event shouldn't re-trigger AI for a comment we're
+            // halfway through (or already finished) handling.
+            if (inserted) {
+              freshlyInsertedCommentIds.push({
+                id: saved.id,
                 orgId: connection.org_id,
-                tags: { page_id: pageId, fb_comment_id: fbCommentId },
+                pageId,
               });
             }
+          } catch (perOrgErr) {
+            // One org failing to ingest shouldn't block the rest.
+            console.error(
+              `[fb-webhook] ingest failed for org ${connection.org_id}:`,
+              perOrgErr,
+            );
+            captureError(perOrgErr, {
+              module: 'facebook-ai',
+              op: 'webhook.ingest',
+              orgId: connection.org_id,
+              tags: { page_id: pageId, fb_comment_id: fbCommentId },
+            });
           }
+        }
+      } catch (err) {
+        console.error('[fb-webhook] Error handling comment entry:', err);
+        captureError(err, {
+          module: 'facebook-ai',
+          op: 'webhook.handleEntry',
+          tags: { page_id: pageId, fb_comment_id: fbCommentId },
+        });
+      }
+    }
+  }
+
+  // AI classification + reply generation can take several seconds — defer
+  // past the response so we still hit the FB <5s ack window.
+  if (freshlyInsertedCommentIds.length > 0) {
+    after(async () => {
+      for (const { id, orgId, pageId } of freshlyInsertedCommentIds) {
+        try {
+          await processComment(id);
         } catch (err) {
-          console.error('[fb-webhook] Error handling comment entry:', err);
+          console.error('[fb-webhook] processComment error:', err);
           captureError(err, {
             module: 'facebook-ai',
-            op: 'webhook.handleEntry',
-            tags: { page_id: pageId, fb_comment_id: fbCommentId },
+            op: 'webhook.processComment',
+            orgId,
+            tags: { comment_id: id, page_id: pageId },
           });
         }
       }
-    }
-  });
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }
