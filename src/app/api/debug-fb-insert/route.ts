@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPageConnectionsByPageId, insertComment } from '@/modules/facebook-ai/data';
+import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,20 @@ export async function GET(req: Request): Promise<Response> {
     env_service_role_last_5: (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').slice(-5),
     env_anon_length: (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').length,
   };
+
+  try {
+    const admin = getSupabaseAdminClient();
+    const raw = await admin
+      .from('meta_pages')
+      .select('id, organization_id, meta_page_id, status, comment_ai_enabled')
+      .eq('meta_page_id', pageId)
+      .eq('status', 'active');
+    out.raw_query = { data: raw.data, error: raw.error?.message ?? null };
+    const all = await admin.from('meta_pages').select('id', { count: 'exact', head: true });
+    out.total_meta_pages = all.count;
+  } catch (err) {
+    out.raw_query_error = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+  }
 
   try {
     const conns = await getPageConnectionsByPageId(pageId);
