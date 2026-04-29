@@ -16,6 +16,10 @@ export async function GET(req: Request): Promise<Response> {
     env_supabase_url_first_char_code: url.charCodeAt(0),
     env_supabase_url_last_char_code: url.charCodeAt(url.length - 1),
     env_service_role_present: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    env_service_role_length: (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').length,
+    env_service_role_first_5: (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').slice(0, 5),
+    env_service_role_last_5: (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').slice(-5),
+    env_anon_length: (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').length,
   };
 
   try {
