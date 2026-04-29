@@ -33,6 +33,16 @@ export async function GET(req: Request): Promise<Response> {
     out.raw_query = { data: raw.data, error: raw.error?.message ?? null };
     const all = await admin.from('meta_pages').select('id', { count: 'exact', head: true });
     out.total_meta_pages = all.count;
+    // Replicate getPageConnectionsByPageId's exact select string
+    const fullCols = await admin
+      .from('meta_pages')
+      .select('id,organization_id,meta_page_id,name,page_access_token_encrypted,status,comment_ai_enabled,webhook_subscribed_at')
+      .eq('meta_page_id', pageId)
+      .eq('status', 'active');
+    out.full_cols_query = {
+      count: (fullCols.data ?? []).length,
+      error: fullCols.error?.message ?? null,
+    };
   } catch (err) {
     out.raw_query_error = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
   }
