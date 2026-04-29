@@ -24,7 +24,7 @@ export default function PrivacyPolicyPage() {
 
       <p>
         MarTech (&quot;we&quot;, &quot;us&quot;, or &quot;the Service&quot;) is a social media analytics platform operated
-        by MarTech Mongolia. This Privacy Policy explains how we collect, use, store, and share your information when you
+        by Brand On Creative House LLC, a company registered in Mongolia. This Privacy Policy explains how we collect, use, store, and share your information when you
         use our Service.
       </p>
 

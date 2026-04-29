@@ -24,7 +24,7 @@ export default function TermsOfServicePage() {
 
       <p>
         These Terms of Service (&quot;Terms&quot;) govern your use of the MarTech platform (&quot;Service&quot;)
-        operated by MarTech Mongolia (&quot;we&quot;, &quot;us&quot;). By accessing or using the Service, you agree to
+        operated by Brand On Creative House LLC, a company registered in Mongolia (&quot;we&quot;, &quot;us&quot;). By accessing or using the Service, you agree to
         be bound by these Terms.
       </p>
 
@@ -118,7 +118,7 @@ export default function TermsOfServicePage() {
 
       <h2>11. Limitation of Liability</h2>
       <p>
-        To the maximum extent permitted by law, MarTech Mongolia shall not be liable for any indirect, incidental,
+        To the maximum extent permitted by law, Brand On Creative House LLC shall not be liable for any indirect, incidental,
         special, consequential, or punitive damages, including loss of profits, data, or business opportunities,
         arising from your use of the Service.
       </p>
