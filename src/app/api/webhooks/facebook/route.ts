@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { createHmac } from 'crypto';
 import { getFacebookAiEnv } from '@/lib/env/server';
 import { getPageConnectionsByPageId, insertComment } from '@/modules/facebook-ai/data';
@@ -81,8 +81,11 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ ok: true });
   }
 
-  // Process in background — return 200 immediately (FB requires <5s response)
-  void (async () => {
+  // Process in background — return 200 immediately (FB requires <5s response).
+  // `after()` keeps the serverless function alive past the response so the
+  // DB writes actually complete; `void (async () => {})()` would freeze with
+  // the lambda the moment the response is sent.
+  after(async () => {
     for (const entry of event.entry ?? []) {
       for (const change of entry.changes ?? []) {
         const val = change.value;
@@ -166,7 +169,7 @@ export async function POST(req: Request): Promise<Response> {
         }
       }
     }
-  })();
+  });
 
   return NextResponse.json({ ok: true });
 }
