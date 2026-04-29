@@ -9,7 +9,10 @@ export async function GET(req: Request): Promise<Response> {
   }
 
   const pageId = '1768956776520441';
-  const out: Record<string, unknown> = {};
+  const out: Record<string, unknown> = {
+    env_supabase_url: JSON.stringify(process.env.NEXT_PUBLIC_SUPABASE_URL ?? null),
+    env_service_role_present: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+  };
 
   try {
     const conns = await getPageConnectionsByPageId(pageId);
