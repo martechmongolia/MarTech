@@ -9,8 +9,12 @@ export async function GET(req: Request): Promise<Response> {
   }
 
   const pageId = '1768956776520441';
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
   const out: Record<string, unknown> = {
-    env_supabase_url: JSON.stringify(process.env.NEXT_PUBLIC_SUPABASE_URL ?? null),
+    env_supabase_url: url,
+    env_supabase_url_length: url.length,
+    env_supabase_url_first_char_code: url.charCodeAt(0),
+    env_supabase_url_last_char_code: url.charCodeAt(url.length - 1),
     env_service_role_present: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
   };
 
