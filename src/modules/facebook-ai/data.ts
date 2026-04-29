@@ -1,4 +1,7 @@
-'use server';
+// Server-only data layer for facebook-ai. NO `'use server'` here:
+// this module is imported into webhook + cron + RSC code and must call
+// straight into the function, not through the Server Action protocol.
+import 'server-only';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
@@ -7,14 +10,18 @@
  * a Supabase type generation run includes the new tables.
  */
 
-import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { decryptSecret } from '@/lib/meta/crypto';
 import { getMetaEnv } from '@/lib/env/server';
 import type { FbComment, FbPageConnection, FbReply, FbKnowledgeBaseItem, FbReplySettings } from './types';
 
+// facebook-ai data functions run from two contexts with no shared auth cookie:
+// UI routes (user session) and webhook/processor/cron (no session). Every
+// query in this file scopes by org_id/connection_id/comment_id and every
+// caller (API route, RSC page, cron) performs its own authorization, so we
+// bypass RLS uniformly with the service-role admin client.
 async function getClient() {
-  return getSupabaseServerClient();
+  return getSupabaseAdminClient();
 }
 
 function fromTable(supabase: any, table: string) {
